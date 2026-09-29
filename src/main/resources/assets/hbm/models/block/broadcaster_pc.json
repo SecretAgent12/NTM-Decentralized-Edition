@@ -278,5 +278,24 @@
     "particle": "hbm:block/broadcaster_pc",
     "texture": "hbm:block/models/machines/broadcaster"
   },
-  "render_type": "minecraft:cutout"
+  "render_type": "minecraft:cutout",
+  "display": {
+    "gui": {
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "translation": [
+        0,
+        -2.4,
+        0
+      ],
+      "scale": [
+        0.6,
+        0.6,
+        0.6
+      ]
+    }
+  }
 }

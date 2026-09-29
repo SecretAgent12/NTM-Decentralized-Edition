@@ -34,6 +34,12 @@ public final class ItemTintSources {
 
     /** 26.x {@code net.minecraft.client.color.item.Constant}. */
     public record Constant(int value) implements ItemTintSource {
+        // backport-fix: BF-008 26.x reads "value" as an RGB color and forces full alpha; 1.21.1 item
+        // rendering honours the tint alpha, so a raw 0xRRGGBB made tinted layers (spawn eggs) invisible
+        public Constant {
+            value = com.hbm.backport.ARGB.opaque(value);
+        }
+
         public static final MapCodec<Constant> MAP_CODEC =
                 RecordCodecBuilder.mapCodec(
                         i -> i.group(Codec.INT.fieldOf("value").forGetter(Constant::value))

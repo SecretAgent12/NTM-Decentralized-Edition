@@ -47,7 +47,14 @@ public class ParticleGiblet extends ParticleCompat implements IQuadParticle {
 
     @Override
     public void tick() {
+        // backport-fix: BF-005 vanilla move() latches stoppedByCollision after the first vertical
+        // block (ceiling hit, or landing on ground an explosion removes later), freezing the gib in
+        // mid-air until it expires; 1.7.10 re-collided every tick, so clear the latch like ParticleSpark
+        this.stoppedByCollision = false;
         super.tick();
+        // backport-fix: BF-005 1.7.10 moveEntity zeroed motionY on a vertical hit; without the latch the
+        // resting gib would otherwise build up fall speed and snap down once its support is removed
+        if (this.onGround) this.yd = 0D;
 
         if (!this.onGround && this.gibType != TYPE_METAL) {
             Minecraft.getInstance()

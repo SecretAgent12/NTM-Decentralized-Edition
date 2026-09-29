@@ -6,7 +6,7 @@
   },
   "display": {
     "announce_to_chat": false,
-    "background": "minecraft:block/dirt",
+    "background": "minecraft:textures/block/dirt.png",
     "description": {
       "translate": "achievement.root.desc"
     },

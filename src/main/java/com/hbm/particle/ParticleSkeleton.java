@@ -94,6 +94,9 @@ public class ParticleSkeleton extends ParticleCompat {
         boolean wasOnGround = this.onGround;
 
         this.yd -= this.gravity;
+        // backport-fix: BF-005 clear vanilla's stoppedByCollision latch so bones that hit a ceiling or
+        // rest on ground an explosion removes later keep falling (1.7.10 behaviour) instead of freezing
+        this.stoppedByCollision = false;
         this.move(this.xd, this.yd, this.zd);
         this.xd *= 0.98D;
         this.yd *= 0.98D;
