@@ -32,6 +32,14 @@ public class BlockEntityTurretSentryDamaged extends BlockEntityTurretSentry {
         return true;
     }
 
+    // backport-fix: BF-009 needs no power (hasPower() is always true), so it must not consume any:
+    // the base class subtracted getConsumption() every tick and drove the buffer negative
+    // (-6500 HE/s for Methusalem), which Jade/TOP showed as ever-decreasing HE. Same in 1.7.10 / ntm-next.
+    @Override
+    public long getConsumption() {
+        return 0L;
+    }
+
     @Override
     public double getTurretYawSpeed() {
         return 3D;
