@@ -38,6 +38,13 @@ public class BlockEntityTurretHowardDamaged extends BlockEntityTurretHoward {
         return 0L;
     }
 
+    // backport-fix: BF-009 turrets placed before the fix saved a negative buffer; the base tick calls
+    // setPower(getPower() - 0) every tick, so clamping here heals them on the next tick
+    @Override
+    public void setPower(long i) {
+        super.setPower(Math.max(0L, i));
+    }
+
     @Override
     protected boolean hasConnectorPlugs() {
         return false;
