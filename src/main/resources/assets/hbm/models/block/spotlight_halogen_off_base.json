@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": false,
+  "textures": {
+    "all": "hbm:block/flood_lamp_off",
+    "particle": "hbm:block/flood_lamp_off"
+  },
+  "render_type": "minecraft:cutout"
+}

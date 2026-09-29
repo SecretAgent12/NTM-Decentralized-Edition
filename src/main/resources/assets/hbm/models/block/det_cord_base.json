@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "all": "hbm:block/det_cord",
+    "particle": "hbm:block/det_cord"
+  },
+  "render_type": "minecraft:cutout"
+}

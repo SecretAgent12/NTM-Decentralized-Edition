@@ -1,0 +1,9 @@
+{
+  "ambientocclusion": false,
+  "gui_light": "side",
+  "textures": {
+    "all": "hbm:block/models/machines/chimney_industrial",
+    "particle": "hbm:block/models/machines/chimney_industrial"
+  },
+  "render_type": "minecraft:cutout"
+}

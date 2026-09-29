@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": false,
+  "textures": {
+    "all": "hbm:block/red_cable_classic",
+    "particle": "hbm:block/red_cable_classic"
+  },
+  "render_type": "minecraft:cutout"
+}

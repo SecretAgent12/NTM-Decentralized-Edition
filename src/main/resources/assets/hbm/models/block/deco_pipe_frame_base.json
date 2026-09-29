@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "frame": "hbm:block/pipe_frame",
+    "mesh": "hbm:block/pipe_mesh",
+    "particle": "hbm:block/pipe_frame"
+  },
+  "render_type": "minecraft:cutout"
+}

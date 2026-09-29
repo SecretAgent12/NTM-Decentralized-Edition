@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "C": {
+      "type": "neoforge:components",
+      "components": {},
+      "items": "hbm:canister",
+      "strict": true
+    },
+    "R": "#hbm:pipes/rubber",
+    "S": "#c:plates/steel"
+  },
+  "pattern": [
+    " R ",
+    "CCC",
+    "SSS"
+  ],
+  "result": {
+    "id": "hbm:weapon_mod_special_canisters"
+  }
+}

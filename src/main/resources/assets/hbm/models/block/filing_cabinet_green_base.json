@@ -1,0 +1,9 @@
+{
+  "ambientocclusion": true,
+  "gui_light": "side",
+  "textures": {
+    "all": "hbm:block/filing_cabinet",
+    "particle": "hbm:block/filing_cabinet"
+  },
+  "render_type": "minecraft:cutout"
+}

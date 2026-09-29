@@ -1,0 +1,6 @@
+{
+  "//": "backport: stand-in for 1.21.1's vanilla model loaders; never drawn",
+  "textures": {
+    "particle": "minecraft:missingno"
+  }
+}

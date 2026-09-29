@@ -1,0 +1,6 @@
+{
+  "textures": {
+    "particle": "hbm:block/fluid/sulfuric_acid_still"
+  },
+  "render_type": "minecraft:translucent"
+}

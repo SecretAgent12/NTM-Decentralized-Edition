@@ -1,0 +1,6 @@
+{
+  "textures": {
+    "particle": "hbm:block/models/machines/boiler"
+  },
+  "render_type": "minecraft:cutout"
+}

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/template_glass_pane_post",
+  "textures": {
+    "edge": "hbm:block/reinforced_laminate_pane_top",
+    "pane": "hbm:block/reinforced_laminate_pane"
+  },
+  "render_type": "minecraft:translucent"
+}

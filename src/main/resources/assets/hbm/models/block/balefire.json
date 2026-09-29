@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/tinted_cross",
+  "textures": {
+    "cross": "hbm:block/balefire",
+    "particle": "hbm:block/balefire"
+  },
+  "render_type": "minecraft:cutout"
+}

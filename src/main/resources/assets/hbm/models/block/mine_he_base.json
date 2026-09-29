@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": false,
+  "textures": {
+    "all": "hbm:block/models/bombs/mine_marelet",
+    "particle": "hbm:block/mine_he"
+  },
+  "render_type": "minecraft:cutout"
+}

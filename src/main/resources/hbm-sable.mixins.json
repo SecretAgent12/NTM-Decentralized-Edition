@@ -1,0 +1,8 @@
+{
+  "required": false,
+  "minVersion": "0.8.5",
+  "package": "com.hbm.mixin.sable",
+  "plugin": "com.hbm.mixin.sable.SableMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": ["MixinSableAssemblyListener"]
+}

@@ -1,0 +1,30 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "east": {
+          "texture": "#span"
+        },
+        "west": {
+          "texture": "#span"
+        }
+      },
+      "from": [
+        8,
+        0,
+        0
+      ],
+      "to": [
+        8,
+        16,
+        7
+      ]
+    }
+  ],
+  "textures": {
+    "particle": "hbm:block/fence_metal",
+    "span": "hbm:block/fence_metal"
+  },
+  "render_type": "minecraft:cutout"
+}

@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cross",
+  "textures": {
+    "cross": "hbm:block/mush"
+  },
+  "render_type": "minecraft:cutout"
+}

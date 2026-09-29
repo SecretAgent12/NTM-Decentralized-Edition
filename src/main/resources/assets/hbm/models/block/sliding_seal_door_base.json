@@ -1,0 +1,9 @@
+{
+  "ambientocclusion": false,
+  "gui_light": "side",
+  "textures": {
+    "particle": "hbm:block/models/pheodoors/seal_door",
+    "sheet0": "hbm:block/models/pheodoors/seal_door"
+  },
+  "render_type": "minecraft:cutout"
+}

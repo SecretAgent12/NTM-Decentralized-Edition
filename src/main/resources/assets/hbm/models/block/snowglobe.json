@@ -1,0 +1,6 @@
+{
+  "textures": {
+    "particle": "hbm:block/glass_boron_plain"
+  },
+  "render_type": "minecraft:cutout"
+}

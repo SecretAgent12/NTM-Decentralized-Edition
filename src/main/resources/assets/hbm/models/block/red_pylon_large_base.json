@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": false,
+  "textures": {
+    "all": "hbm:block/models/network/pylon_large",
+    "particle": "hbm:block/models/network/pylon_large"
+  },
+  "render_type": "minecraft:cutout"
+}

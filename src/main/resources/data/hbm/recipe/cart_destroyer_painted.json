@@ -1,0 +1,36 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "B": {
+      "type": "neoforge:components",
+      "components": {
+        "minecraft:damage": 0
+      },
+      "items": "hbm:blades_steel"
+    },
+    "C": {
+      "type": "neoforge:components",
+      "components": {
+        "hbm:cart_base": "painted"
+      },
+      "items": "hbm:cart_empty"
+    },
+    "L": {
+      "type": "hbm:fluid_content",
+      "amount": 1000,
+      "fluid": "minecraft:lava"
+    },
+    "S": "#c:ingots/steel"
+  },
+  "pattern": [
+    "S S",
+    "BLB",
+    "SCS"
+  ],
+  "result": {
+    "components": {
+      "hbm:cart_base": "painted"
+    },
+    "id": "hbm:cart_destroyer"
+  }
+}

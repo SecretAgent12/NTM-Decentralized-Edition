@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": false,
+  "textures": {
+    "all": "hbm:block/barrel_red",
+    "particle": "hbm:block/barrel_red"
+  },
+  "render_type": "minecraft:cutout"
+}

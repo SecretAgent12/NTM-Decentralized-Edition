@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": false,
+  "textures": {
+    "all": "hbm:block/barrel_vitrified",
+    "particle": "hbm:block/barrel_vitrified"
+  },
+  "render_type": "minecraft:translucent"
+}

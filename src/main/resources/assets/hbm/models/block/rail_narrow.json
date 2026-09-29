@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/rail_flat",
+  "textures": {
+    "rail": "hbm:block/rail_narrow"
+  },
+  "render_type": "minecraft:cutout"
+}

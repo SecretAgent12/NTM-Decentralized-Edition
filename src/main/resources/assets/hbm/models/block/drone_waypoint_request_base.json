@@ -1,0 +1,9 @@
+{
+  "ambientocclusion": false,
+  "gui_light": "side",
+  "textures": {
+    "all": "hbm:block/drone_waypoint_request",
+    "particle": "hbm:block/drone_waypoint_request"
+  },
+  "render_type": "minecraft:cutout"
+}

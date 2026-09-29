@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": false,
+  "textures": {
+    "all": "hbm:block/charge_dynamite",
+    "particle": "hbm:block/charge_dynamite"
+  },
+  "render_type": "minecraft:cutout"
+}

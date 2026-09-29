@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": false,
+  "textures": {
+    "all": "hbm:block/models/bombs/mine_fat",
+    "particle": "hbm:block/mine_fat"
+  },
+  "render_type": "minecraft:translucent"
+}

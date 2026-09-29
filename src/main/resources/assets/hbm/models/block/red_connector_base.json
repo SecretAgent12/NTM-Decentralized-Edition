@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": false,
+  "textures": {
+    "all": "hbm:block/models/network/connector",
+    "particle": "hbm:block/models/network/connector"
+  },
+  "render_type": "minecraft:cutout"
+}

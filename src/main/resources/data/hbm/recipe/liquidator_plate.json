@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "B": {
+      "type": "neoforge:components",
+      "components": {
+        "minecraft:damage": 0
+      },
+      "items": "hbm:hazmat_plate_grey"
+    },
+    "C": "hbm:cladding_lead",
+    "I": "#hbm:ingots/any_rubber",
+    "T": {
+      "type": "neoforge:components",
+      "components": {},
+      "items": "hbm:gas_tank",
+      "strict": true
+    }
+  },
+  "pattern": [
+    "ICI",
+    "TBT",
+    "ICI"
+  ],
+  "result": {
+    "id": "hbm:liquidator_plate"
+  }
+}

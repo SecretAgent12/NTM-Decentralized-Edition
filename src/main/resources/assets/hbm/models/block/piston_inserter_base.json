@@ -1,0 +1,9 @@
+{
+  "ambientocclusion": false,
+  "gui_light": "side",
+  "textures": {
+    "all": "hbm:block/models/machines/piston_inserter",
+    "particle": "hbm:block/models/machines/piston_inserter"
+  },
+  "render_type": "minecraft:cutout"
+}

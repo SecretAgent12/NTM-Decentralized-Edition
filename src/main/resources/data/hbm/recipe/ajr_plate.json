@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "B": {
+      "type": "neoforge:components",
+      "components": {
+        "minecraft:damage": 0
+      },
+      "items": "hbm:titanium_plate"
+    },
+    "M": "hbm:motor_desh",
+    "P": "hbm:plate_armor_ajr",
+    "T": {
+      "type": "neoforge:components",
+      "components": {},
+      "items": "hbm:gas_tank",
+      "strict": true
+    }
+  },
+  "pattern": [
+    "MPM",
+    "TBT",
+    "PPP"
+  ],
+  "result": {
+    "id": "hbm:ajr_plate"
+  }
+}

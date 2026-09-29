@@ -1,0 +1,9 @@
+{
+  "ambientocclusion": false,
+  "gui_light": "side",
+  "textures": {
+    "particle": "hbm:block/models/doors/transition_seal",
+    "sheet0": "hbm:block/models/doors/transition_seal"
+  },
+  "render_type": "minecraft:translucent"
+}

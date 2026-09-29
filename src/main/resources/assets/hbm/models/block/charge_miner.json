@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": false,
+  "textures": {
+    "all": "hbm:block/charge_miner",
+    "particle": "hbm:block/charge_miner"
+  },
+  "render_type": "minecraft:cutout"
+}

@@ -1,0 +1,73 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "LGPL-3.0-only"
+
+[[mods]]
+modId = "hbm"
+version = "${file.jarVersion}"
+displayName = "NTM: Decentralized Edition"
+description = '''HBM's Nuclear Tech Mod on Minecraft 1.21.1 / NeoForge: a backport of ntm-next (the 26.2 port by movblock / Warfactory) with Create: Aeronautics (Sable) support and 1.21.1 mod integrations.
+
+Unofficial. Not affiliated with HbmMods or Warfactory - report bugs of this build to the backport, not upstream.'''
+authors = "HbmMods (The Bobcat), movblock, SecretAgent12"
+credits = "HbmMods (The Bobcat) and contributors: the original Hbm's Nuclear Tech Mod. movblock and Warfactory: ntm-next, the 26.2 port this build is based on. SecretAgent12: backport to Minecraft 1.21.1 / NeoForge, Sable / Create: Aeronautics compatibility, integrations. Raw ore textures: MrNorwood (thorium, cobalt, lithium, schrabidium); Mr. Morgan and NuclearGrandFather (aluminium, beryllium, lead, plutonium, titanium, tungsten, uranium)."
+displayTest = "IGNORE_ALL_VERSION"
+enumExtensions = "META-INF/enumextensions.json"
+
+[[mixins]]
+config = "hbm-common.mixins.json"
+
+# backport: hbm-compat.mixins.json is kept although every Iris/Sodium/Fusion/Vanillin/EnhancedLight
+# mixin in it is disabled (its "client" list is empty): an empty config is harmless, and re-enabling
+# a compat mixin only needs its DISABLED line removed.
+[[mixins]]
+config = "hbm-compat.mixins.json"
+
+[[mixins]]
+config = "hbm-storage-compat.mixins.json"
+
+# backport: hbm-network-compat.mixins.json disabled (NEB / Bandwidth Optimizer compat, see disabled/network-compat)
+
+[[mixins]]
+config = "hbm-neoforge-storage.mixins.json"
+
+[[mixins]]
+config = "hbm-neoforge.mixins.json"
+
+# backport: Sable / Create: Aeronautics sub-level compat (applied only when Sable is installed)
+[[mixins]]
+config = "hbm-sable.mixins.json"
+
+[[accessTransformers]]
+file = "META-INF/accesstransformer.cfg"
+
+[[dependencies.hbm]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.1,1.21.2)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.hbm]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1.0,)"
+ordering = "NONE"
+side = "BOTH"
+
+# backport: Flywheel 1.0.x replaces CrankShaft (the 26.2 Flywheel port, mod id "crankshaft")
+[[dependencies.hbm]]
+modId = "flywheel"
+type = "required"
+versionRange = "[1.0.0,2.0)"
+ordering = "AFTER"
+side = "CLIENT"
+
+# backport: dropped "ctm" (optional [26.2.0.1], CTM Lib): on 1.21.1 the mod id "ctm" belongs to Chisel's
+# CTM, a different mod; the CTM Lib integration is disabled.
+# backport: fenced integration ScalableLux / Lithium (jar not available yet): their optional entries only
+# pinned the 26.2 builds ([0.3.0-alpha.0.16,) / [0.25.3,0.26)), which would reject the 1.21.1 builds of
+# those mods at load time; restore with 1.21.1 ranges when the integrations are ported.
+# backport: fenced integration Iris / Sodium (jar not available yet): the "incompatible" entries
+# ((,1.11.4+mc26.2) / (,0.9.2-beta.1+mc26.2)) would flag every 1.21.1 build of Iris/Sodium; dropped
+# while their compat mixins are disabled.

@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": false,
+  "textures": {
+    "all": "hbm:block/cage_lamp",
+    "particle": "hbm:block/cage_lamp"
+  },
+  "render_type": "minecraft:cutout"
+}

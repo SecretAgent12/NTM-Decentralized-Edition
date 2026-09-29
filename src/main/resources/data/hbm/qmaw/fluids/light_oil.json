@@ -1,0 +1,28 @@
+{
+  "content": {
+    "en_us": "Obtained after [[refining|Oil Refinery]] [[heated|Boiler]] [[crude oil|Crude Oil]]. Light oil is primarily used to make [[desh|Desh]]. It can also be [[fractioned|Fractioning Tower]] to obtain fuels such as [[diesel|Diesel]] or [[kerosene|Kerosene]].<br><br>{{hbm:fluids/template_oil1}}",
+    "ru_ru": "\u041f\u043e\u043b\u0443\u0447\u0430\u0435\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435 [[\u043f\u0435\u0440\u0435\u0440\u0430\u0431\u043e\u0442\u043a\u0438|Oil Refinery]] [[\u043d\u0430\u0433\u0440\u0435\u0442\u043e\u0439|Boiler]] [[\u0441\u044b\u0440\u043e\u0439 \u043d\u0435\u0444\u0442\u0438|Crude Oil]]. \u041b\u0451\u0433\u043a\u0430\u044f \u043d\u0435\u0444\u0442\u044c \u0432 \u043e\u0441\u043d\u043e\u0432\u043d\u043e\u043c \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0435\u0442\u0441\u044f \u0434\u043b\u044f \u0441\u043e\u0437\u0434\u0430\u043d\u0438\u044f [[\u0434\u0435\u0448\u0430|Desh]]. \u0415\u0451 \u0442\u0430\u043a\u0436\u0435 \u043c\u043e\u0436\u043d\u043e \u043f\u043e\u0434\u0432\u0435\u0440\u0433\u043d\u0443\u0442\u044c [[\u0440\u0435\u043a\u0442\u0438\u0444\u0438\u043a\u0430\u0446\u0438\u0438|Fractioning Tower]] \u0434\u043b\u044f \u043f\u043e\u043b\u0443\u0447\u0435\u043d\u0438\u044f \u0442\u0430\u043a\u0438\u0445 \u0432\u0438\u0434\u043e\u0432 \u0442\u043e\u043f\u043b\u0438\u0432\u0430, \u043a\u0430\u043a [[\u0434\u0438\u0437\u0435\u043b\u044c|Diesel]] \u0438\u043b\u0438 [[\u043a\u0435\u0440\u043e\u0441\u0438\u043d|Kerosene]].<br><br>{{hbm:fluids/template_oil1}}",
+    "zh_cn": "\u5728[[\u70bc\u6cb9\u5382|Oil Refinery]][[\u52a0\u70ed|Boiler]]\u539f\u6cb9\u540e\u83b7\u5f97\u3002\u8f7b\u6cb9\u4e3b\u8981\u7528\u4e8e\u5236\u9020[[\u6234\u4ec0\u5408\u91d1|Desh]]\u3002\u4e5f\u53ef\u7528\u4e8e\u83b7\u53d6\u71c3\u6599\uff0c\u4f8b\u5982[[\u56fa\u4f53\u71c3\u6599|Solid Fuel]]\u3001[[\u67f4\u6cb9|Diesel]]\u6216[[\u7164\u6cb9|Kerosene]]\u3002<br><br>\u53e6\u89c1\uff1a<br>[[\u57fa\u7840\u77f3\u6cb9\u5904\u7406|Basic Oil Processing]]<br>[[\u9ad8\u7ea7\u77f3\u6cb9\u5904\u7406|Advanced Oil Processing]]<br>[[\u771f\u7a7a\u77f3\u6cb9\u5904\u7406|Vacuum Oil Processing]]"
+  },
+  "icon": {
+    "components": {
+      "hbm:fluid_content": {
+        "type": "hbm:lightoil",
+        "amount": 0
+      }
+    },
+    "id": "hbm:fluid_icon"
+  },
+  "name": "Light Oil",
+  "title": {
+    "en_us": "Light Oil",
+    "ru_ru": "\u041b\u0451\u0433\u043a\u0430\u044f \u043d\u0435\u0444\u0442\u044c",
+    "zh_cn": "\u8f7b\u6cb9"
+  },
+  "trigger": {
+    "items": "hbm:fluid_icon",
+    "predicates": {
+      "hbm:fluid_content": "hbm:lightoil"
+    }
+  }
+}

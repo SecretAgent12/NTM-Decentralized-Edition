@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "all": "hbm:block/fluid_pipe_silver",
+    "overlay": "hbm:block/fluid_pipe_silver_overlay",
+    "particle": "hbm:block/fluid_pipe_silver"
+  },
+  "render_type": "minecraft:cutout"
+}

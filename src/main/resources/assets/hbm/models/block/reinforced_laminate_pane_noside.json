@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/template_glass_pane_noside",
+  "textures": {
+    "pane": "hbm:block/reinforced_laminate_pane"
+  },
+  "render_type": "minecraft:translucent"
+}

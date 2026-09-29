@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8.5",
+  "package": "com.hbm.mixin.compat",
+  "plugin": "com.hbm.mixin.compat.ClientCompatPlugin",
+  "client": [
+    "sodium.LevelSliceMixin",
+    "sodium.SectionTreeAdmissionMixin",
+    "sodium.QuadImportMixin",
+    "sodium.QuadTagMixin",
+    "sodium.LightCacheMixin",
+    "sodium.QuadLightDataMixin",
+    "sodium.FlatLightMixin",
+    "sodium.SmoothLightMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

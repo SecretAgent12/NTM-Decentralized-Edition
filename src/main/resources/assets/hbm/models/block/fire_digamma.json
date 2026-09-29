@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cross",
+  "textures": {
+    "cross": "hbm:block/fire_digamma",
+    "particle": "hbm:block/fire_digamma"
+  },
+  "render_type": "minecraft:cutout"
+}

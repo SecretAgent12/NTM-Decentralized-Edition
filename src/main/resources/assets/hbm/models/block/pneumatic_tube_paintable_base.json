@@ -1,0 +1,11 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "base": "hbm:block/pneumatic_tube_paintable",
+    "frame": "hbm:block/pneumatic_tube_paintable_overlay",
+    "frame_in": "hbm:block/pneumatic_tube_paintable_overlay_in",
+    "frame_out": "hbm:block/pneumatic_tube_paintable_overlay_out",
+    "particle": "hbm:block/pneumatic_tube_paintable"
+  },
+  "render_type": "minecraft:cutout"
+}

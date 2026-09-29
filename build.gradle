@@ -1,0 +1,178 @@
+// Build script of the ntm-next -> Minecraft 1.21.1 / NeoForge 21.1 backport (SecretAgent12).
+// Based on the NeoForge MDK (ModDevGradle); differences from the MDK are commented.
+plugins {
+    id 'java-library'
+    id 'idea'
+    id 'net.neoforged.moddev' version '2.0.146'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = "ntm-decentralized-neoforge-${minecraft_version}"
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+repositories {
+    mavenCentral()
+    // Flywheel 1.0.x for 1.21.1 (ntm-next used CrankShaft, the 26.2 port of Flywheel)
+    maven {
+        url 'https://maven.createmod.net/'
+        content {
+            includeGroup 'dev.engine-room.flywheel'
+            includeGroup 'net.createmod.ponder'
+        }
+    }
+    // CurseForge files (JEI, ...)
+    exclusiveContent {
+        forRepository {
+            maven { url 'https://cursemaven.com' }
+        }
+        filter { includeGroup 'curse.maven' }
+    }
+    // Ponder's own dependencies (per its README)
+    maven { url = 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/' }
+    // Modrinth files (CC: Tweaked, ...)
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Modrinth'
+                url = 'https://api.modrinth.com/maven'
+            }
+        }
+        filter { includeGroup 'maven.modrinth' }
+    }
+}
+
+neoForge {
+    version = project.neo_version
+
+    // META-INF/accesstransformer.cfg is picked up automatically.
+
+    // 26.x interfaces injected into vanilla classes (e.g. ItemInstance on ItemStack) for compiling;
+    // at runtime the matching mixins make the classes implement them.
+    interfaceInjectionData {
+        from(file('src/main/resources/interface-injection.json'))
+    }
+
+    runs {
+        client {
+            client()
+        }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            logLevel = org.slf4j.event.Level.INFO
+            // SIMD kernels (radiation, noise) are used only when this module is present;
+            // without it the Java fallback runs (see com.hbm.lib.internal.VectorApi)
+            jvmArgument '--add-modules=jdk.incubator.vector'
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+// backport: compile-only stand-ins for optional mods' API types (Sable), never packaged
+sourceSets {
+    sableStubs
+}
+neoForge {
+    addModdingDependenciesTo(sourceSets.sableStubs)
+}
+
+sourceSets.main {
+    // precompiled .hbm_mesh files are what the mod loads; the .obj sources stay in the repo only
+    resources.exclude('assets/**/*.obj')
+}
+
+dependencies {
+    // Flywheel: instanced rendering of machines (compile against the API, run with the full mod)
+    compileOnly "dev.engine-room.flywheel:flywheel-neoforge-api-${minecraft_version}:${flywheel_version}"
+    // Ponder guides (com.hbm.integration.ponder): bundled like Flywheel, the version Create 6.0.10 ships
+    jarJar(implementation("net.createmod.ponder:ponder-neoforge")) {
+        version {
+            strictly "[1.0.82+mc1.21.1,)"
+            prefer "1.0.82+mc1.21.1"
+        }
+    }
+    // bundled into our jar (Jar-in-Jar), the way Create ships it: players don't install Flywheel
+    // separately (its CurseForge page only lists legacy < 0.6.9 builds). NeoForge picks the newest
+    // copy among all mods that bundle it, so ours (1.0.7) and Create 6's (1.0.6) resolve to one.
+    jarJar(implementation("dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}")) {
+        version {
+            strictly "[1.0.7,2.0)"
+            prefer project.flywheel_version
+        }
+    }
+    // JSpecify annotations kept by the ported NeoForge transfer API (com.hbm.lib.neotransfer)
+    compileOnly "org.jspecify:jspecify:1.0.0"
+    // Sable (Create: Aeronautics) API stub for the optional sub-level compat mixin
+    compileOnly sourceSets.sableStubs.output
+    // JEI for 1.21.1 NeoForge (19.x): recipe pages, ghost ingredients, lookups (com.hbm.integration.jei)
+    implementation "curse.maven:jei-238222:8964989"
+    // Jade 15.x for 1.21.1 NeoForge: energy/fluid storage views, multiblock cells show their core (com.hbm.integration.jade)
+    implementation "curse.maven:jade-324717:8591319"
+    // CC: Tweaked for 1.21.1 NeoForge: machine peripherals (com.hbm.compat.computercraft, loaded only with CC present)
+    implementation "maven.modrinth:gu7yAYhd:1ewzHZYg"
+    // CIDE (in-game Lua IDE for CC), dev runs only
+    runtimeOnly "maven.modrinth:xwfHmqSv:xdnAXaAa"
+    // The One Probe 1.21_neo-12.0.x: energy/fluid probe info, multiblock cells show their core (com.hbm.integration.top, IMC)
+    implementation "curse.maven:the-one-probe-245211:7292875"
+    // Curios 9.x for 1.21.1: hazards of items worn in Curios slots (com.hbm.neoforge.hazard.CuriosHazards)
+    implementation "curse.maven:curios-309927:6529130"
+    // Sophisticated Storage / Backpacks for 1.21.1: radiation of stored contents (tooltips + carried items),
+    // hazard visitor mixins (com.hbm.neoforge.hazard, com.hbm.neoforge.mixin.storage)
+    implementation "curse.maven:sophisticated-storage-619320:8985962"
+    implementation "curse.maven:sophisticated-backpacks-422301:8992926"
+    // Sophisticated Core (required by both; 1.5.2+ for the linked-storage classes the backpack mixin uses)
+    implementation "curse.maven:sophisticated-core-618298:8985869"
+    // Lithium for 1.21.1 NeoForge: keeps its section block trackers valid when NTM swaps chunk sections (com.hbm.integration.lithium)
+    implementation "curse.maven:lithium-360438:8330365"
+    // ScalableLux (Starlight) for 1.21.1 NeoForge: NTM bulk light updates (com.hbm.mixin.scalablelux, @Pseudo)
+    implementation "curse.maven:scalablelux-1055925:6952385"
+    // Traveler's Backpack 10.x for 1.21.1: radiation of backpack contents, the worn backpack (com.hbm.neoforge.hazard)
+    implementation "curse.maven:travelers-backpack-321117:8762814"
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    // vector kernels + UnsafeBootstrap (it opens jdk.internal.misc itself at run time)
+    options.compilerArgs += ['--add-modules=jdk.incubator.vector',
+                             '--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED']
+    options.fork = true
+    options.forkOptions.memoryMaximumSize = '3g'
+}
+
+tasks.named('jar') {
+    exclude('assets/**/*.obj')
+    // license notices of the bundled third-party code (NeoForge transfer API: LGPL-2.1, CrankShaft: MIT)
+    from('src/main/java') {
+        include '**/NOTICE.md', '**/LICENSE*'
+    }
+    manifest.attributes(
+            'Implementation-Title': 'NTM: Decentralized Edition (ntm-next backport to 1.21.1)',
+            'Implementation-Version': project.version,
+            'Implementation-Vendor': 'SecretAgent12')
+    // licenses and notices at the jar root (LGPL-3.0: the license must travel with the binary)
+    from(rootProject.file('LICENSE'))
+    from(rootProject.file('LICENSE.LESSER'))
+    from(rootProject.file('THIRD_PARTY_NOTICES'))
+    from(rootProject.file('NOTICE.md'))
+    from(rootProject.file('LICENSES')) { into 'LICENSES' }
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}

@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "base": "hbm:block/red_cable_base",
+    "overlay": "hbm:block/red_cable_overlay",
+    "particle": "hbm:block/red_cable_base"
+  },
+  "render_type": "minecraft:cutout"
+}

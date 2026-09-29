@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": false,
+  "textures": {
+    "all": "hbm:block/models/pole_satellite_receiver",
+    "particle": "hbm:block/models/pole_satellite_receiver"
+  },
+  "render_type": "minecraft:cutout"
+}

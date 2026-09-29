@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": false,
+  "textures": {
+    "all": "hbm:block/charge_semtex",
+    "particle": "hbm:block/charge_semtex"
+  },
+  "render_type": "minecraft:cutout"
+}
