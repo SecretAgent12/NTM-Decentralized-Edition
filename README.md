@@ -7,7 +7,7 @@
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-62B47A?style=flat-square)](https://www.minecraft.net)
 [![NeoForge](https://img.shields.io/badge/NeoForge-21.1.x-DF7A2A?style=flat-square)](https://neoforged.net)
 [![License](https://img.shields.io/badge/License-LGPL--3.0-2F80ED?style=flat-square)](LICENSE.LESSER)
-![Status](https://img.shields.io/badge/Status-alpha-E5484D?style=flat-square)
+![Status](https://img.shields.io/badge/Status-beta-F5A623?style=flat-square)
 
 </div>
 
@@ -41,7 +41,8 @@ in fact a **backport of [NTM: NEXT](https://github.com/Warfactory-Official/ntm-n
 That's it — **Flywheel** and **Ponder** are bundled inside the jar.
 
 > [!WARNING]
-> This is an **alpha**. Play on test worlds and keep backups.
+> This is a **beta**: the whole mod is in and stable, but it hasn't been through many worlds and modpacks yet.
+> Keep backups, and please report what breaks.
 
 Optional: the JVM argument `--add-modules=jdk.incubator.vector` enables the SIMD code paths for radiation and noise.
 Without it the mod falls back to plain Java.
