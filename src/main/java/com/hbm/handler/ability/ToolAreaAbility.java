@@ -24,7 +24,11 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.StringRepresentable;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
@@ -69,6 +73,9 @@ public enum ToolAreaAbility implements BaseAbility, StringRepresentable {
                 return false;
             }
 
+            // backport-fix: BF-014 stone and deepslate variants of one ore (sharing a c:ores/<material>
+            // item tag) are one vein; the original only matched the exact block (1.7.10 had no deepslate)
+            List<TagKey<Item>> veinTags = oreTags(reference);
             int radius = RADIUS[abilityLevel];
             int maxDepth = Services.CONFIG.runtime().toolRecursionDepth();
             Set<BlockPos> visited = new HashSet<>();
@@ -82,7 +89,8 @@ public enum ToolAreaAbility implements BaseAbility, StringRepresentable {
                 if (step.depth() > maxDepth) continue;
                 if (!visited.add(step.pos())) continue;
                 if (step.pos().distSqr(dig.reference()) > (long) radius * radius) continue;
-                if (!level.getBlockState(step.pos()).is(reference.getBlock())) continue;
+                BlockState candidate = level.getBlockState(step.pos());
+                if (!candidate.is(reference.getBlock()) && !sharesOreTag(candidate, veinTags)) continue;
                 if (dig.player().getMainHandItem().isEmpty()) return false;
 
                 ItemToolAbility.breakExtraBlock(dig, step.pos());
@@ -217,6 +225,26 @@ public enum ToolAreaAbility implements BaseAbility, StringRepresentable {
     ToolAreaAbility(String translationKey, int order) {
         this.translationKey = translationKey;
         this.sortOrder = SORT_ORDER_BASE + order;
+    }
+
+    /** backport-fix: BF-014 the c:ores/<material> item tags of a block (empty for non-ores). */
+    private static List<TagKey<Item>> oreTags(BlockState state) {
+        Item item = state.getBlock().asItem();
+        if (item == Items.AIR) return List.of();
+        return new ItemStack(item).getTags()
+                .filter(t -> t.location().getNamespace().equals("c") && t.location().getPath().startsWith("ores/"))
+                .toList();
+    }
+
+    private static boolean sharesOreTag(BlockState state, List<TagKey<Item>> tags) {
+        if (tags.isEmpty()) return false;
+        Item item = state.getBlock().asItem();
+        if (item == Items.AIR) return false;
+        ItemStack stack = new ItemStack(item);
+        for (TagKey<Item> tag : tags) {
+            if (stack.is(tag)) return true;
+        }
+        return false;
     }
 
     private static List<BlockPos> neighbourhood() {
