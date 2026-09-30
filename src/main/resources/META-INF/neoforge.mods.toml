@@ -6,6 +6,7 @@ license = "LGPL-3.0-only"
 modId = "hbm"
 version = "${file.jarVersion}"
 displayName = "NTM: Decentralized Edition"
+logoFile = "ntm_de_logo.png"
 description = '''HBM's Nuclear Tech Mod on Minecraft 1.21.1 / NeoForge: a backport of ntm-next (the 26.2 port by movblock / Warfactory) with Create: Aeronautics (Sable) support and 1.21.1 mod integrations.
 
 Unofficial. Not affiliated with HbmMods or Warfactory - report bugs of this build to the backport, not upstream.'''
