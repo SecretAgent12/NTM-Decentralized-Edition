@@ -98,10 +98,16 @@ public abstract class BlockEntityCompat extends BlockEntity {
     /**
      * 26.x's hook for a block entity's side effects just before its block is
      * removed (dropping contents, mostly). 1.21.1 has none; BlockCompat calls
-     * this from onRemove when the block is actually changing. Empty by default,
-     * as in 26.x: block entities that drop things override it.
+     * this from onRemove when the block is actually changing. As in 26.x, a
+     * block entity that is a Container drops its contents by default; others
+     * override it.
      */
-    public void preRemoveSideEffects(BlockPos pos, BlockState state) {}
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+        // backport-fix: BF-017 (26.x drops Container contents here by default)
+        if (this instanceof net.minecraft.world.Container container && level != null) {
+            net.minecraft.world.Containers.dropContents(level, pos, container);
+        }
+    }
 
     /// components ///
 
