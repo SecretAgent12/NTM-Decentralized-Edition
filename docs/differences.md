@@ -15,7 +15,7 @@ here. What follows is the short list of places where things are not *exactly* th
 
 ## Fixed
 
-Bugs we ran into that are present in NEXT itself:
+Bugs I ran into that are present in NEXT itself:
 
 - Damaged turrets (found in ruins) drained their energy buffer below zero. Worlds saved with a negative buffer
   get fixed on load.

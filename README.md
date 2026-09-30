@@ -77,7 +77,7 @@ Open an issue **[here](https://github.com/SecretAgent12/NTM-Decentralized-Editio
 
 > [!IMPORTANT]
 > Please **don't report bugs of this build to NTM: NEXT or to HbmMods.** Many bugs here come from the backport itself;
-> we sort them out and forward the ones that really belong upstream.
+> I sort them out and forward the ones that really belong upstream.
 
 ## ❓ FAQ
 
