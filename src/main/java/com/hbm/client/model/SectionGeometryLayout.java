@@ -137,6 +137,7 @@ public final class SectionGeometryLayout {
                         ny,
                         nz);
             }
+            SodiumQuadGuard.endQuad(consumer); // backport-fix: BF-015
         }
         for (int i = cutStarts[part]; i < cutStarts[part + 1]; i++) {
             int q = cutQuads[i];
@@ -171,6 +172,7 @@ public final class SectionGeometryLayout {
                         ny,
                         nz);
             }
+            SodiumQuadGuard.endQuad(consumer); // backport-fix: BF-015
         }
     }
 
