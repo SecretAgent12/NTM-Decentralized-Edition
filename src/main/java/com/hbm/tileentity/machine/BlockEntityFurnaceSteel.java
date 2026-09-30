@@ -54,6 +54,15 @@ public class BlockEntityFurnaceSteel extends BlockEntitySmeltingFurnace
     private static final int[] ACCESSIBLE_SLOTS = {0, 1, 2, 3, 4, 5};
     private static final TagKey<Item> C_ORES =
             TagKey.create(Registries.ITEM, ResourceLocation.parse("c:ores"));
+    // backport-fix: BF-013 raw ores count for the ore bonus (see addBonus)
+    private static final TagKey<Item> C_RAW_MATERIALS =
+            TagKey.create(Registries.ITEM, ResourceLocation.parse("c:raw_materials"));
+
+    private static boolean inCommonTag(ItemStack stack, String pathPrefix) {
+        return stack.getTags()
+                .anyMatch(t -> t.location().getNamespace().equals("c")
+                        && t.location().getPath().startsWith(pathPrefix));
+    }
 
     private final ItemStack[] lastItems = {ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY};
     private final RecipeManager.CachedCheck<SingleRecipeInput, SmeltingRecipe> quickCheck =
@@ -197,7 +206,12 @@ public class BlockEntityFurnaceSteel extends BlockEntitySmeltingFurnace
     }
 
     private void addBonus(ItemStack stack, int index) {
-        if (stack.is(C_ORES)) {
+        // backport-fix: BF-013 1.7.10 gave the ore bonus to anything in an "ore*" dictionary entry,
+        // and ore blocks were the only ore form. Since 1.17 ores drop raw materials, which ntm-next's
+        // plain c:ores check missed. Ores and raw materials both count now, including c: sub-tags
+        // (c:ores/<metal>, c:raw_materials/<metal>) that are not added to the parent tag.
+        if (stack.is(C_ORES) || stack.is(C_RAW_MATERIALS) || inCommonTag(stack, "ores/")
+                || inCommonTag(stack, "raw_materials/")) {
             bonus[index] += 25;
             return;
         }
