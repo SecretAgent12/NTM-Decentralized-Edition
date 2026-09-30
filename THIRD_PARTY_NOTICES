@@ -474,3 +474,19 @@ PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS 
 FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
+
+=================================================
+Bundled libraries (Jar-in-Jar, unmodified)
+=================================================
+
+The distributed jar contains the following libraries as nested jars, unmodified, exactly as
+published on https://maven.createmod.net/ (the same builds Create 6 ships). Each keeps its own
+metadata and license.
+
+Flywheel (dev.engine-room.flywheel:flywheel-neoforge-1.21.1)
+https://github.com/Engine-Room/Flywheel
+Copyright (c) Jozufozu and the Flywheel contributors. MIT License (LICENSES/MIT.txt).
+
+Ponder (net.createmod.ponder:ponder-neoforge)
+https://github.com/Creators-of-Create/Ponder
+Copyright (c) the Ponder authors (Creators of Create). MIT License (LICENSES/MIT.txt).
