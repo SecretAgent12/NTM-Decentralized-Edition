@@ -200,6 +200,16 @@ tasks.register('syncDevMods') {
 // both the Gradle run and IntelliJ's run configuration (it calls the prepare task first)
 tasks.matching { it.name == 'runClient' || it.name == 'prepareClientRun' }.configureEach { dependsOn 'syncDevMods' }
 
+// The version goes into neoforge.mods.toml as text: CurseForge doesn't resolve ${file.jarVersion}.
+// A plain replace instead of expand(), so other '$' in the file stay untouched.
+tasks.named('processResources') {
+    def modVersion = project.mod_version
+    inputs.property 'mod_version', modVersion
+    filesMatching('META-INF/neoforge.mods.toml') {
+        filter { String line -> line.replace('${mod_version}', modVersion) }
+    }
+}
+
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     // vector kernels + UnsafeBootstrap (it opens jdk.internal.misc itself at run time)
