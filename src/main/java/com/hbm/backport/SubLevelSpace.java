@@ -29,6 +29,23 @@ public final class SubLevelSpace {
         return new Vec3(out.x, out.y, out.z);
     }
 
+    /**
+     * The sub-level with this id whose bounds reach into the column around {@code near}, or null if
+     * it's gone (disassembled, unloaded) or moved further than {@code radius} away.
+     */
+    public static dev.ryanhcode.sable.companion.SubLevelAccess find(
+            Level level, java.util.UUID id, Vec3 near, double radius) {
+        dev.ryanhcode.sable.companion.math.BoundingBox3d column =
+                new dev.ryanhcode.sable.companion.math.BoundingBox3d(
+                        near.x - radius, level.getMinBuildHeight() - 512, near.z - radius,
+                        near.x + radius, level.getMaxBuildHeight() + 2048, near.z + radius);
+        for (dev.ryanhcode.sable.companion.SubLevelAccess sub :
+                SableCompanion.INSTANCE.getAllIntersecting(level, column)) {
+            if (id.equals(sub.getUniqueId())) return sub;
+        }
+        return null;
+    }
+
     /** True when {@code (x, z)} lies inside a sub-level plot. */
     public static boolean inSubLevel(Level level, double x, double z) {
         return SableCompanion.INSTANCE.getContaining(level, x, z) != null;

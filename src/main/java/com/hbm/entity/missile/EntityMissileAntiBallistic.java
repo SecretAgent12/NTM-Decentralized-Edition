@@ -29,6 +29,16 @@ public class EntityMissileAntiBallistic extends EntityThrowableInterp
     public double velocity;
     protected int activationTimer;
 
+    // backport: an airship (Sable sub-level) picked on the radar, and where it was last seen
+    private java.util.UUID trackingSubLevel; // null: not chasing a build
+    private Vec3 subLevelHint = Vec3.ZERO;
+
+    /** backport: chase this airship instead of looking for missiles. */
+    public void trackSubLevel(java.util.UUID subLevel, Vec3 seenAt) {
+        this.trackingSubLevel = subLevel;
+        this.subLevelHint = seenAt;
+    }
+
     public EntityMissileAntiBallistic(
             EntityType<? extends EntityMissileAntiBallistic> type, Level level) {
         super(type, level);
@@ -65,6 +75,9 @@ public class EntityMissileAntiBallistic extends EntityThrowableInterp
                 this.activationTimer++;
                 this.setDeltaMovement(
                         this.getDeltaMovement().x, baseSpeed, this.getDeltaMovement().z);
+            } else if (this.trackingSubLevel != null) {
+                // backport: radar-assigned airship; if it's lost, fall back to hunting missiles
+                if (!this.chaseSubLevel()) this.trackingSubLevel = null;
             } else {
                 Entity prevTracking = this.tracking;
 
@@ -121,10 +134,53 @@ public class EntityMissileAntiBallistic extends EntityThrowableInterp
 
             if (vec.length() < dist) {
                 closest = e;
+                // backport-fix: BF-023 remember the distance, otherwise this picks the last missile
+                // within 1000 blocks instead of the closest one (same slip in 1.7.10 and NEXT)
+                dist = vec.length();
             }
         }
 
         this.tracking = closest;
+    }
+
+    /**
+     * backport: steer at the airship's bounding box with the same lead as for missiles (its speed is
+     * the pose change since last tick) and go off when within 6 blocks of its hull box.
+     *
+     * @return false once the build can't be found any more
+     */
+    protected boolean chaseSubLevel() {
+        dev.ryanhcode.sable.companion.SubLevelAccess sub =
+                com.hbm.backport.SubLevelSpace.find(level(), trackingSubLevel, subLevelHint, 256);
+        if (sub == null) return false;
+
+        dev.ryanhcode.sable.companion.math.BoundingBox3dc box = sub.boundingBox();
+        Vec3 center =
+                new Vec3(
+                        (box.minX() + box.maxX()) * 0.5D,
+                        (box.minY() + box.maxY()) * 0.5D,
+                        (box.minZ() + box.maxZ()) * 0.5D);
+        this.subLevelHint = center;
+
+        org.joml.Vector3dc now = sub.logicalPose().position();
+        org.joml.Vector3dc last = sub.lastPose().position();
+        Vec3 shipVelocity = new Vec3(now.x() - last.x(), now.y() - last.y(), now.z() - last.z());
+
+        double dx = Math.max(Math.max(box.minX() - getX(), 0), getX() - box.maxX());
+        double dy = Math.max(Math.max(box.minY() - getY(), 0), getY() - box.maxY());
+        double dz = Math.max(Math.max(box.minZ() - getZ(), 0), getZ() - box.maxZ());
+        if (dx * dx + dy * dy + dz * dz < 36D) {
+            this.discard();
+            ExplosionLarge.explode(
+                    this.level(), this.getX(), this.getY(), this.getZ(), 15F, true, false, false);
+            return true;
+        }
+
+        double intercept = center.distanceTo(position()) / (baseSpeed * this.velocity);
+        Vec3 predicted = center.add(shipVelocity.scale(intercept));
+        Vec3 motion = predicted.subtract(position()).normalize();
+        this.setDeltaMovement(motion.x * baseSpeed, motion.y * baseSpeed, motion.z * baseSpeed);
+        return true;
     }
 
     protected void aimAtTarget() {

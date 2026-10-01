@@ -266,6 +266,30 @@ public abstract class BlockEntityLaunchPadBase extends BlockEntityMachineBase
         return launchToEntity(target) == IBomb.BombReturnCode.LAUNCHED;
     }
 
+    /**
+     * backport: an airship picked on the radar. Interceptors lock onto the build itself; any other
+     * missile just flies to where it is now, like a position command.
+     */
+    @Override
+    public boolean sendCommandSubLevel(java.util.UUID subLevel, int x, int y, int z) {
+        if (!isAntiBallistic()) return sendCommandPosition(x, y, z);
+        if (!canLaunch()) return false;
+
+        BlockPos core = getBlockPos();
+        EntityMissileAntiBallistic interceptor =
+                new EntityMissileAntiBallistic(ModEntities.MISSILE_ANTI.get(), getLevel());
+        interceptor.setPos(
+                com.hbm.backport.SubLevelSpace.toWorld(
+                        getLevel(),
+                        core.getX() + 0.5,
+                        core.getY() + getLaunchOffset(),
+                        core.getZ() + 0.5));
+        interceptor.trackSubLevel(subLevel, new net.minecraft.world.phys.Vec3(x + 0.5, y, z + 0.5));
+        getLevel().addFreshEntity(interceptor);
+        finalizeLaunch();
+        return true;
+    }
+
     private IBomb.BombReturnCode launchToCoordinate(
             int targetX, int targetZ, @Nullable Entity tracking) {
         if (!canLaunch()) return IBomb.BombReturnCode.ERROR_MISSING_COMPONENT;

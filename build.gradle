@@ -171,6 +171,35 @@ dependencies {
     }
 }
 
+// Sodium for dev runs. On the dev classpath it loads but never switches its renderer on (F3 shows
+// "Active renderer: none"), so it goes into run/mods like a normal install instead.
+// dev_sodium=false in gradle.properties takes it out again (vanilla renderer).
+configurations {
+    devMods { transitive = false }
+}
+dependencies {
+    devMods "maven.modrinth:AANobbMI:uMOpc5uV" // Sodium 0.8.13 for 1.21.1 NeoForge
+}
+tasks.register('syncDevMods') {
+    def modsDir = file('run/mods')
+    def files = configurations.devMods
+    def enabled = project.findProperty('dev_sodium') != 'false'
+    inputs.files(files)
+    doLast {
+        modsDir.mkdirs()
+        files.each { jar ->
+            def target = new File(modsDir, jar.name)
+            if (enabled) {
+                if (!target.exists()) java.nio.file.Files.copy(jar.toPath(), target.toPath())
+            } else {
+                target.delete()
+            }
+        }
+    }
+}
+// both the Gradle run and IntelliJ's run configuration (it calls the prepare task first)
+tasks.matching { it.name == 'runClient' || it.name == 'prepareClientRun' }.configureEach { dependsOn 'syncDevMods' }
+
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     // vector kernels + UnsafeBootstrap (it opens jdk.internal.misc itself at run time)

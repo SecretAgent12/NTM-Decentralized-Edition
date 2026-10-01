@@ -120,6 +120,9 @@ public final class MachineData {
             RADAR.integer("chunk_load_cap", 10);
     public static final DataGroups.Param<Boolean> RADAR_GENERATE_CHUNKS =
             RADAR.bool("generate_chunks", false);
+    // backport: smallest Sable sub-level (airship, debris) the radar shows, as hull box volume in blocks
+    public static final DataGroups.Param<Integer> RADAR_MIN_SUBLEVEL_VOLUME =
+            RADAR.integer("min_sublevel_volume", 27);
 
     private static final DataGroups.Group ICF_CONTROLLER = DataGroups.group(GROUPS, "icfLaser");
     public static final DataGroups.Param<Integer> ICF_CAPACITOR_POWER =

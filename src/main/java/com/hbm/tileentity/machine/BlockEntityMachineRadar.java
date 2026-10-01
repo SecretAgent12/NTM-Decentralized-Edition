@@ -131,6 +131,9 @@ public class BlockEntityMachineRadar extends BlockEntityMachineBase
     @SyncField(units = 1L << 8)
     public final List<RadarEntry> entries = new SyncList<>();
 
+    // backport: sub-level blips of the last scan, by packed x/z, so a click can name the build
+    private final java.util.Map<Long, java.util.UUID> subLevelBlips = new java.util.HashMap<>();
+
     private int pingTimer = 0;
     private int lastPower;
 
@@ -303,6 +306,7 @@ public class BlockEntityMachineRadar extends BlockEntityMachineBase
 
     protected void allocateTargets() {
         this.entries.clear();
+        this.subLevelBlips.clear();
 
         if (worldPosition.getY() < MachineData.RADAR_ALTITUDE.get()) return;
         long consumption = MachineData.RADAR_CONSUMPTION.get();
@@ -365,12 +369,33 @@ public class BlockEntityMachineRadar extends BlockEntityMachineBase
         dev.ryanhcode.sable.companion.math.BoundingBox3d box =
                 new dev.ryanhcode.sable.companion.math.BoundingBox3d(
                         cx - scan, minY, cz - scan, cx + scan, level.getMaxBuildHeight() + 256, cz + scan);
+        // backport: like radar cross-section, debris smaller than the configured hull volume stays
+        // off the scope, and the biggest builds go first, so a cursor over a cluster of blips picks
+        // the airship rather than a random shard of it
+        int minVolume = MachineData.RADAR_MIN_SUBLEVEL_VOLUME.get();
+        List<dev.ryanhcode.sable.companion.SubLevelAccess> found = new ArrayList<>();
+        java.util.Map<dev.ryanhcode.sable.companion.SubLevelAccess, Double> volumes =
+                new java.util.IdentityHashMap<>();
         for (dev.ryanhcode.sable.companion.SubLevelAccess sub :
                 dev.ryanhcode.sable.companion.SableCompanion.INSTANCE.getAllIntersecting(level, box)) {
             org.joml.Vector3dc p = sub.logicalPose().position();
             if (Math.abs(p.x() - cx) > scan || Math.abs(p.z() - cz) > scan) continue;
             if (p.y() - worldPosition.getY() <= buffer) continue;
+            dev.ryanhcode.sable.companion.math.BoundingBox3dc hull = sub.boundingBox();
+            double volume =
+                    (hull.maxX() - hull.minX()) * (hull.maxY() - hull.minY()) * (hull.maxZ() - hull.minZ());
+            if (volume < minVolume) continue;
+            volumes.put(sub, volume);
+            found.add(sub);
+        }
+        found.sort((a, b) -> Double.compare(volumes.get(b), volumes.get(a)));
+
+        for (dev.ryanhcode.sable.companion.SubLevelAccess sub : found) {
+            org.joml.Vector3dc p = sub.logicalPose().position();
             String name = sub.getName();
+            subLevelBlips.putIfAbsent(
+                    net.minecraft.world.level.ChunkPos.asLong(Mth.floor(p.x()), Mth.floor(p.z())),
+                    sub.getUniqueId());
             entries.add(
                     new RadarEntry(
                             name != null && !name.isBlank() ? name : "radar.target.sublevel",
@@ -490,6 +515,13 @@ public class BlockEntityMachineRadar extends BlockEntityMachineBase
             int x = Nbt.getIntOr(data, "launchPosX", 0);
             int z = Nbt.getIntOr(data, "launchPosZ", 0);
 
+            // backport: a click on an airship blip names that build, so interceptors can chase it
+            java.util.UUID subLevel =
+                    subLevelBlips.get(net.minecraft.world.level.ChunkPos.asLong(x, z));
+            if (subLevel != null) {
+                if (receiver.sendCommandSubLevel(subLevel, x, worldPosition.getY(), z)) bleep(player);
+                return;
+            }
             if (receiver.sendCommandPosition(x, worldPosition.getY(), z)) bleep(player);
         }
     }
