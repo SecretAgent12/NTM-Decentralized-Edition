@@ -56,11 +56,17 @@ public class EntityProcessorCross implements IEntityProcessor {
                 : 1.0D;
     }
 
+    private static final double MAX_SAMPLES_PER_AXIS = 9.0D;
+
     public static double getBlockDensity(Level world, Vec3 source, Entity entity) {
         AABB bb = entity.getBoundingBox();
-        double xs = 1.0D / ((bb.maxX - bb.minX) * 2.0D + 1.0D);
-        double ys = 1.0D / ((bb.maxY - bb.minY) * 2.0D + 1.0D);
-        double zs = 1.0D / ((bb.maxZ - bb.minZ) * 2.0D + 1.0D);
+        // backport-fix: BF-020 at most 9 sample rays per axis. One ray per half block was fine for
+        // mobs, but region-sized entities (Create: Aeronautics honey glue spans a whole airship) made
+        // a single rocket hit cast tens of thousands of rays and froze the server for seconds.
+        // Anything up to 4 blocks across samples exactly as before.
+        double xs = 1.0D / Math.min((bb.maxX - bb.minX) * 2.0D + 1.0D, MAX_SAMPLES_PER_AXIS);
+        double ys = 1.0D / Math.min((bb.maxY - bb.minY) * 2.0D + 1.0D, MAX_SAMPLES_PER_AXIS);
+        double zs = 1.0D / Math.min((bb.maxZ - bb.minZ) * 2.0D + 1.0D, MAX_SAMPLES_PER_AXIS);
         double xOffset = (1.0D - Math.floor(1.0D / xs) * xs) / 2.0D;
         double zOffset = (1.0D - Math.floor(1.0D / zs) * zs) / 2.0D;
 
