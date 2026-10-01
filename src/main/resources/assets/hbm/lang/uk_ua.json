@@ -8734,6 +8734,7 @@
   "pollution.trait.poison": "ОТРУТИ",
   "pollution.trait.soot": "САЖІ",
   "radar.target.meteor": "Метеор",
+  "radar.target.sublevel": "Транспорт",
   "radvis.hbm.hud.no_backend": "Для відображення потрібен бекенд Flywheel",
   "radvis.hbm.hud.scale": "від %s до %s RAD, логарифмічна шкала",
   "radvis.hbm.hud.title": "RadVis: %s",

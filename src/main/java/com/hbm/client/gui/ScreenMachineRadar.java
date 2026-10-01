@@ -272,7 +272,13 @@ public class ScreenMachineRadar extends ScreenInfoContainer<MenuMachineRadar> {
                     && lastMouseX - 4 <= x
                     && lastMouseY + 5 > z
                     && lastMouseY - 4 <= z) {
-                data.putInt("launchEntity", m.entityID);
+                if (m.entityID >= 0) {
+                    data.putInt("launchEntity", m.entityID);
+                } else {
+                    // backport-fix: BF-022 a physics build has no entity: target where it is now
+                    data.putInt("launchPosX", m.posX);
+                    data.putInt("launchPosZ", m.posZ);
+                }
                 Services.NETWORK.sendToServer(new NbtControlPayload(be.getBlockPos(), data));
                 return true;
             }

@@ -338,6 +338,10 @@ public class BlockEntityMachineRadar extends BlockEntityMachineBase
                 }
             }
         }
+
+        // backport-fix: BF-022 physics builds (Create: Aeronautics / Sable sub-levels) are not
+        // entities, so the loop above never sees them; list the ones in range, same rules
+        if (params.scanPlayers) scanSubLevels(scan, buffer);
         if (level.getGameTime() % 20 == 0) {
             ServerLevel server = (ServerLevel) level;
             SatelliteDetector.reportEvent(
@@ -347,6 +351,35 @@ public class BlockEntityMachineRadar extends BlockEntityMachineBase
                     worldPosition.getX(),
                     worldPosition.getZ());
             SatelliteRayEvents.report(server, worldPosition, SatelliteRayEvents.RADAR_WAVES, 200);
+        }
+    }
+
+    /**
+     * Sable sub-levels (airships and other physics builds) above the radar, as {@code SPECIAL} blips at
+     * their pose position. They have no entity id, so clicking one sends its position instead.
+     */
+    private void scanSubLevels(int scan, int buffer) {
+        double cx = worldPosition.getX() + 0.5D;
+        double cz = worldPosition.getZ() + 0.5D;
+        int minY = worldPosition.getY() + buffer;
+        dev.ryanhcode.sable.companion.math.BoundingBox3d box =
+                new dev.ryanhcode.sable.companion.math.BoundingBox3d(
+                        cx - scan, minY, cz - scan, cx + scan, level.getMaxBuildHeight() + 256, cz + scan);
+        for (dev.ryanhcode.sable.companion.SubLevelAccess sub :
+                dev.ryanhcode.sable.companion.SableCompanion.INSTANCE.getAllIntersecting(level, box)) {
+            org.joml.Vector3dc p = sub.logicalPose().position();
+            if (Math.abs(p.x() - cx) > scan || Math.abs(p.z() - cz) > scan) continue;
+            if (p.y() - worldPosition.getY() <= buffer) continue;
+            String name = sub.getName();
+            entries.add(
+                    new RadarEntry(
+                            name != null && !name.isBlank() ? name : "radar.target.sublevel",
+                            IRadarDetectableNT.SPECIAL,
+                            Mth.floor(p.x()),
+                            Mth.floor(p.y()),
+                            Mth.floor(p.z()),
+                            -1,
+                            true));
         }
     }
 
