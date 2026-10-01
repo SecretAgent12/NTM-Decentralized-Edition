@@ -59,12 +59,14 @@ public class MenuMachineAssemblyMachine extends BlockEntityMenu<BlockEntityMachi
         addSlot(
                 new SlotUpgrade(
                         container, BlockEntityMachineAssemblyMachine.SLOT_UPGRADE_START, 152, 108));
+        // backport-fix: BF-021 the second upgrade slot sits under the first (152, 126), as in 1.7.10
+        // (addSlots(assembler, 2, 152, 108, 2, 1)) and on the GUI texture; NEXT put it at 170, 108
         addSlot(
                 new SlotUpgrade(
                         container,
                         BlockEntityMachineAssemblyMachine.SLOT_UPGRADE_START + 1,
-                        170,
-                        108));
+                        152,
+                        126));
 
         for (int row = 0; row < 4; row++) {
             for (int col = 0; col < 3; col++) {
