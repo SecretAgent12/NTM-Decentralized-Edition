@@ -60,6 +60,16 @@ public abstract class EntityMissileBaseNT extends ProjectileCompat implements IR
     }
 
     public void launch(double x, double y, double z, int targetX, int targetZ) {
+        // backport-fix: BF-019 a pad on an airship (Sable sub-level) hands over plot coordinates,
+        // millions of blocks from the visible ship: start from the matching world position. A target
+        // designated on a ship is moved the same way, to where that ship is now.
+        Vec3 from = com.hbm.backport.SubLevelSpace.toWorld(level(), x, y, z);
+        Vec3 to = com.hbm.backport.SubLevelSpace.toWorld(level(), targetX + 0.5D, from.y, targetZ + 0.5D);
+        x = from.x;
+        y = from.y;
+        z = from.z;
+        targetX = Mth.floor(to.x);
+        targetZ = Mth.floor(to.z);
         setPos(x, y, z);
         this.startX = (int) x;
         this.startZ = (int) z;

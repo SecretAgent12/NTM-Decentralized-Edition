@@ -275,8 +275,13 @@ public abstract class BlockEntityLaunchPadBase extends BlockEntityMachineBase
         if (isAntiBallistic()) {
             EntityMissileAntiBallistic interceptor =
                     new EntityMissileAntiBallistic(ModEntities.MISSILE_ANTI.get(), getLevel());
+            // backport-fix: BF-019 on an airship the pad sits in a Sable plot, start in world space
             interceptor.setPos(
-                    core.getX() + 0.5, core.getY() + getLaunchOffset(), core.getZ() + 0.5);
+                    com.hbm.backport.SubLevelSpace.toWorld(
+                            getLevel(),
+                            core.getX() + 0.5,
+                            core.getY() + getLaunchOffset(),
+                            core.getZ() + 0.5));
             interceptor.tracking = tracking;
             getLevel().addFreshEntity(interceptor);
             finalizeLaunch();

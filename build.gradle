@@ -32,6 +32,13 @@ repositories {
         }
         filter { includeGroup 'curse.maven' }
     }
+    // Sable Companion: Sable's official compat library, bundled (safe no-op without Sable)
+    exclusiveContent {
+        forRepository {
+            maven { url = 'https://maven.ryanhcode.dev/releases' }
+        }
+        filter { includeGroup 'dev.ryanhcode.sable-companion' }
+    }
     // Ponder's own dependencies (per its README)
     maven { url = 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/' }
     // Modrinth files (CC: Tweaked, ...)
@@ -115,6 +122,14 @@ dependencies {
     }
     // JSpecify annotations kept by the ported NeoForge transfer API (com.hbm.lib.neotransfer)
     compileOnly "org.jspecify:jspecify:1.0.0"
+    // Sable Companion (MIT): world <-> sub-level positions (com.hbm.backport.SubLevelSpace). Bundled the way
+    // its README asks; Sable ships the real implementation, without Sable every call is a no-op
+    jarJar(implementation("dev.ryanhcode.sable-companion:sable-companion-common-1.21.1")) {
+        version {
+            strictly "[1.6.0,)"
+            prefer "1.6.0"
+        }
+    }
     // Sable (Create: Aeronautics) API stub for the optional sub-level compat mixin
     compileOnly sourceSets.sableStubs.output
     // JEI for 1.21.1 NeoForge (19.x): recipe pages, ghost ingredients, lookups (com.hbm.integration.jei)
