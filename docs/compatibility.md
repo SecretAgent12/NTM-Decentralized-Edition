@@ -16,7 +16,7 @@ the other mod is installed.
 | **Traveler's Backpack** | ✅ | Radiation of carried items counts (fluid tanks not yet) |
 | **Sodium** | ✅ | Tested with 0.8.x |
 | **Lithium** | ✅ | |
-| **ScalableLux** | ✅ | Recommended: relights nuke craters much faster |
+| **ScalableLux** | ✅ | Recommended (0.3.x): relights nuke craters much faster. Not together with Create: Aeronautics, see below |
 | **Iris / shaders** | ❌ | Planned |
 | **REI, Compact Storage** | ❌ | Not planned for now |
 | **WTHIT, Trinkets** | ❌ | No NeoForge 1.21.1 versions exist |
@@ -24,7 +24,9 @@ the other mod is installed.
 ## Tips
 
 **Big explosions.** A nuke rebuilds lighting for a lot of chunks at once. With **ScalableLux** installed,
-that's a lot faster, and the lag spike after a large blast is much shorter.
+that's a lot faster, and the lag spike after a large blast is much shorter. One catch: Sable (the physics
+behind Create: Aeronautics) refuses to start next to ScalableLux, so it's one or the other. If you fly
+airships, skip ScalableLux: NTM works fine without it, the relight just takes longer.
 
 **Airships.** When you assemble a ship with a machine on board, make sure the *whole* multiblock is part of
 the build (Super Glue helps). If only one block of a multiblock gets picked up, the machine breaks apart.

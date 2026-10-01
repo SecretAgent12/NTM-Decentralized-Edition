@@ -61,7 +61,7 @@ Without it the mod falls back to plain Java.
 | Traveler's Backpack | ✅ | Radiation of carried items (fluid tanks are not counted yet) |
 | Sodium | ✅ | 0.8.x |
 | Lithium | ✅ | |
-| ScalableLux | ✅ | Recommended — relights nuke craters much faster |
+| ScalableLux | ✅ | Recommended (0.3.x) — relights nuke craters much faster; can't be used together with Sable |
 | Iris / shaders | ❌ | Planned |
 | REI, Compact Storage | ❌ | Not planned for now |
 | WTHIT, Trinkets | ❌ | No NeoForge 1.21.1 builds exist |

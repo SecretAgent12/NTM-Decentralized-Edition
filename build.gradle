@@ -138,14 +138,22 @@ dependencies {
     // Lithium for 1.21.1 NeoForge: keeps its section block trackers valid when NTM swaps chunk sections (com.hbm.integration.lithium)
     implementation "curse.maven:lithium-360438:8330365"
     // ScalableLux (Starlight) for 1.21.1 NeoForge: NTM bulk light updates (com.hbm.mixin.scalablelux, @Pseudo)
-    implementation "curse.maven:scalablelux-1055925:6952385"
+    // 0.3.0-alpha.0.8 from Modrinth (CurseForge only has 0.1.0.1): the queue classes our mixins target
+    // (ThreadedLevelLightEngineVanillaInterface, Simple/ConcurrentLightQueue) exist only in 0.3.x.
+    // In dev runs only with dev_stack=scalablelux (see below)
+    compileOnly "maven.modrinth:Ps1zyz6x:9KuFoPhC"
     // Traveler's Backpack 10.x for 1.21.1: radiation of backpack contents, the worn backpack (com.hbm.neoforge.hazard)
     implementation "curse.maven:travelers-backpack-321117:8762814"
-    // Create: Aeronautics stack, dev runs only (Sable sub-level compat is tested in-game; we compile
-    // against src/sableStubs, so none of these end up in the jar or the mod's dependencies)
-    runtimeOnly "curse.maven:create-328085:7963363"              // Create 6.0.10
-    runtimeOnly "curse.maven:sable-1312371:8673825"              // Sable 2.0.5 (NeoForge)
-    runtimeOnly "curse.maven:create-aeronautics-676721:8763471"  // Create Aeronautics 1.3.2
+    // Dev runs get one of two stacks (gradle.properties: dev_stack): Sable 2.x refuses to start next to
+    // ScalableLux of any version, so they can't share a run. Neither ends up in the jar or our dependencies.
+    if (project.findProperty('dev_stack') == 'scalablelux') {
+        runtimeOnly "maven.modrinth:Ps1zyz6x:9KuFoPhC"                  // ScalableLux 0.3.0-alpha.0.8
+    } else {
+        // Create: Aeronautics stack (we compile against src/sableStubs)
+        runtimeOnly "curse.maven:create-328085:7963363"              // Create 6.0.10
+        runtimeOnly "curse.maven:sable-1312371:8673825"              // Sable 2.0.5 (NeoForge)
+        runtimeOnly "curse.maven:create-aeronautics-676721:8763471"  // Create Aeronautics 1.3.2
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {

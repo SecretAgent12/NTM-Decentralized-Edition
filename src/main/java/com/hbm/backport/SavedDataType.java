@@ -21,19 +21,54 @@ import org.jetbrains.annotations.Nullable;
  * "data" in that file. Classes extend SavedDataCompat, which writes it back with
  * the same codec.
  */
-public record SavedDataType<T extends SavedData>(
-        ResourceLocation id, Supplier<T> constructor, Codec<T> codec, @Nullable DataFixTypes dataFixType) {
+public final class SavedDataType<T extends SavedData> {
 
-    public String fileName() {
-        return id.getNamespace() + "_" + id.getPath().replace('/', '_');
-    }
+    // backport-fix: BF-018 — the file name and the factory are built once, not on every lookup.
+    // NTM looks some saved data up every tick (TomSaveData per level and per player), and the
+    // old record rebuilt the string and a new Factory each time.
+    private final ResourceLocation id;
+    private final Supplier<T> constructor;
+    private final Codec<T> codec;
+    private final @Nullable DataFixTypes dataFixType;
+    private final String fileName;
+    private final SavedData.Factory<T> factory;
 
-    public SavedData.Factory<T> factory() {
-        return new SavedData.Factory<>(
+    public SavedDataType(
+            ResourceLocation id, Supplier<T> constructor, Codec<T> codec, @Nullable DataFixTypes dataFixType) {
+        this.id = id;
+        this.constructor = constructor;
+        this.codec = codec;
+        this.dataFixType = dataFixType;
+        this.fileName = id.getNamespace() + "_" + id.getPath().replace('/', '_');
+        this.factory = new SavedData.Factory<>(
                 () -> bind(constructor.get()),
                 (tag, lookup) -> bind(codec.parse(lookup.createSerializationContext(NbtOps.INSTANCE), tag.get("data"))
                         .getOrThrow(e -> new IllegalStateException("Failed to load " + id + ": " + e))),
                 dataFixType);
+    }
+
+    public ResourceLocation id() {
+        return id;
+    }
+
+    public Supplier<T> constructor() {
+        return constructor;
+    }
+
+    public Codec<T> codec() {
+        return codec;
+    }
+
+    public @Nullable DataFixTypes dataFixType() {
+        return dataFixType;
+    }
+
+    public String fileName() {
+        return fileName;
+    }
+
+    public SavedData.Factory<T> factory() {
+        return factory;
     }
 
     @SuppressWarnings("unchecked")
@@ -44,11 +79,11 @@ public record SavedDataType<T extends SavedData>(
 
     /** 26.x DimensionDataStorage.computeIfAbsent(SavedDataType). */
     public static <T extends SavedData> T computeIfAbsent(DimensionDataStorage storage, SavedDataType<T> type) {
-        return storage.computeIfAbsent(type.factory(), type.fileName());
+        return storage.computeIfAbsent(type.factory, type.fileName);
     }
 
     /** 26.x DimensionDataStorage.get(SavedDataType). */
     public static <T extends SavedData> @Nullable T get(DimensionDataStorage storage, SavedDataType<T> type) {
-        return storage.get(type.factory(), type.fileName());
+        return storage.get(type.factory, type.fileName);
     }
 }
