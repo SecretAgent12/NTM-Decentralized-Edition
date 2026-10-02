@@ -51,8 +51,17 @@ public final class FluidPipeTintRequestPayload extends ThreadedPayload {
         ServerLevel level = player.serverLevel();
         Reference2ObjectOpenHashMap<Fluid, LongArrayList> byFluid =
                 new Reference2ObjectOpenHashMap<>();
+        // backport-fix: BF-029 positions come from the client: only pipes in loaded chunks within the
+        // player's view distance. getBlockState on any other key loaded (or generated) that chunk on
+        // the main thread, so a forged packet with a few thousand far keys stalled the server
+        int view = player.server.getPlayerList().getViewDistance() + 1;
+        int playerChunkX = player.blockPosition().getX() >> 4;
+        int playerChunkZ = player.blockPosition().getZ() >> 4;
         for (long key : payload.posKeys) {
             BlockPos pos = BlockPos.of(key);
+            if (Math.abs((pos.getX() >> 4) - playerChunkX) > view
+                    || Math.abs((pos.getZ() >> 4) - playerChunkZ) > view
+                    || !level.isLoaded(pos)) continue;
             if (!(level.getBlockState(pos).getBlock() instanceof FluidDuctBlockBase)) continue;
             PipeData data = FluidPipeGraph.dataAt(level, key);
             if (data == null) continue;
