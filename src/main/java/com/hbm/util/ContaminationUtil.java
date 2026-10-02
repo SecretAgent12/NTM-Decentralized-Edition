@@ -350,6 +350,14 @@ public final class ContaminationUtil {
             double rad,
             ContaminationType cont) {
         if (level.isClientSide()) return;
+        // backport-fix: BF-028 a source on a Sable sub-level (a reactor on a contraption) has plot
+        // coordinates millions of blocks away: radiate around where it is drawn instead. And the
+        // shielding rays only read loaded chunks; a far entity made them walk (and load) the
+        // whole way to the plot, freezing the server.
+        Vec3 source = com.hbm.backport.SubLevelSpace.toWorld(level, x, y, z);
+        x = source.x;
+        y = source.y;
+        z = source.z;
         AABB aabb = new AABB(x - range, y - range, z - range, x + range, y + range, z + range);
         List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, aabb);
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -359,6 +367,7 @@ public final class ContaminationUtil {
             double dy = (e.getY() + e.getEyeHeight()) - y;
             double dz = e.getZ() - z;
             double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (len > range * 1.7321D) continue;
 
             double invLen = 1.0D / Math.max(len, 1.0E-4D);
             Vec3 dir = new Vec3(dx * invLen, dy * invLen, dz * invLen);
@@ -368,6 +377,7 @@ public final class ContaminationUtil {
                 int iy = Mth.floor(y + dir.y * i);
                 int iz = Mth.floor(z + dir.z * i);
                 pos.set(ix, iy, iz);
+                if (!level.isLoaded(pos)) continue;
                 res += level.getBlockState(pos).getBlock().getExplosionResistance();
             }
             if (res < 1.0D) res = 1.0D;
