@@ -44,14 +44,23 @@ public final class NbtControlPayload extends ThreadedPayload {
     public static void handleServer(NbtControlPayload payload, IPayloadHandlerContext ctx) {
         if (!(ctx.player() instanceof ServerPlayer sp)) return;
         BlockEntity be = ChunkUtil.blockEntityIfLoaded(sp.level(), payload.pos);
-        if (!(be instanceof IControlReceiver r) || !r.hasPermission(sp)) return;
+        if (!(be instanceof IControlReceiver r)) return;
+        // backport-fix: BF-027 With Sable, Entity.distanceToSqr measures to a sub-level block where
+        // it is drawn; plain Vec3 math (most receivers' hasPermission) still sees its plot millions
+        // of blocks away and refuses. Near by the first and far by the second = a sub-level block in
+        // reach. Without Sable both agree and nothing changes.
+        Vec3 centre = Vec3.atCenterOf(payload.pos);
+        boolean subLevelReach =
+                sp.distanceToSqr(centre) <= MAX_DIST_SQ
+                        && sp.position().distanceToSqr(centre) > MAX_DIST_SQ;
+        if (!r.hasPermission(sp) && !subLevelReach) return;
         boolean remoteRadar =
                 be instanceof BlockEntityMachineRadar radar && radar.isRadarMenuValid(sp);
 
         boolean launchpad = be instanceof BlockEntityLaunchpadSoyuz;
         if (!remoteRadar
                 && !launchpad
-                && sp.distanceToSqr(Vec3.atCenterOf(payload.pos)) > MAX_DIST_SQ)
+                && sp.distanceToSqr(centre) > MAX_DIST_SQ)
             return;
 
         r.receiveControl(sp, payload.data);
