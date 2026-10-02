@@ -179,6 +179,7 @@ public final class ModMenus {
     public static RegistryHandle<MenuType<MenuNukeCustom>> NUKE_CUSTOM;
     public static RegistryHandle<MenuType<MenuNukeFstbmb>> NUKE_FSTBMB;
     public static RegistryHandle<MenuType<MenuBombMulti>> BOMB_MULTI;
+    public static RegistryHandle<MenuType<com.hbm.inventory.container.MenuKallBomb>> KALL_BOMB;
     public static RegistryHandle<MenuType<MenuSoyuzCapsule>> SOYUZ_CAPSULE;
     public static RegistryHandle<MenuType<MenuSoyuzLauncher>> SOYUZ_LAUNCHER;
     public static RegistryHandle<MenuType<MenuLaunchpadSoyuz>> LAUNCHPAD_SOYUZ;
@@ -442,6 +443,7 @@ public final class ModMenus {
         NUKE_CUSTOM = r.registerBlockEntityMenu("nuke_custom", BlockEntityNukeCustom.class);
         NUKE_FSTBMB = r.registerBlockEntityMenu("nuke_fstbmb", BlockEntityNukeBalefire.class);
         BOMB_MULTI = r.registerBlockEntityMenu("bomb_multi", BlockEntityBombMulti.class);
+        KALL_BOMB = r.registerMenu("kall_bomb", MenuKallBomb::new);
         SOYUZ_CAPSULE = r.registerBlockEntityMenu("soyuz_capsule", BlockEntitySoyuzCapsule.class);
         SOYUZ_LAUNCHER =
                 r.registerBlockEntityMenu("soyuz_launcher", BlockEntitySoyuzLauncher.class);
