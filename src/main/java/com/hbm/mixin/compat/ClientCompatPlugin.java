@@ -15,6 +15,12 @@ public final class ClientCompatPlugin implements IMixinConfigPlugin {
         // backport: the sodium mixins are gated like the Iris ones. They are @Pseudo and name
         // their targets by string (no Sodium on the backport's compile classpath), so this only
         // keeps them (and the duck interfaces they add) from being considered without Sodium.
+        // backport: JEI fluid tooltips (BF-031), only with JEI installed
+        if (mixin.contains(".jei."))
+            return getClass()
+                            .getClassLoader()
+                            .getResource("mezz/jei/neoforge/platform/FluidHelper.class")
+                    != null;
         if (mixin.contains(".sodium."))
             return getClass()
                             .getClassLoader()

@@ -11,7 +11,8 @@
     "sodium.LightCacheMixin",
     "sodium.QuadLightDataMixin",
     "sodium.FlatLightMixin",
-    "sodium.SmoothLightMixin"
+    "sodium.SmoothLightMixin",
+    "jei.JeiFluidTooltipMixin"
   ],
   "injectors": {
     "defaultRequire": 1
