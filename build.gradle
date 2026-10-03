@@ -71,6 +71,9 @@ neoForge {
         server {
             server()
             programArgument '--nogui'
+            // own folder: run/mods holds client-only dev mods (Sodium, ImmediatelyFast) that crash a
+            // dedicated server, and a client running at the same time keeps run/logs locked
+            gameDirectory = project.file('runs/server')
         }
         configureEach {
             systemProperty 'forge.logging.markers', 'REGISTRIES'

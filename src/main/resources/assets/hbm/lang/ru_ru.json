@@ -7368,6 +7368,7 @@
   "desc.gui.machineReactorBreeding.researchReactorsToBreed": "исследовательских реакторов для наработки.",
   "desc.gui.machineReactorBreeding.theReactorHasTo": "Реактор должен получать",
   "desc.gui.machineSILEX.voidContents": "Очистить содержимое",
+  "desc.gui.drill.subLevel": "Ошибка: бурить с физической конструкции нельзя, под ней нет земли!",
   "desc.gui.machineShredder.errorShredderBladesAre": "Ошибка: лезвия измельчителя сломаны или отсутствуют!",
   "desc.gui.machineSiren.volume": "Громкость: %s",
   "desc.gui.machineSolderingStation.preventsNoFluidRecipes": "Не допускает выполнения рецептов без жидкости",

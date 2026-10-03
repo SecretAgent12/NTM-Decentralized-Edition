@@ -6703,6 +6703,7 @@
   "desc.gui.machineReactorBreeding.researchReactorsToBreed": "дослідницьких реакторів для розмноження.",
   "desc.gui.machineReactorBreeding.theReactorHasTo": "Реактор має отримувати",
   "desc.gui.machineSILEX.voidContents": "Знищити вміст",
+  "desc.gui.drill.subLevel": "Помилка: бурити з фізичної конструкції не можна, під нею немає землі!",
   "desc.gui.machineShredder.errorShredderBladesAre": "Помилка: леза подрібнювача зламані або відсутні!",
   "desc.gui.machineSiren.volume": "Гучність: %s",
   "desc.gui.machineSolderingStation.preventsNoFluidRecipes": "Не дозволяє обробляти рецепти без рідини",

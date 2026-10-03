@@ -11,6 +11,7 @@ import com.hbm.backport.client.rendertype.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
+import java.util.List;
 
 public class ScreenMachineOilWell extends ScreenInfoContainer<MenuMachineOilWell> {
 
@@ -50,13 +51,16 @@ public class ScreenMachineOilWell extends ScreenInfoContainer<MenuMachineOilWell
             graphics.blit(
                     RenderPipelines.GUI_TEXTURED, TEXTURE, 8, 56 - i, 184, 34 - i, 16, i, 256, 256);
 
-        if (be.indicator != 0) {
+        // backport: on a contraption the drill shows the error lamp plus a warning panel (BF-034)
+        boolean subLevel = be.indicator == BlockEntityOilDrillBase.INDICATOR_SUB_LEVEL;
+        int lamp = subLevel ? 2 : be.indicator;
+        if (lamp != 0) {
             graphics.blit(
                     RenderPipelines.GUI_TEXTURED,
                     TEXTURE,
                     50,
                     19,
-                    184 + (be.indicator - 1) * 14,
+                    184 + (lamp - 1) * 14,
                     34,
                     14,
                     14,
@@ -92,6 +96,21 @@ public class ScreenMachineOilWell extends ScreenInfoContainer<MenuMachineOilWell
                         "desc.gui.upgrade.power",
                         "desc.gui.upgrade.afterburner",
                         "desc.gui.upgrade.overdrive"));
+
+        if (subLevel) {
+            drawInfoPanel(graphics, -16, 36, 16, 16, 6);
+            drawCustomInfoStat(
+                    graphics,
+                    mouseX,
+                    mouseY,
+                    -16,
+                    36,
+                    16,
+                    16,
+                    -8,
+                    52,
+                    List.of(Component.translatable("desc.gui.drill.subLevel")));
+        }
 
         super.extractLabels(graphics, mouseX, mouseY);
     }

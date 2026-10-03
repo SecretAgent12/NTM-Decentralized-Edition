@@ -88,6 +88,9 @@ public abstract class BlockEntityOilDrillBase extends BlockEntityMachineBase
     @SyncField(units = 1L << 5)
     public int indicator = 0;
 
+    // backport: indicator shown while the drill sits on a Sable sub-level (see BF-034 in tickServer)
+    public static final int INDICATOR_SUB_LEVEL = 4;
+
     private static final String[] PERSISTENT_KEYS = {"power", "oil", "gas"};
 
     @SyncField(units = 1L << 0)
@@ -180,6 +183,18 @@ public abstract class BlockEntityOilDrillBase extends BlockEntityMachineBase
         if (unloaded) setChanged();
 
         flush.provide((ServerLevel) level, this);
+
+        // backport-fix: BF-034 On a Sable sub-level (Create: Aeronautics contraption) the column under
+        // the drill is plot space: nothing but air down to the bottom of the world, so every pipe the
+        // drill places becomes part of the contraption and it grows downwards without end. There is
+        // no ground to drill into from there, so the drill stays idle and the GUI says why.
+        if (com.hbm.backport.SubLevelSpace.inSubLevel(
+                level, worldPosition.getX() + 0.5D, worldPosition.getZ() + 0.5D)) {
+            this.indicator = INDICATOR_SUB_LEVEL;
+            setChanged();
+            networkPackNT(25);
+            return;
+        }
 
         if (power >= getPowerReqEff()
                 && tanks[0].getFill() < tanks[0].getMaxFill()
