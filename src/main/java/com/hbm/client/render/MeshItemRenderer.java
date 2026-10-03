@@ -222,14 +222,17 @@ public final class MeshItemRenderer
         if (clock == null) return fallback;
         Vector3fc axis = clock.axis();
         // backport-fix: BF-033 (GitHub #4, same in ntm-next) the item layer recenters with
-        // translate(-0.5) *after* this local transform, so rotating before the suffix turned the mesh
-        // around the point (0.5, 0.5, 0.5) of the model: missile parts and gears orbited instead of
-        // spinning. As in 1.7.10 (glRotate right before renderAll) the turn now happens around the
-        // model's own origin, last; with no spin the pose is exactly the old one.
+        // translate(-0.5) *after* this local transform, so turning right before the suffix rotated
+        // around a point half a block off the 1.7.10 pivot: missile parts and gears orbited instead
+        // of spinning. 1.7.10 does glRotate and then the suffix (e.g. the gear's glTranslate that
+        // centres the cog), so the pivot is the origin of the frame where that layer shift is undone:
+        // prefix * suffix * T(-0.5) * suffix^-1. With no spin the pose is exactly the old one.
         return (fallback != null ? new Matrix4f(fallback) : new Matrix4f())
                 .mul(clock.post())
                 .translate(-0.5F, -0.5F, -0.5F)
+                .mul(clock.postInverse())
                 .rotate((float) Math.toRadians(argument.spin()), axis.x(), axis.y(), axis.z())
+                .mul(clock.post())
                 .translate(0.5F, 0.5F, 0.5F);
     }
 
@@ -264,7 +267,11 @@ public final class MeshItemRenderer
         }
     }
 
-    private record Clock(Vector3fc axis, Matrix4f post) {}
+    private record Clock(Vector3fc axis, Matrix4f post, Matrix4f postInverse) {
+        Clock(Vector3fc axis, Matrix4f post) {
+            this(axis, post, new Matrix4f(post).invert());
+        }
+    }
 
     public record Draw(String part, Vector3fc offset) {
         public static final Codec<Draw> CODEC =
