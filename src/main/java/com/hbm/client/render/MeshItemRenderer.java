@@ -221,9 +221,16 @@ public final class MeshItemRenderer
         Clock clock = clocks.get(context);
         if (clock == null) return fallback;
         Vector3fc axis = clock.axis();
+        // backport-fix: BF-033 (GitHub #4, same in ntm-next) the item layer recenters with
+        // translate(-0.5) *after* this local transform, so rotating before the suffix turned the mesh
+        // around the point (0.5, 0.5, 0.5) of the model: missile parts and gears orbited instead of
+        // spinning. As in 1.7.10 (glRotate right before renderAll) the turn now happens around the
+        // model's own origin, last; with no spin the pose is exactly the old one.
         return (fallback != null ? new Matrix4f(fallback) : new Matrix4f())
+                .mul(clock.post())
+                .translate(-0.5F, -0.5F, -0.5F)
                 .rotate((float) Math.toRadians(argument.spin()), axis.x(), axis.y(), axis.z())
-                .mul(clock.post());
+                .translate(0.5F, 0.5F, 0.5F);
     }
 
     public enum SkinSource implements StringRepresentable {
