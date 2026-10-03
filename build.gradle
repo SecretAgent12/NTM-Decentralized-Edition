@@ -134,6 +134,9 @@ dependencies {
     compileOnly sourceSets.sableStubs.output
     // JEI for 1.21.1 NeoForge (19.x): recipe pages, ghost ingredients, lookups (com.hbm.integration.jei)
     implementation "curse.maven:jei-238222:8964989"
+    // WTHIT 12.10.2 for 1.21.1 NeoForge: energy/fluid info, multiblock cells show their core (com.hbm.integration.wthit,
+    // wthit_plugins.json). Compile only; dev runs get it through run/mods (devModWthit below)
+    compileOnly "maven.modrinth:6AQIaxuO:IeXnWQRE"
     // Jade 15.x for 1.21.1 NeoForge: energy/fluid storage views, multiblock cells show their core (com.hbm.integration.jade)
     implementation "curse.maven:jade-324717:8591319"
     // CC: Tweaked for 1.21.1 NeoForge: machine peripherals (com.hbm.compat.computercraft, loaded only with CC present)
@@ -177,16 +180,20 @@ dependencies {
 configurations {
     devModSodium { transitive = false }
     devModImmediatelyFast { transitive = false }
+    devModWthit { transitive = false }
 }
 dependencies {
     devModSodium "maven.modrinth:AANobbMI:uMOpc5uV"                  // Sodium 0.8.13 for 1.21.1 NeoForge
     devModImmediatelyFast "maven.modrinth:5ZwdcRci:OUpXxw4n"         // ImmediatelyFast 1.6.14 (GitHub #2)
+    devModWthit "maven.modrinth:6AQIaxuO:IeXnWQRE"                   // WTHIT neo-12.10.2 (GitHub #5)
+    devModWthit "maven.modrinth:ftdbN0KK:RNyYl9M3"                   // Bad Packets neo-0.8.2, required by WTHIT
 }
 tasks.register('syncDevMods') {
     def modsDir = file('run/mods')
     def sets = [
             [configurations.devModSodium, project.findProperty('dev_sodium') != 'false'],
             [configurations.devModImmediatelyFast, project.findProperty('dev_immediatelyfast') == 'true'],
+            [configurations.devModWthit, project.findProperty('dev_wthit') != 'false'],
     ]
     sets.each { inputs.files(it[0]) }
     doLast {

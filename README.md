@@ -63,6 +63,7 @@ Without it the mod falls back to plain Java.
 | JEI | ✅ | All NTM recipe types |
 | Jade | ✅ | Energy, fluids; multiblock parts show their core |
 | The One Probe | ✅ | Energy, fluids; multiblock parts show their core |
+| WTHIT | ✅ | From 1.0.0-beta.4. Energy, fluids; multiblock parts show their core |
 | CC: Tweaked | ✅ | Peripherals for reactors, turbines, launch pads, storage and more |
 | Curios | ✅ | Hazards of items worn in Curios slots |
 | Sophisticated Storage / Backpacks | ✅ | Radiation of stored items |
@@ -73,7 +74,7 @@ Without it the mod falls back to plain Java.
 | ScalableLux | ✅ | Recommended (0.3.x) — relights nuke craters much faster; can't be used together with Sable |
 | Iris / shaders | ❌ | Planned |
 | REI, Compact Storage | ❌ | Not planned for now |
-| WTHIT, Trinkets | ❌ | No NeoForge 1.21.1 builds exist |
+| Trinkets | ❌ | No NeoForge 1.21.1 builds exist |
 
 Details and tips: [docs/compatibility.md](docs/compatibility.md). All documentation: [docs](docs/README.md).
 

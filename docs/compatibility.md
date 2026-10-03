@@ -10,16 +10,18 @@ the other mod is installed.
 | **JEI** | ✅ | Every NTM recipe type |
 | **Jade** | ✅ | Energy and fluid info; looking at any part of a multiblock shows its core |
 | **The One Probe** | ✅ | Same as Jade |
+| **WTHIT** | ✅ | Same as Jade (from 1.0.0-beta.4) |
 | **CC: Tweaked** | ✅ | Peripherals for reactors, turbines, launch pads, storage and much more. See [ComputerCraft](computercraft/README.md) |
 | **Curios** | ✅ | Radioactive or hazardous items in Curios slots affect you like items in your inventory |
 | **Sophisticated Storage / Backpacks** | ✅ | Radiation of items stored inside counts |
 | **Traveler's Backpack** | ✅ | Radiation of carried items counts (fluid tanks not yet) |
 | **Sodium** | ✅ | Tested with 0.8.x |
 | **Lithium** | ✅ | |
+| **ImmediatelyFast, Gnetum** | ✅ | From 1.0.0-beta.4. Older versions: machine GUIs could turn dark or black |
 | **ScalableLux** | ✅ | Recommended (0.3.x): relights nuke craters much faster. Not together with Create: Aeronautics, see below |
 | **Iris / shaders** | ❌ | Planned |
 | **REI, Compact Storage** | ❌ | Not planned for now |
-| **WTHIT, Trinkets** | ❌ | No NeoForge 1.21.1 versions exist |
+| **Trinkets** | ❌ | No NeoForge 1.21.1 version exists |
 
 ## Tips
 
