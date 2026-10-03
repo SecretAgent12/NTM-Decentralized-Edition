@@ -97,8 +97,10 @@ neoForge {
 }
 
 sourceSets.main {
-    // precompiled .hbm_mesh files are what the mod loads; the .obj sources stay in the repo only
-    resources.exclude('assets/**/*.obj')
+    // precompiled .hbm_mesh files are what the mod loads; the .obj sources stay in the repo only (except kall_bomb.obj which uses NeoForge OBJ loader)
+    resources.exclude { FileTreeElement element ->
+        element.path.endsWith('.obj') && !element.path.contains('kall_bomb')
+    }
 }
 
 dependencies {
@@ -226,7 +228,9 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 tasks.named('jar') {
-    exclude('assets/**/*.obj')
+    exclude { FileTreeElement element ->
+        element.path.endsWith('.obj') && !element.path.contains('kall_bomb')
+    }
     // license notices of the bundled third-party code (NeoForge transfer API: LGPL-2.1, CrankShaft: MIT)
     from('src/main/java') {
         include '**/NOTICE.md', '**/LICENSE*'
