@@ -103,12 +103,18 @@ public class GuiGraphicsExtractor extends GuiGraphics {
     }
 
     /**
-     * The extractor for a vanilla GuiGraphics (the one it was made for is reused, so a frame's
-     * layers and screen share one; a GuiGraphicsExtractor is returned as is).
+     * The extractor for a vanilla GuiGraphics (the one it was made for is reused while it still
+     * draws into the same buffer source; a GuiGraphicsExtractor is returned as is).
      */
     public static GuiGraphicsExtractor of(GuiGraphics graphics) {
         if (graphics instanceof GuiGraphicsExtractor e) return e;
-        if (graphics == lastBase && last != null) return last;
+        // backport-fix: BF-032 the extractor takes the buffer source GuiGraphics has when it is made.
+        // ImmediatelyFast's HUD batching swaps that buffer for the HUD only, and the HUD and the
+        // screen share one GuiGraphics per frame: an extractor made by an NTM HUD layer kept the HUD
+        // buffer into the screen, so the screen's darkened background and tooltips were drawn late
+        // (on top of / under the GUI). Reuse it only while the buffer is still the same.
+        if (graphics == lastBase && last != null && last.bufferSource() == graphics.bufferSource())
+            return last;
         GuiGraphicsExtractor e = new GuiGraphicsExtractor(graphics);
         lastBase = graphics;
         last = e;

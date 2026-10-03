@@ -171,28 +171,34 @@ dependencies {
     }
 }
 
-// Sodium for dev runs. On the dev classpath it loads but never switches its renderer on (F3 shows
-// "Active renderer: none"), so it goes into run/mods like a normal install instead.
-// dev_sodium=false in gradle.properties takes it out again (vanilla renderer).
+// Client-only mods for dev runs. On the dev classpath Sodium loads but never switches its renderer
+// on (F3 shows "Active renderer: none"), so these go into run/mods like a normal install instead.
+// gradle.properties toggles each one (false = removed from run/mods again).
 configurations {
-    devMods { transitive = false }
+    devModSodium { transitive = false }
+    devModImmediatelyFast { transitive = false }
 }
 dependencies {
-    devMods "maven.modrinth:AANobbMI:uMOpc5uV" // Sodium 0.8.13 for 1.21.1 NeoForge
+    devModSodium "maven.modrinth:AANobbMI:uMOpc5uV"                  // Sodium 0.8.13 for 1.21.1 NeoForge
+    devModImmediatelyFast "maven.modrinth:5ZwdcRci:OUpXxw4n"         // ImmediatelyFast 1.6.14 (GitHub #2)
 }
 tasks.register('syncDevMods') {
     def modsDir = file('run/mods')
-    def files = configurations.devMods
-    def enabled = project.findProperty('dev_sodium') != 'false'
-    inputs.files(files)
+    def sets = [
+            [configurations.devModSodium, project.findProperty('dev_sodium') != 'false'],
+            [configurations.devModImmediatelyFast, project.findProperty('dev_immediatelyfast') == 'true'],
+    ]
+    sets.each { inputs.files(it[0]) }
     doLast {
         modsDir.mkdirs()
-        files.each { jar ->
-            def target = new File(modsDir, jar.name)
-            if (enabled) {
-                if (!target.exists()) java.nio.file.Files.copy(jar.toPath(), target.toPath())
-            } else {
-                target.delete()
+        sets.each { set ->
+            set[0].each { jar ->
+                def target = new File(modsDir, jar.name)
+                if (set[1]) {
+                    if (!target.exists()) java.nio.file.Files.copy(jar.toPath(), target.toPath())
+                } else {
+                    target.delete()
+                }
             }
         }
     }
