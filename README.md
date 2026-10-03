@@ -2,12 +2,16 @@
 
 # ☢️ NTM: Decentralized Edition
 
-**HBM's Nuclear Tech Mod for Minecraft 1.21.1 — reactors, nukes, radiation, heavy industry, and all of it working on Create: Aeronautics airships.**
+**HBM's Nuclear Tech Mod for Minecraft 1.21.1 — reactors, nukes, radiation, heavy industry, and all of it working on Create: Aeronautics physics contraptions.**
 
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-62B47A?style=flat-square)](https://www.minecraft.net)
 [![NeoForge](https://img.shields.io/badge/NeoForge-21.1.x-DF7A2A?style=flat-square)](https://neoforged.net)
 [![License](https://img.shields.io/badge/License-LGPL--3.0-2F80ED?style=flat-square)](LICENSE.LESSER)
 ![Status](https://img.shields.io/badge/Status-beta-F5A623?style=flat-square)
+
+[![CurseForge](https://img.shields.io/badge/CurseForge-Download-F16436?style=for-the-badge&logo=curseforge&logoColor=white)](https://www.curseforge.com/minecraft/mc-mods/ntm-decentralized-edition)
+[![Modrinth](https://img.shields.io/badge/Modrinth-under_review-1BD96A?style=for-the-badge&logo=modrinth&logoColor=white)](https://modrinth.com/mod/ntm-de)
+[![Discord](https://img.shields.io/badge/Discord-Join-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/9TV4mHG9yD)
 
 </div>
 
@@ -26,8 +30,9 @@ in fact a **backport of [NTM: NEXT](https://github.com/Warfactory-Official/ntm-n
 
 - **The whole mod.** Every machine, reactor, weapon, bomb, structure and system of NTM: NEXT — RBMK, ZIRNOX, PWR,
   fusion, particle accelerator, oil and chemistry, energy and fluid networks, missiles, nukes, radiation and fallout.
-- **Create: Aeronautics / Sable support.** Machines, cables, pipes and multiblocks keep working on physics-based
-  sub-levels: GUIs open and sync, networks survive assembly and disassembly, multiblocks move as a whole.
+- **Create: Aeronautics / Sable support.** Machines, cables, pipes and multiblocks keep working on physics
+  contraptions: GUIs open and sync, networks survive assembly and disassembly, multiblocks move as a whole.
+  Missiles launch from contraptions, the NTM radar tracks them, and anti-ballistic missiles can shoot them down.
 - **Integrations** with the popular 1.21.1 mods — recipe viewers, info overlays, ComputerCraft, backpacks,
   performance mods (see [Compatibility](#-compatibility)).
 - **Complete Russian and Ukrainian translations.**
@@ -36,7 +41,10 @@ in fact a **backport of [NTM: NEXT](https://github.com/Warfactory-Official/ntm-n
 ## 📦 Installation
 
 1. Install **Minecraft 1.21.1** with **[NeoForge](https://neoforged.net) 21.1.x**.
-2. Drop `ntm-decentralized-neoforge-1.21.1-<version>.jar` into your `mods` folder.
+2. Download the mod from **[CurseForge](https://www.curseforge.com/minecraft/mc-mods/ntm-decentralized-edition)**,
+   **[Modrinth](https://modrinth.com/mod/ntm-de)** (under review) or
+   **[GitHub Releases](https://github.com/SecretAgent12/NTM-Decentralized-Edition/releases)**.
+3. Drop `ntm-decentralized-neoforge-1.21.1-<version>.jar` into your `mods` folder.
 
 That's it — **Flywheel** and **Ponder** are bundled inside the jar.
 
@@ -61,6 +69,7 @@ Without it the mod falls back to plain Java.
 | Traveler's Backpack | ✅ | Radiation of carried items (fluid tanks are not counted yet) |
 | Sodium | ✅ | 0.8.x |
 | Lithium | ✅ | |
+| ImmediatelyFast, Gnetum | ✅ | From 1.0.0-beta.4 (older versions: dark machine GUIs) |
 | ScalableLux | ✅ | Recommended (0.3.x) — relights nuke craters much faster; can't be used together with Sable |
 | Iris / shaders | ❌ | Planned |
 | REI, Compact Storage | ❌ | Not planned for now |
@@ -75,6 +84,8 @@ Open an issue **[here](https://github.com/SecretAgent12/NTM-Decentralized-Editio
 - `logs/latest.log` (or the crash report from `crash-reports/`),
 - steps to reproduce,
 - your mod list.
+
+Or ask in the **[Discord](https://discord.gg/9TV4mHG9yD)**.
 
 > [!IMPORTANT]
 > Please **don't report bugs of this build to NTM: NEXT or to HbmMods.** Many bugs here come from the backport itself;
@@ -131,6 +142,8 @@ More in [How the backport works](docs/how-it-works.md). Every deliberate deviati
 ## 📬 Contacts
 
 - Discord: <https://discord.gg/9TV4mHG9yD>
+- CurseForge: <https://www.curseforge.com/minecraft/mc-mods/ntm-decentralized-edition>
+- Modrinth: <https://modrinth.com/mod/ntm-de> (under review)
 
 ## 📜 Credits & License
 
