@@ -151,7 +151,7 @@ public final class NeoForgeNetworkService implements INetworkService {
 
         if (listener.getConnection().isMemoryConnection()) return;
         for (PreJoinSync<?> s : preJoin) {
-            if (listener.hasChannel(s.type)) event.register(s.task());
+            if (listener.hasChannel(s.type)) event.register(s.task(listener));
         }
     }
 
@@ -192,15 +192,19 @@ public final class NeoForgeNetworkService implements INetworkService {
     private record PreJoinSync<T extends CustomPacketPayload>(
             Type<T> type, StreamCodec<ByteBuf, T> codec, Consumer<T> apply, Supplier<T> snapshot) {
 
-        ICustomConfigurationTask task() {
+        ICustomConfigurationTask task(ServerConfigurationPacketListener listener) {
             ConfigurationTask.Type key = new ConfigurationTask.Type(type.id());
             return new ICustomConfigurationTask() {
                 @Override
                 public void run(Consumer<CustomPacketPayload> send) {
                     send.accept(snapshot.get());
+                    // backport-fix: BF-035 26.x finishes a task once tick() returns true; 1.21.1 never
+                    // calls tick() and waits for finishCurrentTask, so a client joining a dedicated
+                    // server hung in the configuration phase forever (singleplayer skips these tasks)
+                    listener.finishCurrentTask(key);
                 }
 
-                // backport: not part of 1.21.1's ICustomConfigurationTask
+                // backport: not part of 1.21.1's ICustomConfigurationTask (see run)
                 public boolean tick() {
                     return true;
                 }
