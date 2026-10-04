@@ -422,7 +422,10 @@ public final class ClientEffects {
         if (fx == null) return;
         fx.setParticleSpeed(mx, my + 0.2D, mz);
         fx.setLifetime(10 + level.getRandom().nextInt(20));
-        ((SingleQuadParticle) fx).setColor(0.8F, 0.8F, 0.8F);
+        // backport-fix: BF-045 vanilla block dust (TerrainParticle) isn't our SingleQuadParticle
+        // shim: the hard cast crashed the ore slopper's client tick; tint it only if it's a quad
+        if (fx instanceof net.minecraft.client.particle.SingleQuadParticle quad)
+            quad.setColor(0.8F, 0.8F, 0.8F);
     }
 
     public static void spawnNoClipSmoke(double x, double y, double z, int lifetime) {
