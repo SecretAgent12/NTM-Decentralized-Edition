@@ -11,6 +11,7 @@ the other mod is installed.
 | **Jade** | ✅ | Energy and fluid info; looking at any part of a multiblock shows its core |
 | **The One Probe** | ✅ | Same as Jade |
 | **WTHIT** | ✅ | Same as Jade (from 1.0.0-beta.4) |
+| **KubeJS** | ✅ | From 1.0.0-beta.5. Typed machine recipes, replaceInput/replaceOutput, filters. See [KubeJS and datapacks](kubejs.md) |
 | **CC: Tweaked** | ✅ | Peripherals for reactors, turbines, launch pads, storage and much more. See [ComputerCraft](computercraft/README.md) |
 | **Curios** | ✅ | Radioactive or hazardous items in Curios slots affect you like items in your inventory |
 | **Sophisticated Storage / Backpacks** | ✅ | Radiation of items stored inside counts |

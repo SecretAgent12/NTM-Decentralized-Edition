@@ -64,6 +64,7 @@ Without it the mod falls back to plain Java.
 | Jade | ✅ | Energy, fluids; multiblock parts show their core |
 | The One Probe | ✅ | Energy, fluids; multiblock parts show their core |
 | WTHIT | ✅ | From 1.0.0-beta.4. Energy, fluids; multiblock parts show their core |
+| KubeJS | ✅ | From 1.0.0-beta.5. Machine recipes from scripts, see [docs](docs/kubejs.md) |
 | CC: Tweaked | ✅ | Peripherals for reactors, turbines, launch pads, storage and more |
 | Curios | ✅ | Hazards of items worn in Curios slots |
 | Sophisticated Storage / Backpacks | ✅ | Radiation of stored items |

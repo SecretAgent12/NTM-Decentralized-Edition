@@ -100,7 +100,15 @@ public final class DataCodecs {
     }
 
     public static <A> MapCodec<A> recipe(MapCodec<A> codec) {
-        return strict(codec, "type", "fabric:load_conditions", "neoforge:conditions");
+        // backport-fix: BF-038 KubeJS leaves "_kubejs_changed_marker" in every recipe it adds or edits
+        // while vanilla parses them, and the strict check turned all such NTM recipes into
+        // "Unknown fields" errors; the marker is tolerated like the condition envelopes
+        return strict(
+                codec,
+                "type",
+                "fabric:load_conditions",
+                "neoforge:conditions",
+                "_kubejs_changed_marker");
     }
 
     public static <A> Codec<List<A>> listOrSingle(Codec<A> element) {

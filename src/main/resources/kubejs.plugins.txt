@@ -1,0 +1,2 @@
+# KubeJS reads this; the plugin only loads when KubeJS is installed
+com.hbm.integration.kubejs.NTMKubeJSPlugin
