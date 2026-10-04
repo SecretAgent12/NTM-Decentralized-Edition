@@ -37,7 +37,10 @@ public final class SlagTextures {
             for (NTMMaterial material : Mats.orderedList) {
                 if (material.solidColorLight == material.solidColorDark) continue;
                 ResourceLocation texture = Library.id("dynamic/slag/" + material.tagPath);
-                NativeImage recolored = source.mappedCopy(pixel -> recolor(pixel, material));
+                // backport-fix: BF-046 1.21.1 hands mappedCopy the raw ABGR pixel (26.x: ARGB), so the
+                // material colours landed in the wrong channels: copper and gold slag came out blue
+                NativeImage recolored =
+                        source.mappedCopy(pixel -> swapRedBlue(recolor(swapRedBlue(pixel), material)));
                 textureManager.register(
                         texture, new DynamicTexture(recolored));
                 next.put(material, texture);
@@ -70,6 +73,11 @@ public final class SlagTextures {
                         ARGB.blue(pixel),
                         ARGB.blue(material.solidColorLight),
                         ARGB.blue(material.solidColorDark)));
+    }
+
+    /** ABGR <-> ARGB (the swap is its own inverse). */
+    private static int swapRedBlue(int color) {
+        return (color & 0xFF00FF00) | ((color >> 16) & 0xFF) | ((color & 0xFF) << 16);
     }
 
     private static int channel(int component, int lighter, int darker) {
