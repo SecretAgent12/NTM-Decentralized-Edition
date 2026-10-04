@@ -18,6 +18,8 @@ import com.hbm.backport.BlockEntityCompat;
 public class BlockEntityFloodlightBeam extends BlockEntityCompat implements GraphResident {
 
     public static final int RECHECK_TICKS = 100;
+    /** Further than any floodlight reaches: the source sits in a build's plot. */
+    private static final int FAR_SOURCE = 1024;
 
     private int sourceX;
     private int sourceY;
@@ -41,6 +43,12 @@ public class BlockEntityFloodlightBeam extends BlockEntityCompat implements Grap
             BlockPos source = new BlockPos(sourceX, sourceY, sourceZ);
             LevelChunk chunk = level.getChunkSource().getChunkNow(sourceX >> 4, sourceZ >> 4);
             if (chunk == null) {
+                // backport-fix: BF-042 light cast from a physics build onto the world: the build
+                // is gone (unloaded or flown off), so the light goes too instead of waiting for it
+                if (worldPosition.distManhattan(source) > FAR_SOURCE) {
+                    level.removeBlock(worldPosition, false);
+                    return;
+                }
                 level.scheduleTick(worldPosition, getBlockState().getBlock(), RECHECK_TICKS);
                 return;
             }

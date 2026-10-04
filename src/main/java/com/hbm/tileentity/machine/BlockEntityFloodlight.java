@@ -56,6 +56,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import com.hbm.backport.BlockEntityCompat;
+import com.hbm.backport.SubLevelSpace;
 
 public class BlockEntityFloodlight extends BlockEntityCompat
         implements IEnergyHandlerMK2, Synced, GraphResident, SyncUnitSchema {
@@ -102,8 +103,13 @@ public class BlockEntityFloodlight extends BlockEntityCompat
                 castLights();
                 syncVisualState();
             } else if (TickPhase.every(this, 5)) {
-                long timer = level.getGameTime() / 5L;
-                castLight((int) Math.abs(timer % lightPositions.length));
+                // backport-fix: BF-042 on a build the ground under the beams changes as it moves
+                if (onSubLevel()) {
+                    castLights();
+                } else {
+                    long timer = level.getGameTime() / 5L;
+                    castLight((int) Math.abs(timer % lightPositions.length));
+                }
             }
         } else if (isOn) {
             isOn = false;
@@ -166,6 +172,8 @@ public class BlockEntityFloodlight extends BlockEntityCompat
         if (meta == 4) direction = direction.yRot((float) Math.PI);
         direction = direction.yRot(angles[1]);
 
+        if (onSubLevel()) return getRayEndpointSubLevel(direction);
+
         for (int distance = 1; distance < MAX_BEAM_DISTANCE; distance++) {
             BlockPos tested =
                     BlockPos.containing(
@@ -183,6 +191,63 @@ public class BlockEntityFloodlight extends BlockEntityCompat
                         worldPosition.getX() + 0.5D + direction.x * (distance - 1),
                         worldPosition.getY() + 0.5D + direction.y * (distance - 1),
                         worldPosition.getZ() + 0.5D + direction.z * (distance - 1));
+            }
+        }
+
+        return null;
+    }
+
+    private boolean onSubLevel() {
+        return SubLevelSpace.inSubLevel(
+                level, worldPosition.getX() + 0.5D, worldPosition.getZ() + 0.5D);
+    }
+
+    private static boolean blocksLight(BlockState state) {
+        return state.getLightBlock(
+                        net.minecraft.world.level.EmptyBlockGetter.INSTANCE,
+                        net.minecraft.core.BlockPos.ZERO)
+                >= LIGHT_DAMPENING_CUTOFF;
+    }
+
+    /**
+     * backport-fix: BF-042 — a floodlight on a physics build marches its ray through the build
+     * (its own plot) and through the world at the build's pose side by side. Whichever it hits
+     * first gets the light: the build's own surfaces, or the world outside it. Before, the ray only
+     * saw the build and empty plot air, so the light never left the build.
+     */
+    private @Nullable BlockPos getRayEndpointSubLevel(Vec3 direction) {
+        Vec3 start =
+                new Vec3(
+                        worldPosition.getX() + 0.5D,
+                        worldPosition.getY() + 0.5D,
+                        worldPosition.getZ() + 0.5D);
+        Vec3 worldStart = SubLevelSpace.toWorld(level, start.x, start.y, start.z);
+        Vec3 worldDirection =
+                SubLevelSpace.toWorld(
+                                level,
+                                start.x + direction.x,
+                                start.y + direction.y,
+                                start.z + direction.z)
+                        .subtract(worldStart);
+
+        for (int distance = 1; distance < MAX_BEAM_DISTANCE; distance++) {
+            BlockPos own = BlockPos.containing(start.add(direction.scale(distance)));
+            if (!own.equals(worldPosition)) {
+                BlockState blocking = ChunkUtil.blockStateIfLoaded(level, own);
+                if (blocking != null && blocksLight(blocking)) {
+                    return distance > 1
+                            ? BlockPos.containing(start.add(direction.scale(distance - 1)))
+                            : null;
+                }
+            }
+
+            BlockPos ground = BlockPos.containing(worldStart.add(worldDirection.scale(distance)));
+            BlockState blocking = ChunkUtil.blockStateIfLoaded(level, ground);
+            if (blocking == null) return null;
+            if (blocksLight(blocking)) {
+                return distance > 1
+                        ? BlockPos.containing(worldStart.add(worldDirection.scale(distance - 1)))
+                        : null;
             }
         }
 
