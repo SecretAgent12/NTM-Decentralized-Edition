@@ -5,9 +5,8 @@ package com.hbm.neoforge.mixin.storage;
 
 import com.hbm.interfaces.StoredItemSlots;
 import com.hbm.interfaces.StoredItems;
+import com.hbm.neoforge.hazard.SophisticatedLinkedStorage;
 import net.p3pp3rf1y.sophisticatedbackpacks.backpack.wrapper.IBackpackWrapper;
-import net.p3pp3rf1y.sophisticatedcore.linkedstorage.LinkedStorageEndpointStackState;
-import net.p3pp3rf1y.sophisticatedcore.linkedstorage.LinkedStorageStackLifecycle;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
@@ -19,8 +18,10 @@ public abstract class MixinSophisticatedBackpack implements StoredItems {
 
     @Override
     public void visitStoredItems(Visitor visitor) {
-        if (LinkedStorageStackLifecycle.classifyEndpoint(backpackWrapper.getBackpack())
-                == LinkedStorageEndpointStackState.ENDPOINT) return;
+        // backport-fix: BF-036 the linked-storage check went through a direct reference to
+        // LinkedStorageStackLifecycle (Sophisticated Core 1.5+); with Core 1.4.x the mixin failed to
+        // attach and Sophisticated Backpacks crashed the game start. Now behind a presence check.
+        if (SophisticatedLinkedStorage.isEndpoint(backpackWrapper.getBackpack())) return;
         visitor.visit((StoredItemSlots) backpackWrapper.getInventoryHandler());
     }
 }
