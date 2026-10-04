@@ -29,6 +29,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 import com.hbm.backport.Nbt;
+import com.hbm.backport.SubLevelSpace;
 
 public class BlockEntityFoundryOutlet extends BlockEntityFoundryBase {
 
@@ -86,6 +87,9 @@ public class BlockEntityFoundryOutlet extends BlockEntityFoundryBase {
         return 4;
     }
 
+    // backport-fix: BF-043 block height the last clipDown started from, in the hit's own space
+    private double clipTopY;
+
     protected @Nullable BlockHitResult clipDown(Level level, BlockPos pos) {
         BlockHitResult hit =
                 CrucibleUtil.traceDown(
@@ -94,7 +98,24 @@ public class BlockEntityFoundryOutlet extends BlockEntityFoundryBase {
                         pos.getY() - 0.125,
                         pos.getZ() + 0.5,
                         pos.getY() + 0.125 - dropRange());
-        return hit.getType() == HitResult.Type.BLOCK ? hit : null;
+        if (hit.getType() == HitResult.Type.BLOCK) {
+            clipTopY = pos.getY();
+            return hit;
+        }
+
+        // backport-fix: BF-043 over the side of a physics build there's only empty plot below:
+        // look for a target in the world straight down from where the outlet is drawn instead
+        if (!SubLevelSpace.inSubLevel(level, pos.getX() + 0.5, pos.getZ() + 0.5)) return null;
+        Vec3 from = SubLevelSpace.toWorld(level, pos.getX() + 0.5, pos.getY() - 0.125, pos.getZ() + 0.5);
+        hit = CrucibleUtil.traceDown(level, from.x, from.y, from.z, from.y + 0.25 - dropRange());
+        if (hit.getType() != HitResult.Type.BLOCK) return null;
+        clipTopY = from.y + 0.125;
+        return hit;
+    }
+
+    /** Height the pour stream starts at, matching the last {@link #clipDown} hit. */
+    protected float pourTopY() {
+        return (float) clipTopY;
     }
 
     protected boolean passesGates(Direction side, MaterialStack stack) {
@@ -142,7 +163,7 @@ public class BlockEntityFoundryOutlet extends BlockEntityFoundryBase {
         double hitY = hit.getBlockPos().getY() + 1;
         setPourEvent(
                 stack.material.moltenColor,
-                Math.max(1F, worldPosition.getY() - (float) (Math.ceil(hitY) - 0.875)));
+                Math.max(1F, pourTopY() - (float) (Math.ceil(hitY) - 0.875)));
 
         return didPour;
     }

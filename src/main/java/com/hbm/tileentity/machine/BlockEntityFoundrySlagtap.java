@@ -85,7 +85,8 @@ public class BlockEntityFoundrySlagtap extends BlockEntityFoundryOutlet {
         if (didFlow) {
             recordStream(
                     stack.material.moltenColor,
-                    Math.max(1F, worldPosition.getY() - (float) Math.ceil(hitPos.getY())));
+                    // backport-fix: BF-043 the hit may be in the world under a build
+                    Math.max(1F, pourTopY() - (float) Math.ceil(hitPos.getY())));
         }
 
         if (stack.amount <= 0) return null;
