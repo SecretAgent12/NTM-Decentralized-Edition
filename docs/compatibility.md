@@ -6,7 +6,7 @@ the other mod is installed.
 | Mod | Status | What you get |
 |---|:---:|---|
 | **Create: Aeronautics / Sable** | ✅ | Machines, cables, pipes and multiblocks work on airships and other physics builds |
-| **Create** | ✅ | Plays nicely: NTM bundles the same Flywheel and Ponder that Create 6 uses |
+| **Create** | ✅ | Plays nicely: NTM bundles the same Flywheel and Ponder that Create 6 uses. From 1.0.0-beta.5: Engineer's Goggles go into an NTM helmet (helmet or extra slot of the armor modification table) and work from there |
 | **JEI** | ✅ | Every NTM recipe type |
 | **Jade** | ✅ | Energy and fluid info; looking at any part of a multiblock shows its core |
 | **The One Probe** | ✅ | Same as Jade |

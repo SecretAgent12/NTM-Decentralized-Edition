@@ -144,6 +144,8 @@ dependencies {
     // (com.hbm.integration.kubejs, loaded by KubeJS from kubejs.plugins.txt). Compile only
     compileOnly "maven.modrinth:umyGl7zF:THIGFPwf"
     compileOnly "maven.modrinth:sk9knFPE:SqkDvOLG"
+    // Create 6.0.10: Engineer's Goggles as an NTM helmet mod (com.hbm.integration.create). Compile only
+    compileOnly "curse.maven:create-328085:7963363"
     // Jade 15.x for 1.21.1 NeoForge: energy/fluid storage views, multiblock cells show their core (com.hbm.integration.jade)
     implementation "curse.maven:jade-324717:8591319"
     // CC: Tweaked for 1.21.1 NeoForge: machine peripherals (com.hbm.compat.computercraft, loaded only with CC present)

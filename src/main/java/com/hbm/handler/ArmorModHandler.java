@@ -16,7 +16,9 @@ import com.hbm.lib.Library;
 import com.hbm.platform.Services;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import net.minecraft.ChatFormatting;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.Holder;
@@ -82,7 +84,45 @@ public final class ArmorModHandler {
                     Attributes.ATTACK_DAMAGE,
                     Attributes.KNOCKBACK_RESISTANCE);
 
+    /**
+     * backport: items of other mods that can sit in an armor mod slot (Create's Engineer's Goggles,
+     * see com.hbm.integration.create.CreateGogglesCompat). They only occupy the slot; NTM runs no mod
+     * logic for them, the other mod reads them back with {@link #pryMods}.
+     */
+    private static final Map<Item, ForeignMod> FOREIGN_MODS = new IdentityHashMap<>();
+
+    /** Slots a foreign mod fits ({@code 1 << slot} bits) and the armor pieces it goes on. */
+    public record ForeignMod(
+            int slotMask, boolean helmet, boolean chestplate, boolean leggings, boolean boots) {
+        public boolean fits(int slot) {
+            return (slotMask & (1 << slot)) != 0;
+        }
+    }
+
     private ArmorModHandler() {}
+
+    public static void registerForeignMod(Item item, ForeignMod mod) {
+        FOREIGN_MODS.put(item, mod);
+    }
+
+    /** An NTM armor mod or a registered foreign one. */
+    public static boolean isMod(ItemStack stack) {
+        return !stack.isEmpty()
+                && (stack.getItem() instanceof ItemArmorMod
+                        || FOREIGN_MODS.containsKey(stack.getItem()));
+    }
+
+    public static boolean fitsSlot(ItemStack mod, int slot) {
+        if (mod.getItem() instanceof ItemArmorMod armorMod) return armorMod.type == slot;
+        ForeignMod foreign = FOREIGN_MODS.get(mod.getItem());
+        return foreign != null && foreign.fits(slot);
+    }
+
+    private static int defaultSlot(ItemStack mod) {
+        if (mod.getItem() instanceof ItemArmorMod armorMod) return armorMod.type;
+        ForeignMod foreign = FOREIGN_MODS.get(mod.getItem());
+        return foreign == null ? -1 : Integer.numberOfTrailingZeros(foreign.slotMask());
+    }
 
     public static void init() {
         Services.SERVER.onServerTickPost(ArmorModHandler::onServerTick);
@@ -90,7 +130,7 @@ public final class ArmorModHandler {
 
     public static boolean isArmor(ItemStack stack) {
 
-        if (stack.isEmpty() || stack.getItem() instanceof ItemArmorMod) return false;
+        if (stack.isEmpty() || isMod(stack)) return false;
         var equippable = com.hbm.backport.item.armor.Equippable.get(stack);
         return equippable != null
                 && switch (equippable.slot()) {
@@ -100,7 +140,17 @@ public final class ArmorModHandler {
     }
 
     public static boolean isApplicable(ItemStack armor, ItemStack mod) {
-        if (!isArmor(armor) || !(mod.getItem() instanceof ItemArmorMod armorMod)) return false;
+        if (!isArmor(armor) || !isMod(mod)) return false;
+        if (!(mod.getItem() instanceof ItemArmorMod armorMod)) {
+            ForeignMod foreign = FOREIGN_MODS.get(mod.getItem());
+            return switch (com.hbm.backport.item.armor.Equippable.get(armor).slot()) {
+                case HEAD -> foreign.helmet();
+                case CHEST -> foreign.chestplate();
+                case LEGS -> foreign.leggings();
+                case FEET -> foreign.boots();
+                default -> false;
+            };
+        }
         return switch (com.hbm.backport.item.armor.Equippable.get(armor).slot()) {
             case HEAD -> armorMod.helmet;
             case CHEST -> armorMod.chestplate;
@@ -116,7 +166,12 @@ public final class ArmorModHandler {
     }
 
     public static void applyMod(ItemStack armor, ItemStack mod) {
-        ItemArmorMod armorMod = (ItemArmorMod) mod.getItem();
+        applyMod(armor, mod, defaultSlot(mod));
+    }
+
+    // backport: explicit slot, for mods that fit more than one (foreign mods)
+    public static void applyMod(ItemStack armor, ItemStack mod, int slot) {
+        if (slot < 0) return;
         Tag encoded =
                 ItemStack.CODEC.encodeStart(NbtOps.INSTANCE, mod.copyWithCount(1)).getOrThrow();
         CustomData.update(
@@ -124,7 +179,7 @@ public final class ArmorModHandler {
                 armor,
                 root -> {
                     CompoundTag mods = Nbt.getCompoundOrEmpty(root, MOD_COMPOUND_KEY);
-                    mods.put(MOD_SLOT_KEY + armorMod.type, encoded);
+                    mods.put(MOD_SLOT_KEY + slot, encoded);
                     root.put(MOD_COMPOUND_KEY, mods);
                 });
     }
@@ -169,7 +224,7 @@ public final class ArmorModHandler {
                     ItemStack.CODEC
                             .parse(NbtOps.INSTANCE, encoded)
                             .result()
-                            .filter(stack -> stack.getItem() instanceof ItemArmorMod)
+                            .filter(ArmorModHandler::isMod)
                             .orElse(ItemStack.EMPTY);
             if (mod.isEmpty()) {
                 mods.remove(key);
@@ -224,6 +279,11 @@ public final class ArmorModHandler {
         for (int i = 0; i < EXTRA + 1; i++) {
             if (mods[i].getItem() instanceof ItemArmorMod mod)
                 mod.addDescription(tooltip, mods[i], armor);
+            else if (isMod(mods[i]))
+                tooltip.add(
+                        Component.literal("  ")
+                                .append(mods[i].getHoverName())
+                                .withStyle(ChatFormatting.GOLD));
         }
     }
 

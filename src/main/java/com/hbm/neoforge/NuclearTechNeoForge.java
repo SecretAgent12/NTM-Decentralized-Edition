@@ -200,6 +200,9 @@ public final class NuclearTechNeoForge {
                     // backport: Create: Aeronautics assembles NTM multiblocks whole (SimulatedCompat)
                     if (ModList.get().isLoaded("simulated"))
                         com.hbm.backport.SimulatedCompat.register();
+                    // backport: Create's Engineer's Goggles as a helmet mod (CreateGogglesCompat)
+                    if (ModList.get().isLoaded("create"))
+                        com.hbm.integration.create.CreateGogglesCompat.register();
                     if (ModList.get().isLoaded("sophisticatedstorage")) {
                         HazardSystem.addTransformer(new HazardTransformerSophisticatedStorage());
                     }
