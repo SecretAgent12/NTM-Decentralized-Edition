@@ -97,11 +97,53 @@ Machines with builders: `anvil_construction`, `anvil_smithing`, `arc_furnace`, `
 `pyro_oven`, `radiolysis`, `refinery`, `rock_mill`, `shredder`, `silex`, `soldering`, `solidification`,
 `space_assembler`, `supercomputer`, `vacuum_refinery`.
 
+### Rotary furnace, crucible, gas centrifuge, ammo press, pedestal
+
+These machines have their own fields, so their builders look a bit different.
+
+**Foundry materials** (rotary furnace output, crucible inputs and outputs) are written as
+`'144x copper'`, `'copper'` (one ingot) or `{ material: 'copper', amount: 144 }`. Amounts are in quanta:
+8 = nugget, 72 = ingot, 648 = block. Material names are NTM's own (`iron`, `steel`, `copper`, `slag`,
+`arsenic_bronze`, ...); look at any crucible recipe in the jar for more.
+
+```js
+ServerEvents.recipes(event => {
+    // rotary furnace: output material, input items, duration; .steam() per operation, .inputFluids()
+    event.recipes.hbm.rotary_furnace('144x copper', ['minecraft:raw_copper'], 100).steam(200)
+    event.recipes.hbm.rotary_furnace('gold', [], 60)
+        .inputFluids(Fluid.of('hbm:sulfuric_acid', 250))
+
+    // crucible alloy: output materials, input materials, frequency (optional, default 1)
+    event.recipes.hbm.crucible(['72x steel', '8x slag'], ['72x iron', '8x coal'], 4)
+        .merge({ icon: { id: 'minecraft:iron_block' } })   // the template item shown in the GUI
+
+    // gas centrifuge stage: output items, stage name, duration
+    event.recipes.hbm.gas_centrifuge(['3x minecraft:diamond'], 'heuf6', 150)
+        .consumed(300).power(200).requiresUpgrade(true)
+
+    // ammo press / pedestal: a 3x3 grid like a shaped crafting recipe; keys take counts ('2x ...')
+    event.recipes.hbm.ammo_press(['16x minecraft:arrow'], [' A ', ' B ', ' C '], {
+        A: 'minecraft:flint', B: '2x minecraft:stick', C: 'minecraft:feather'
+    })
+    event.recipes.hbm.pedestal(['minecraft:nether_star'], ['ABA', 'BCB', 'ABA'], {
+        A: 'minecraft:diamond', B: 'minecraft:gold_ingot', C: 'minecraft:emerald'
+    }).extra('full_moon')
+})
+```
+
+| Machine | Extra functions |
+|---|---|
+| `rotary_furnace` | `.steam(n)`, `.inputFluids(...)`, `.power(n)` |
+| `crucible` | `.frequency(n)` |
+| `gas_centrifuge` | `.consumed(mB)`, `.produced(mB)`, `.next('stage')`, `.feed('hbm:fluid')`, `.requiresUpgrade(bool)`, `.deadEndVolume(mB)`, `.deadEndItems([...])`, `.power(n)` |
+| `ammo_press` | `.duration(t)`, `.power(n)` |
+| `pedestal` | `.extra(...)`: `none`, `full_moon`, `new_moon`, `sun`, `good_karma`, `bad_karma`; `.recipeSet(n)` |
+
 ### Raw JSON (any machine)
 
 `event.custom` takes the recipe exactly as it looks in NTM's data files
 (`data/hbm/recipe/<machine>/*.json` inside the mod jar). This also covers the machines that have no
-builder yet (rotary furnace, crucible, gas centrifuge, ammo press, ...).
+builder (annihilator, the technical recipe types).
 
 ```js
 ServerEvents.recipes(event => {
@@ -183,8 +225,8 @@ with a resource pack (or `kubejs/assets/hbm/textures/gui/fluids/<fluid>.png`).
 
 ## Limitations
 
-- `replaceInput` / `replaceOutput` don't touch recipes that scripts add themselves; write those the way
-  you want them in the first place.
+- `replaceInput` / `replaceOutput` don't touch recipes that scripts add themselves (even when called after
+  them); write those the way you want them in the first place.
 - Crafting table recipes that take "any container with N mB of a fluid" (C4, solid fuel, ...) can be
   removed or replaced as a whole, but not edited piece by piece yet.
 - Machines without a builder (see [Raw JSON](#raw-json-any-machine)) need `event.custom`.
