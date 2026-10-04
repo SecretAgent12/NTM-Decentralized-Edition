@@ -2706,6 +2706,8 @@
   "desc.gui.machineReactorBreeding.theReactorHasTo": "The reactor has to recieve",
   "desc.gui.machineSILEX.voidContents": "Void contents",
   "desc.gui.drill.subLevel": "Error: can't drill on a physics contraption, there is no ground under it!",
+  "desc.gui.subLevel.moving": "Stopped: the contraption is moving. Bring it to a full stop to work the ground below.",
+  "desc.gui.subLevel.tilted": "Stopped: the contraption is tilted more than 1°. Level it out to work the ground below.",
   "desc.gui.machineShredder.errorShredderBladesAre": "Error: Shredder blades are broken or missing!",
   "desc.gui.machineSiren.volume": "Volume: %s",
   "desc.gui.machineSolderingStation.preventsNoFluidRecipes": "Prevents no-fluid recipes from being processed",

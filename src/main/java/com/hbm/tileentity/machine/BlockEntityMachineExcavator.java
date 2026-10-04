@@ -4,6 +4,7 @@
 package com.hbm.tileentity.machine;
 
 import com.hbm.api.control.IControlReceiver;
+import com.hbm.backport.SubLevelAnchor;
 import com.hbm.api.conveyor.IConveyorBelt;
 import com.hbm.api.energymk2.IEnergyHandlerMK2;
 import com.hbm.api.energymk2.ItemEnergyTransfer;
@@ -152,6 +153,12 @@ public class BlockEntityMachineExcavator extends BlockEntityMachineBase
     private long consumption = BASE_CONSUMPTION;
 
     private final Set<BlockPos> recursionBrake = new HashSet<>();
+
+    // backport-fix: BF-041 on a physics build the drill works the ground under it while steady
+    private final SubLevelAnchor anchor = new SubLevelAnchor();
+
+    @SyncField(units = 1L << 10)
+    public int subLevelState;
     private int minX, minY, minZ, maxX, maxY, maxZ;
 
     public BlockEntityMachineExcavator(BlockPos pos, BlockState state) {
@@ -182,8 +189,14 @@ public class BlockEntityMachineExcavator extends BlockEntityMachineBase
         operational = false;
         int radiusLevel = upgradeManager.getLevel(UpgradeType.EFFECT);
 
+        // backport-fix: BF-041 a moving or tilted build switches the drill off at once
+        subLevelState = anchor.check(level, worldPosition);
+        if (subLevelState == SubLevelAnchor.MOVING || subLevelState == SubLevelAnchor.TILTED)
+            enableDrill = false;
+
         EnumDrillType type = getInstalledDrill();
         if (enableDrill && type != null && power >= consumption) {
+            if (subLevelState == SubLevelAnchor.STEADY) anchor.lock();
             operational = true;
             power -= consumption;
 
@@ -196,6 +209,7 @@ public class BlockEntityMachineExcavator extends BlockEntityMachineBase
             }
         } else {
             targetDepth = 0;
+            anchor.unlock();
         }
 
         networkPackNT(150);
@@ -237,7 +251,7 @@ public class BlockEntityMachineExcavator extends BlockEntityMachineBase
     }
 
     private int maxDepth() {
-        return worldPosition.getY() - 4 - level.getMinBuildHeight();
+        return anchor.worldY(worldPosition, worldPosition.getY()) - 4 - level.getMinBuildHeight();
     }
 
     public int drillY() {
@@ -251,7 +265,8 @@ public class BlockEntityMachineExcavator extends BlockEntityMachineBase
     private boolean tryDrill(int radius) {
         int y = drillY();
 
-        if (targetDepth == 0 || y == level.getMinBuildHeight()) radius = 1;
+        if (targetDepth == 0 || anchor.worldY(worldPosition, y) == level.getMinBuildHeight())
+            radius = 1;
 
         for (int ring = 1; ring <= radius; ring++) {
 
@@ -271,7 +286,7 @@ public class BlockEntityMachineExcavator extends BlockEntityMachineBase
                         continue;
                     }
 
-                    BlockPos pos = new BlockPos(x, y, z);
+                    BlockPos pos = at(x, y, z);
                     BlockState state = level.getBlockState(pos);
 
                     if (state.is(ModBlocks.ORE_BEDROCK.get())) {
@@ -321,6 +336,11 @@ public class BlockEntityMachineExcavator extends BlockEntityMachineBase
         return true;
     }
 
+    /** The block to work for grid position x/y/z: the build's own, or the ground under it. */
+    private BlockPos at(int x, int y, int z) {
+        return anchor.resolve(level, worldPosition, new BlockPos(x, y, z));
+    }
+
     private void collectBedrock(BlockPos pos) {
         if (!(level.getBlockEntity(pos) instanceof BlockEntityBedrockOre ore)) return;
         if (ore.resource.isEmpty()) return;
@@ -366,7 +386,7 @@ public class BlockEntityMachineExcavator extends BlockEntityMachineBase
                     continue;
                 }
 
-                BlockPos pos = new BlockPos(x, y, z);
+                BlockPos pos = at(x, y, z);
                 if (!shouldIgnoreBlock(level.getBlockState(pos), pos)) tryMineAtLocation(pos);
             }
         }
@@ -481,7 +501,7 @@ public class BlockEntityMachineExcavator extends BlockEntityMachineBase
         for (int x = worldPosition.getX() - ring; x <= worldPosition.getX() + ring; x++) {
             for (int z = worldPosition.getZ() - ring; z <= worldPosition.getZ() + ring; z++) {
 
-                BlockPos pos = new BlockPos(x, y, z);
+                BlockPos pos = at(x, y, z);
                 BlockState state = level.getBlockState(pos);
                 boolean liquid = !state.getFluidState().isEmpty();
 
@@ -514,7 +534,7 @@ public class BlockEntityMachineExcavator extends BlockEntityMachineBase
                     continue;
                 }
 
-                BlockPos pos = new BlockPos(x, y, z);
+                BlockPos pos = at(x, y, z);
                 BlockState state = level.getBlockState(pos);
                 if (!shouldIgnoreBlock(state, pos) && isOre(state)) tryMineAtLocation(pos);
             }
@@ -550,7 +570,18 @@ public class BlockEntityMachineExcavator extends BlockEntityMachineBase
                         worldPosition.getX() + radius + 1,
                         y + 2,
                         worldPosition.getZ() + radius + 1);
-        List<ItemEntity> items = level.getEntitiesOfClass(ItemEntity.class, box);
+        List<ItemEntity> items = new ArrayList<>(level.getEntitiesOfClass(ItemEntity.class, box));
+        // backport-fix: BF-041 drops from the ground under a build land in the world
+        BlockPos ground = anchor.project(worldPosition, worldPosition);
+        if (ground != null) {
+            items.addAll(
+                    level.getEntitiesOfClass(
+                            ItemEntity.class,
+                            box.move(
+                                    ground.getX() - worldPosition.getX(),
+                                    ground.getY() - worldPosition.getY(),
+                                    ground.getZ() - worldPosition.getZ())));
+        }
 
         List<ItemStack> stacks = new ArrayList<>();
         for (ItemEntity item : items) if (!item.isRemoved()) stacks.add(item.getItem());
@@ -751,7 +782,7 @@ public class BlockEntityMachineExcavator extends BlockEntityMachineBase
 
     @Override
     public long syncUnitMask() {
-        return 0x3ffL;
+        return 0x7ffL;
     }
 
     @Override
@@ -767,6 +798,7 @@ public class BlockEntityMachineExcavator extends BlockEntityMachineBase
             case 7 -> output.writeInt(this.chuteTimer);
             case 8 -> output.writeLong(this.power);
             case 9 -> this.tank.packetSerialize(output);
+            case 10 -> output.writeInt(this.subLevelState);
             default -> throw new IllegalArgumentException();
         }
     }
@@ -784,6 +816,7 @@ public class BlockEntityMachineExcavator extends BlockEntityMachineBase
             case 7 -> this.chuteTimer = input.readInt();
             case 8 -> this.power = input.readLong();
             case 9 -> this.tank.packetDeserialize(input);
+            case 10 -> this.subLevelState = input.readInt();
             default -> throw new IllegalArgumentException();
         }
     }

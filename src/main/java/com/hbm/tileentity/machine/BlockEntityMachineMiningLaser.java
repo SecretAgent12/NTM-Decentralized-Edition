@@ -4,6 +4,7 @@
 package com.hbm.tileentity.machine;
 
 import com.hbm.api.control.IControlReceiver;
+import com.hbm.backport.SubLevelAnchor;
 import com.hbm.api.energymk2.IBatteryItem;
 import com.hbm.api.energymk2.IEnergyHandlerMK2;
 import com.hbm.api.energymk2.ItemEnergyTransfer;
@@ -60,6 +61,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import com.hbm.backport.storage.ValueInput;
 import com.hbm.backport.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 import com.hbm.backport.recipe.Recipes;
 
@@ -150,11 +152,28 @@ public class BlockEntityMachineMiningLaser extends BlockEntityMachineBase
     private boolean targetArmed;
     private double breakProgress;
 
+    // backport: the scan cursor lives in the machine's own block grid; targetX/Y/Z are what the
+    // client draws the beam to (the same thing, unless the beam hits the world under a build)
+    private int cursorX, cursorY, cursorZ;
+    private int prevCursorX, prevCursorY, prevCursorZ;
+
+    // backport-fix: BF-041 on a physics build the laser works the ground under it while steady
+    private final SubLevelAnchor anchor = new SubLevelAnchor();
+
+    @SyncField(units = 1L << 12)
+    public int subLevelState;
+
     private final FluidFlushOutputs flush = new FluidFlushOutputs();
 
     public BlockEntityMachineMiningLaser(BlockPos pos, BlockState state) {
         super(ModBlockEntities.MINING_LASER.get(), pos, state, SLOT_COUNT);
         sending = new FluidTankNTM[] {tank};
+        // backport-fix: BF-040 targets started at 0,0,0 and are not saved, so the first beam frame
+        // stretched from the world origin; far from it (a build's plot) that is a million-block
+        // mesh and a native crash in BeamVisual. Start them at the laser itself.
+        cursorX = prevCursorX = targetX = lastTargetX = pos.getX();
+        cursorY = prevCursorY = targetY = lastTargetY = pos.getY() - 2;
+        cursorZ = prevCursorZ = targetZ = lastTargetZ = pos.getZ();
     }
 
     public void refreshUnloadTargets() {
@@ -196,11 +215,21 @@ public class BlockEntityMachineMiningLaser extends BlockEntityMachineBase
 
         power += ItemEnergyTransfer.extract(this, SLOT_BATTERY, MAX_POWER - power, false);
 
-        if (lastTargetX != targetX || lastTargetY != targetY || lastTargetZ != targetZ)
+        if (prevCursorX != cursorX || prevCursorY != cursorY || prevCursorZ != cursorZ)
             breakProgress = 0;
+        prevCursorX = cursorX;
+        prevCursorY = cursorY;
+        prevCursorZ = cursorZ;
         lastTargetX = targetX;
         lastTargetY = targetY;
         lastTargetZ = targetZ;
+
+        // backport-fix: BF-041 a moving or tilted build switches the laser off at once
+        subLevelState = anchor.check(level, worldPosition);
+        boolean unsteady =
+                subLevelState == SubLevelAnchor.MOVING || subLevelState == SubLevelAnchor.TILTED;
+        if (unsteady && isOn) setOn(false);
+        if (subLevelState == SubLevelAnchor.STEADY && isOn && !redstonePowered) anchor.lock();
 
         if (this.isOn && !this.redstonePowered) {
             upgradeManager.scan(this, SLOT_UPGRADE_START, SLOT_UPGRADE_END);
@@ -220,14 +249,17 @@ public class BlockEntityMachineMiningLaser extends BlockEntityMachineBase
                 }
                 power -= draw;
 
-                if (!targetArmed || targetY <= level.getMinBuildHeight()) {
-                    targetY = worldPosition.getY() - 2;
+                if (!targetArmed
+                        || anchor.worldY(worldPosition, cursorY) <= level.getMinBuildHeight()) {
+                    cursorY = worldPosition.getY() - 2;
                     targetArmed = true;
                 }
 
                 scan(range);
 
-                BlockPos target = new BlockPos(targetX, targetY, targetZ);
+                BlockPos target =
+                        anchor.resolve(level, worldPosition, new BlockPos(cursorX, cursorY, cursorZ));
+                aim(target);
                 BlockState state = level.getBlockState(target);
 
                 if (!state.getFluidState().isEmpty()) {
@@ -250,8 +282,12 @@ public class BlockEntityMachineMiningLaser extends BlockEntityMachineBase
                 }
             }
         } else {
-            targetY = worldPosition.getY() - 2;
+            cursorY = worldPosition.getY() - 2;
+            targetX = cursorX;
+            targetY = cursorY;
+            targetZ = cursorZ;
             beam = false;
+            anchor.unlock();
         }
 
         if (!unloadKnown) refreshUnloadTargets();
@@ -263,6 +299,17 @@ public class BlockEntityMachineMiningLaser extends BlockEntityMachineBase
         }
 
         networkPackNT(250);
+    }
+
+    /** Points the synced beam target at {@code target}, in the laser's own block grid. */
+    private void aim(BlockPos target) {
+        BlockPos drawn = target;
+        if (target.getX() != cursorX || target.getY() != cursorY || target.getZ() != cursorZ) {
+            drawn = BlockPos.containing(anchor.toPlot(worldPosition, Vec3.atCenterOf(target)));
+        }
+        targetX = drawn.getX();
+        targetY = drawn.getY();
+        targetZ = drawn.getZ();
     }
 
     private void buildDam(BlockPos target) {
@@ -439,20 +486,21 @@ public class BlockEntityMachineMiningLaser extends BlockEntityMachineBase
     public void scan(int range) {
         for (int x = -range; x <= range; x++) {
             for (int z = -range; z <= range; z++) {
-                BlockPos pos =
-                        new BlockPos(worldPosition.getX() + x, targetY, worldPosition.getZ() + z);
+                BlockPos grid =
+                        new BlockPos(worldPosition.getX() + x, cursorY, worldPosition.getZ() + z);
+                BlockPos pos = anchor.resolve(level, worldPosition, grid);
                 BlockState state = level.getBlockState(pos);
                 if (!state.getFluidState().isEmpty()) continue;
                 if (canBreak(state, pos)) {
-                    targetX = pos.getX();
-                    targetZ = pos.getZ();
+                    cursorX = grid.getX();
+                    cursorZ = grid.getZ();
                     beam = true;
                     return;
                 }
             }
         }
         beam = false;
-        targetY--;
+        cursorY--;
     }
 
     private boolean canBreak(BlockState state, BlockPos pos) {
@@ -583,7 +631,7 @@ public class BlockEntityMachineMiningLaser extends BlockEntityMachineBase
 
     @Override
     public long syncUnitMask() {
-        return 0xfffL;
+        return 0x1fffL;
     }
 
     @Override
@@ -601,6 +649,7 @@ public class BlockEntityMachineMiningLaser extends BlockEntityMachineBase
             case 9 -> output.writeDouble(this.clientBreakProgress);
             case 10 -> this.tank.packetSerialize(output);
             case 11 -> output.writeBoolean(this.redstonePowered);
+            case 12 -> output.writeInt(this.subLevelState);
             default -> throw new IllegalArgumentException();
         }
     }
@@ -620,6 +669,7 @@ public class BlockEntityMachineMiningLaser extends BlockEntityMachineBase
             case 9 -> this.clientBreakProgress = input.readDouble();
             case 10 -> this.tank.packetDeserialize(input);
             case 11 -> this.redstonePowered = input.readBoolean();
+            case 12 -> this.subLevelState = input.readInt();
             default -> throw new IllegalArgumentException();
         }
     }

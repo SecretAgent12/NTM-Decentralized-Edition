@@ -6704,6 +6704,8 @@
   "desc.gui.machineReactorBreeding.theReactorHasTo": "Реактор має отримувати",
   "desc.gui.machineSILEX.voidContents": "Знищити вміст",
   "desc.gui.drill.subLevel": "Помилка: бурити з фізичної конструкції не можна, під нею немає землі!",
+  "desc.gui.subLevel.moving": "Зупинено: конструкція рухається. Повністю зупиніть її, щоб працювати із землею під нею.",
+  "desc.gui.subLevel.tilted": "Зупинено: конструкція нахилена більше ніж на 1°. Вирівняйте її, щоб працювати із землею під нею.",
   "desc.gui.machineShredder.errorShredderBladesAre": "Помилка: леза подрібнювача зламані або відсутні!",
   "desc.gui.machineSiren.volume": "Гучність: %s",
   "desc.gui.machineSolderingStation.preventsNoFluidRecipes": "Не дозволяє обробляти рецепти без рідини",

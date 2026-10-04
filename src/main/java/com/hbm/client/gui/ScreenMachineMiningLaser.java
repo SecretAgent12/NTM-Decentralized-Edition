@@ -3,6 +3,8 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.backport.SubLevelAnchor;
+import java.util.List;
 import com.hbm.inventory.container.MenuMachineMiningLaser;
 import com.hbm.lib.Library;
 import com.hbm.packet.toserver.NbtControlPayload;
@@ -107,6 +109,27 @@ public class ScreenMachineMiningLaser extends ScreenInfoContainer<MenuMachineMin
                 141,
                 55,
                 lineArray("desc.gui.miningLaser.upgrades"));
+
+        // backport-fix: BF-041 why the machine won't run on a moving or tilted build
+        int unsteady = be.subLevelState;
+        if (unsteady == SubLevelAnchor.MOVING || unsteady == SubLevelAnchor.TILTED) {
+            drawInfoPanel(graphics, -16, 36, 16, 16, 6);
+            drawCustomInfoStat(
+                    graphics,
+                    mouseX,
+                    mouseY,
+                    -16,
+                    36,
+                    16,
+                    16,
+                    -8,
+                    52,
+                    List.of(
+                            Component.translatable(
+                                    unsteady == SubLevelAnchor.MOVING
+                                            ? "desc.gui.subLevel.moving"
+                                            : "desc.gui.subLevel.tilted")));
+        }
 
         super.extractLabels(graphics, mouseX, mouseY);
     }

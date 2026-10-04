@@ -3,6 +3,7 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.backport.SubLevelAnchor;
 import com.hbm.inventory.container.MenuMachineExcavator;
 import com.hbm.lib.Library;
 import com.hbm.packet.toserver.NbtControlPayload;
@@ -95,7 +96,10 @@ public class ScreenMachineExcavator extends ScreenInfoContainer<MenuMachineExcav
         }
 
         boolean powered =
-                be.getInstalledDrill() != null && menu.getPower() >= be.getPowerConsumption();
+                be.getInstalledDrill() != null
+                        && menu.getPower() >= be.getPowerConsumption()
+                        && be.subLevelState != SubLevelAnchor.MOVING
+                        && be.subLevelState != SubLevelAnchor.TILTED;
         drawToggle(graphics, TOGGLES[0], be.enableDrill, powered, blink);
         drawToggle(graphics, TOGGLES[1], be.enableCrusher, true, blink);
         drawToggle(graphics, TOGGLES[2], be.enableWalling, true, blink);
@@ -127,6 +131,27 @@ public class ScreenMachineExcavator extends ScreenInfoContainer<MenuMachineExcav
                 menu.getPower(),
                 BlockEntityMachineExcavator.MAX_POWER);
         drawFluidGaugeInfo(graphics, mouseX, mouseY, TANK_X, TANK_Y, TANK_W, TANK_H, be.tank);
+
+        // backport-fix: BF-041 why the machine won't run on a moving or tilted build
+        int unsteady = be.subLevelState;
+        if (unsteady == SubLevelAnchor.MOVING || unsteady == SubLevelAnchor.TILTED) {
+            drawInfoPanel(graphics, -16, 36, 16, 16, 6);
+            drawCustomInfoStat(
+                    graphics,
+                    mouseX,
+                    mouseY,
+                    -16,
+                    36,
+                    16,
+                    16,
+                    -8,
+                    52,
+                    List.of(
+                            Component.translatable(
+                                    unsteady == SubLevelAnchor.MOVING
+                                            ? "desc.gui.subLevel.moving"
+                                            : "desc.gui.subLevel.tilted")));
+        }
 
         super.extractLabels(graphics, mouseX, mouseY);
     }
