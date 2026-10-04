@@ -3,6 +3,7 @@
 
 package com.hbm.client.render;
 
+import com.hbm.client.render.flywheel.HbmBlockEntityVisual;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.main.ResourceManager;
 import com.hbm.render.loader.HFRWavefrontObject;
@@ -105,6 +106,9 @@ public class RenderArcFurnace
         BlockEntityRenderer.super.extractRenderState(
                 be, state, partialTicks, cameraPosition, breakProgress);
 
+        // backport-fix: BF-047 with Flywheel on, the visual draws the furnace and this draws the
+        // pour streams only (the visual's stream meshes break under the indirect backend)
+        state.streamsOnly = HbmBlockEntityVisual.hasVisual(be);
         state.facing = BlockMultiblockCore.coreFacing(be.getBlockState());
         state.lidLift = Mth.lerp(partialTicks, be.prevLid, be.lid);
         state.isProgressing = be.isProgressing;
@@ -128,6 +132,7 @@ public class RenderArcFurnace
         int light = s.lightCoords;
         final HFRWavefrontObject m = this.model;
 
+        if (!s.streamsOnly) {
         ps.pushPose();
         ps.translate(0.5, 0.0, 0.5);
         ps.mulPose(Axis.YP.rotationDegrees(furnaceYaw(s.facing)));
@@ -223,6 +228,7 @@ public class RenderArcFurnace
         }
 
         ps.popPose();
+        }
 
         Direction dir = s.facing;
         for (PourStream stream : s.streams) {
@@ -249,6 +255,7 @@ public class RenderArcFurnace
     public static final class State extends BlockEntityRenderState {
         public final byte[] electrodes = new byte[3];
         public final List<PourStream> streams = new ArrayList<>();
+        public boolean streamsOnly;
         public Direction facing = Direction.NORTH;
         public float lidLift = 1F;
         public boolean isProgressing;

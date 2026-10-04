@@ -21,9 +21,6 @@ public final class MachineVisuals {
                 .factory(WatzStructPreviewVisual::new)
                 .apply();
 
-        SimpleBlockEntityVisualizer.builder(ModBlockEntities.FOUNDRY_SLAGTAP.get())
-                .factory(FoundryOutletVisual::new)
-                .apply();
 
         SimpleBlockEntityVisualizer.builder(ModBlockEntities.MULTI_CORE.get())
                 .factory(MultiblockStructPreviewVisual::new)
@@ -37,24 +34,27 @@ public final class MachineVisuals {
         SimpleBlockEntityVisualizer.builder(ModBlockEntities.RBMK_DISPLAY.get())
                 .factory(RBMKDisplayVisual::new)
                 .apply();
-        SimpleBlockEntityVisualizer.builder(ModBlockEntities.FOUNDRY_OUTLET.get())
-                .factory(FoundryOutletVisual::new)
-                .apply();
 
+        // backport-fix: BF-047 the foundry (crucible, molds and basins, channels, tanks, outlets and
+        // slag taps, slag) and the electrolyser (pour streams only) have no Flywheel visuals here: under Flywheel 1.0's indirect backend (the
+        // default) their thin molten / slag / pour-stream meshes came out with broken geometry (half
+        // quads, stray spikes), while the instancing backend and the vanilla renderers draw them fine.
+        // Their block entity renderers (ClientRegistry) take over; the visuals stay in the source.
         SimpleBlockEntityVisualizer.builder(ModBlockEntities.REFUELER.get())
                 .factory(RefuelerVisual::new)
-                .apply();
-        SimpleBlockEntityVisualizer.builder(ModBlockEntities.ELECTROLYSER.get())
-                .factory(ElectrolyserVisual::new)
                 .apply();
         SimpleBlockEntityVisualizer.builder(ModBlockEntities.STRAND_CASTER.get())
                 .factory(StrandCasterVisual::new)
                 .apply();
+        // backport-fix: BF-047 these two keep their Flywheel visuals for the body, while their
+        // renderers draw the pour streams (see RenderArcFurnace / RenderRotaryFurnace)
         SimpleBlockEntityVisualizer.builder(ModBlockEntities.ROTARY_FURNACE.get())
                 .factory(RotaryFurnaceVisual::new)
+                .neverSkipVanillaRender()
                 .apply();
         SimpleBlockEntityVisualizer.builder(ModBlockEntities.ARC_FURNACE_LARGE.get())
                 .factory(ArcFurnaceVisual::new)
+                .neverSkipVanillaRender()
                 .apply();
         SimpleBlockEntityVisualizer.builder(ModBlockEntities.MACHINE_PUMPJACK.get())
                 .factory(PumpjackVisual::new)
@@ -435,20 +435,6 @@ public final class MachineVisuals {
         SimpleBlockEntityVisualizer.builder(ModBlockEntities.NTM_SNOWGLOBE.get())
                 .factory(SnowglobeVisual::new)
                 .apply();
-        SimpleBlockEntityVisualizer.builder(ModBlockEntities.CRUCIBLE.get())
-                .factory(CrucibleVisual::new)
-                .apply();
-        SimpleBlockEntityVisualizer.builder(ModBlockEntities.FOUNDRY_MOLD.get())
-                .factory(FoundryVisual::new)
-                .skipVanillaRender(be -> !FoundryVisual.vanillaNeeded(be))
-                .apply();
-        SimpleBlockEntityVisualizer.builder(ModBlockEntities.FOUNDRY_BASIN.get())
-                .factory(FoundryVisual::new)
-                .skipVanillaRender(be -> !FoundryVisual.vanillaNeeded(be))
-                .apply();
-        SimpleBlockEntityVisualizer.builder(ModBlockEntities.FOUNDRY_CHANNEL.get())
-                .factory(FoundryChannelVisual::new)
-                .apply();
         SimpleBlockEntityVisualizer.builder(ModBlockEntities.PYLON_REDWIRE.get())
                 .factory(PylonWiresVisual::new)
                 .apply();
@@ -466,12 +452,6 @@ public final class MachineVisuals {
                 .apply();
         SimpleBlockEntityVisualizer.builder(ModBlockEntities.SUBSTATION.get())
                 .factory(PylonWiresVisual::new)
-                .apply();
-        SimpleBlockEntityVisualizer.builder(ModBlockEntities.FOUNDRY_TANK.get())
-                .factory(FoundryTankVisual::new)
-                .apply();
-        SimpleBlockEntityVisualizer.builder(ModBlockEntities.FOUNDRY_SLAG.get())
-                .factory(SlagVisual::new)
                 .apply();
         SimpleBlockEntityVisualizer.builder(ModBlockEntities.TESLA_COIL.get())
                 .factory(TeslaVisual::new)

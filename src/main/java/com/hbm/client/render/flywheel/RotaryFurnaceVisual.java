@@ -101,7 +101,8 @@ public final class RotaryFurnaceVisual
                 BlockMultiblockCore.coreFacing(blockEntity.getBlockState()).getCounterClockWise();
         long now = level.getGameTime();
         int slot = 0;
-        for (PourStream stream : blockEntity.streams) {
+        // backport-fix: BF-047 pour streams are drawn by RenderRotaryFurnace (neverSkipVanillaRender)
+        for (PourStream stream : java.util.List.<PourStream>of()) {
             while (pours.size() <= slot)
                 pours.add(new PourVisual(visualizationContext, level, pos));
             float age = (now - stream.birth()) + partialTick;

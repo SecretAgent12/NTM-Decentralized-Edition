@@ -3,6 +3,7 @@
 
 package com.hbm.client.render;
 
+import com.hbm.client.render.flywheel.HbmBlockEntityVisual;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.main.ResourceManager;
 import com.hbm.render.loader.HFRWavefrontObject;
@@ -87,6 +88,9 @@ public class RenderRotaryFurnace
             ModelFeatureRenderer.@Nullable CrumblingOverlay breakProgress) {
         BlockEntityRenderer.super.extractRenderState(
                 be, state, partialTicks, cameraPosition, breakProgress);
+        // backport-fix: BF-047 with Flywheel on, the visual draws the piston and this draws the
+        // pour streams only (the visual's stream meshes break under the indirect backend)
+        state.streamsOnly = HbmBlockEntityVisual.hasVisual(be);
         state.facing = BlockMultiblockCore.coreFacing(be.getBlockState());
         state.anim = Mth.lerp(partialTicks, be.lastAnim, be.anim);
 
@@ -105,15 +109,17 @@ public class RenderRotaryFurnace
 
         Direction rot = s.facing.getCounterClockWise();
 
-        ps.pushPose();
-        ps.translate(0.5, 0.0, 0.5);
-        ps.mulPose(Axis.YP.rotationDegrees(furnaceYaw(s.facing)));
+        if (!s.streamsOnly) {
+            ps.pushPose();
+            ps.translate(0.5, 0.0, 0.5);
+            ps.mulPose(Axis.YP.rotationDegrees(furnaceYaw(s.facing)));
 
-        ps.translate(0.0, BobMathUtil.sps((s.anim * 0.75) * 0.125) * 0.5 - 0.5, 0.0);
-        final HFRWavefrontObject m = this.model;
-        col.submitCustomGeometry(
-                ps, bodyType, (pose, buffer) -> m.renderPart(pose, buffer, light, -1, PISTON));
-        ps.popPose();
+            ps.translate(0.0, BobMathUtil.sps((s.anim * 0.75) * 0.125) * 0.5 - 0.5, 0.0);
+            final HFRWavefrontObject m = this.model;
+            col.submitCustomGeometry(
+                    ps, bodyType, (pose, buffer) -> m.renderPart(pose, buffer, light, -1, PISTON));
+            ps.popPose();
+        }
 
         for (StreamState stream : s.streams) {
             ps.pushPose();
@@ -139,6 +145,7 @@ public class RenderRotaryFurnace
 
     public static final class State extends BlockEntityRenderState {
         public final List<StreamState> streams = new ArrayList<>();
+        public boolean streamsOnly;
         public Direction facing = Direction.NORTH;
         public float anim;
     }

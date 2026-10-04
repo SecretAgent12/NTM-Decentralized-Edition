@@ -32,7 +32,12 @@ public abstract class HbmBlockEntityVisual<T extends BlockEntity>
 
     public static boolean hasVisual(BlockEntity blockEntity) {
         Level level = blockEntity.getLevel();
+        // backport-fix: BF-047 some block entities have their visuals switched off (MachineVisuals);
+        // their renderers must then draw everything even though Flywheel is on
         return VisualizationManager.supportsVisualization(level)
+                && dev.engine_room.flywheel.api.visualization.VisualizerRegistry.getVisualizer(
+                                blockEntity.getType())
+                        != null
                 && level.getBlockEntity(blockEntity.getBlockPos()) == blockEntity;
     }
 
