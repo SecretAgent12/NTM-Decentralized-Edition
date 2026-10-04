@@ -17,7 +17,9 @@ import net.minecraft.world.item.ItemStack;
 
 public class ItemModCharm extends ItemArmorMod {
     public ItemModCharm(Item.Properties properties) {
-        super(properties, ArmorModHandler.HELMET_ONLY, true, false, false, false);
+        // backport-fix: BF-039 (same in ntm-next) 1.7.10 lets both charms go on helmets *and*
+        // chestplates (helmet_only, true, true, false, false); ntm-next dropped the chestplate
+        super(properties, ArmorModHandler.HELMET_ONLY, true, true, false, false);
     }
 
     @Override
