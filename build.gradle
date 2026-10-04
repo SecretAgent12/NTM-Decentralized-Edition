@@ -191,6 +191,7 @@ configurations {
     devModImmediatelyFast { transitive = false }
     devModWthit { transitive = false }
     devModKubejs { transitive = false }
+    devModWorldedit { transitive = false }
 }
 dependencies {
     devModSodium "maven.modrinth:AANobbMI:uMOpc5uV"                  // Sodium 0.8.13 for 1.21.1 NeoForge
@@ -201,6 +202,7 @@ dependencies {
     devModKubejs "maven.modrinth:umyGl7zF:THIGFPwf"                  // KubeJS 2101.7.2-build.377
     devModKubejs "maven.modrinth:sk9knFPE:SqkDvOLG"                  // Rhino 2101.2.8-build.91
     devModKubejs "maven.modrinth:iHLDc0eo:uPFbnD32"                  // Better Advanced Tooltips 2101.1.0-build.5
+    devModWorldedit "maven.modrinth:1u6JkXh5:WTAFvuRx"               // WorldEdit 7.3.8 (NeoForge 1.21.1)
 }
 tasks.register('syncDevMods') {
     def modsDir = file('run/mods')
@@ -209,6 +211,7 @@ tasks.register('syncDevMods') {
             [configurations.devModImmediatelyFast, project.findProperty('dev_immediatelyfast') == 'true'],
             [configurations.devModWthit, project.findProperty('dev_wthit') != 'false'],
             [configurations.devModKubejs, project.findProperty('dev_kubejs') != 'false'],
+            [configurations.devModWorldedit, project.findProperty('dev_worldedit') != 'false'],
     ]
     sets.each { inputs.files(it[0]) }
     doLast {
