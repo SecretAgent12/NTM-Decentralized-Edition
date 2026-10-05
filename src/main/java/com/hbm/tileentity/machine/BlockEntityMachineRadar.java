@@ -231,7 +231,7 @@ public class BlockEntityMachineRadar extends BlockEntityMachineBase
         pushToLinkedScreen();
 
         if (this.clearFlag) mapState.clear();
-        networkPackNT(50);
+        networkPackNT(syncRange());
         if (this.clearFlag) this.clearFlag = false;
         flushSyncBlob();
     }
@@ -251,14 +251,15 @@ public class BlockEntityMachineRadar extends BlockEntityMachineBase
         int chunkLoads = 0;
         int chunkLoadCap = MachineData.RADAR_CHUNK_LOAD_CAP.get();
         int range = getRange();
+        BlockPos center = scanCenter();
 
         for (int i = 0; i < MAP_SAMPLES_PER_TICK; i++) {
             int index = (int) (level.getGameTime() % MAP_CYCLE) * MAP_SAMPLES_PER_TICK + i;
             int iX = (index % MAP_SIDE) * range * 2 / MAP_SIDE;
             int iZ = index / MAP_SIDE * range * 2 / MAP_SIDE;
 
-            int x = worldPosition.getX() - range + iX;
-            int z = worldPosition.getZ() - range + iZ;
+            int x = center.getX() - range + iX;
+            int z = center.getZ() - range + iZ;
 
             ChunkAccess resident = ChunkUtil.chunkIfLoaded(level, new BlockPos(x, 0, z));
             if (resident != null) {
@@ -301,6 +302,8 @@ public class BlockEntityMachineRadar extends BlockEntityMachineBase
             return;
         }
 
+        // the screen keeps the radar's own block (it opens the radar's map from it) and works out
+        // where that radar scans around itself (BlockEntityMachineRadarScreen.scanCenter)
         screen.acceptRadar(worldPosition, getRange(), entries);
     }
 
@@ -308,7 +311,8 @@ public class BlockEntityMachineRadar extends BlockEntityMachineBase
         this.entries.clear();
         this.subLevelBlips.clear();
 
-        if (worldPosition.getY() < MachineData.RADAR_ALTITUDE.get()) return;
+        BlockPos center = scanCenter();
+        if (center.getY() < MachineData.RADAR_ALTITUDE.get()) return;
         long consumption = MachineData.RADAR_CONSUMPTION.get();
         if (this.power < consumption) {
             this.power = 0;
@@ -324,9 +328,9 @@ public class BlockEntityMachineRadar extends BlockEntityMachineBase
 
         for (Entity e : MATCHING) {
             if (e.level() != level) continue;
-            if (Math.abs(e.getX() - (worldPosition.getX() + 0.5)) > scan) continue;
-            if (Math.abs(e.getZ() - (worldPosition.getZ() + 0.5)) > scan) continue;
-            if (e.getY() - worldPosition.getY() <= buffer) continue;
+            if (Math.abs(e.getX() - (center.getX() + 0.5)) > scan) continue;
+            if (Math.abs(e.getZ() - (center.getZ() + 0.5)) > scan) continue;
+            if (e.getY() - center.getY() <= buffer) continue;
 
             if (e instanceof LivingEntity living && HbmLivingProps.getDigamma(living) > 0.001) {
                 this.jammed = true;
@@ -345,16 +349,16 @@ public class BlockEntityMachineRadar extends BlockEntityMachineBase
 
         // backport-fix: BF-022 physics builds (Create: Aeronautics / Sable sub-levels) are not
         // entities, so the loop above never sees them; list the ones in range, same rules
-        if (params.scanPlayers) scanSubLevels(scan, buffer);
+        if (params.scanPlayers) scanSubLevels(center, scan, buffer);
         if (level.getGameTime() % 20 == 0) {
             ServerLevel server = (ServerLevel) level;
             SatelliteDetector.reportEvent(
                     server,
                     SatelliteDetector.DURATION_MEDIUM,
                     SatelliteDetector.BurstIntensity.MEDIUM,
-                    worldPosition.getX(),
-                    worldPosition.getZ());
-            SatelliteRayEvents.report(server, worldPosition, SatelliteRayEvents.RADAR_WAVES, 200);
+                    center.getX(),
+                    center.getZ());
+            SatelliteRayEvents.report(server, center, SatelliteRayEvents.RADAR_WAVES, 200);
         }
     }
 
@@ -362,10 +366,13 @@ public class BlockEntityMachineRadar extends BlockEntityMachineBase
      * Sable sub-levels (airships and other physics builds) above the radar, as {@code SPECIAL} blips at
      * their pose position. They have no entity id, so clicking one sends its position instead.
      */
-    private void scanSubLevels(int scan, int buffer) {
-        double cx = worldPosition.getX() + 0.5D;
-        double cz = worldPosition.getZ() + 0.5D;
-        int minY = worldPosition.getY() + buffer;
+    private void scanSubLevels(BlockPos center, int scan, int buffer) {
+        double cx = center.getX() + 0.5D;
+        double cz = center.getZ() + 0.5D;
+        int minY = center.getY() + buffer;
+        // backport-fix: BF-059 a radar standing on a build doesn't report its own build
+        dev.ryanhcode.sable.companion.SubLevelAccess own =
+                dev.ryanhcode.sable.companion.SableCompanion.INSTANCE.getContaining(level, worldPosition);
         dev.ryanhcode.sable.companion.math.BoundingBox3d box =
                 new dev.ryanhcode.sable.companion.math.BoundingBox3d(
                         cx - scan, minY, cz - scan, cx + scan, level.getMaxBuildHeight() + 256, cz + scan);
@@ -378,9 +385,10 @@ public class BlockEntityMachineRadar extends BlockEntityMachineBase
                 new java.util.IdentityHashMap<>();
         for (dev.ryanhcode.sable.companion.SubLevelAccess sub :
                 dev.ryanhcode.sable.companion.SableCompanion.INSTANCE.getAllIntersecting(level, box)) {
+            if (own != null && own.getUniqueId().equals(sub.getUniqueId())) continue;
             org.joml.Vector3dc p = sub.logicalPose().position();
             if (Math.abs(p.x() - cx) > scan || Math.abs(p.z() - cz) > scan) continue;
-            if (p.y() - worldPosition.getY() <= buffer) continue;
+            if (p.y() - center.getY() <= buffer) continue;
             dev.ryanhcode.sable.companion.math.BoundingBox3dc hull = sub.boundingBox();
             double volume =
                     (hull.maxX() - hull.minX()) * (hull.maxY() - hull.minY()) * (hull.maxZ() - hull.minZ());
@@ -408,10 +416,64 @@ public class BlockEntityMachineRadar extends BlockEntityMachineBase
         }
     }
 
+    /**
+     * backport-fix: BF-059 the world block the radar scans around: its own block, or, when it
+     * stands on a physics build (Sable sub-level), the world block where the build draws it. A
+     * radar on a build used its far-away plot position: it saw nothing (or the plot's empty sky),
+     * drew the wrong map and placed every blip and target off by millions of blocks. Used on both
+     * sides (the screen places blips around it).
+     */
+    /**
+     * backport-fix: BF-060 how far the radar's state reaches: 50 blocks, and further for players
+     * who have its map open from a linked radar screen (a screen can be far away, e.g. on a flying
+     * build). Out of the 50 their map froze: blips stayed where they were, and a click on a moved
+     * airship's old blip launched at empty sky instead of locking onto it.
+     */
+    private int syncRange() {
+        int range = 50;
+        if (!(level instanceof ServerLevel server)) return range;
+        net.minecraft.world.phys.Vec3 at = net.minecraft.world.phys.Vec3.atCenterOf(worldPosition);
+        for (net.minecraft.server.level.ServerPlayer player : server.players()) {
+            if (!isRadarMenuValid(player)) continue;
+            range = Math.max(range, (int) Math.ceil(Math.sqrt(player.distanceToSqr(at))) + 2);
+        }
+        return range;
+    }
+
+    /**
+     * backport-fix: BF-060 the airship blip nearest to a clicked point (within a few blocks). The
+     * map shows blips from the last sync, and a moving build is a block or two further by the time
+     * the click arrives, so an exact match missed it and the interceptor got a plain position.
+     */
+    private java.util.@org.jspecify.annotations.Nullable UUID subLevelNear(int x, int z) {
+        java.util.UUID best = null;
+        long bestDist = 12L * 12L;
+        for (var blip : subLevelBlips.entrySet()) {
+            long dx = net.minecraft.world.level.ChunkPos.getX(blip.getKey()) - x;
+            long dz = net.minecraft.world.level.ChunkPos.getZ(blip.getKey()) - z;
+            long dist = dx * dx + dz * dz;
+            if (dist <= bestDist) {
+                bestDist = dist;
+                best = blip.getValue();
+            }
+        }
+        return best;
+    }
+
+    public BlockPos scanCenter() {
+        if (level == null) return worldPosition;
+        double x = worldPosition.getX() + 0.5D;
+        double z = worldPosition.getZ() + 0.5D;
+        if (!com.hbm.backport.SubLevelSpace.inSubLevel(level, x, z)) return worldPosition;
+        return BlockPos.containing(
+                com.hbm.backport.SubLevelSpace.toWorld(level, x, worldPosition.getY() + 0.5D, z));
+    }
+
     public int getRedPower() {
         if (entries.isEmpty()) return 0;
 
         if (redMode) {
+            BlockPos center = scanCenter();
             double maxRange = this.getRange() * Math.sqrt(2D);
             int best = 0;
 
@@ -419,8 +481,8 @@ public class BlockEntityMachineRadar extends BlockEntityMachineBase
                 if (!e.redstone) continue;
                 double dist =
                         Math.sqrt(
-                                Math.pow(e.posX - worldPosition.getX(), 2)
-                                        + Math.pow(e.posZ - worldPosition.getZ(), 2));
+                                Math.pow(e.posX - center.getX(), 2)
+                                        + Math.pow(e.posZ - center.getZ(), 2));
                 int p = 15 - (int) Math.floor(dist / maxRange * 15);
                 if (p > best) best = p;
             }
@@ -516,13 +578,12 @@ public class BlockEntityMachineRadar extends BlockEntityMachineBase
             int z = Nbt.getIntOr(data, "launchPosZ", 0);
 
             // backport: a click on an airship blip names that build, so interceptors can chase it
-            java.util.UUID subLevel =
-                    subLevelBlips.get(net.minecraft.world.level.ChunkPos.asLong(x, z));
+            java.util.UUID subLevel = subLevelNear(x, z);
             if (subLevel != null) {
-                if (receiver.sendCommandSubLevel(subLevel, x, worldPosition.getY(), z)) bleep(player);
+                if (receiver.sendCommandSubLevel(subLevel, x, scanCenter().getY(), z)) bleep(player);
                 return;
             }
-            if (receiver.sendCommandPosition(x, worldPosition.getY(), z)) bleep(player);
+            if (receiver.sendCommandPosition(x, scanCenter().getY(), z)) bleep(player);
         }
     }
 
@@ -633,7 +694,7 @@ public class BlockEntityMachineRadar extends BlockEntityMachineBase
 
     @Override
     public void flushSyncBlob() {
-        mapState.flush(this, 50, showMap);
+        mapState.flush(this, syncRange(), showMap);
     }
 
     @Override

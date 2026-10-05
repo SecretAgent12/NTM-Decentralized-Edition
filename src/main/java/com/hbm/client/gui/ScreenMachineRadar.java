@@ -141,8 +141,8 @@ public class ScreenMachineRadar extends ScreenInfoContainer<MenuMachineRadar> {
 
         int range = be.getRange();
         for (RadarEntry m : be.entries) {
-            double x = blipOffset(m.posX - be.getBlockPos().getX(), range) - 4D;
-            double z = blipOffset(m.posZ - be.getBlockPos().getZ(), range) - 4D;
+            double x = blipOffset(m.posX - be.scanCenter().getX(), range) - 4D;
+            double z = blipOffset(m.posZ - be.scanCenter().getZ(), range) - 4D;
             graphics.pose().pushMatrix();
             graphics.pose()
                     .translate(
@@ -183,11 +183,11 @@ public class ScreenMachineRadar extends ScreenInfoContainer<MenuMachineRadar> {
         for (RadarEntry m : be.entries) {
             int x =
                     leftPos
-                            + (int) blipOffset(m.posX - be.getBlockPos().getX(), range)
+                            + (int) blipOffset(m.posX - be.scanCenter().getX(), range)
                             + RadarScopeElements.SCOPE_X;
             int z =
                     topPos
-                            + (int) blipOffset(m.posZ - be.getBlockPos().getZ(), range)
+                            + (int) blipOffset(m.posZ - be.scanCenter().getZ(), range)
                             + RadarScopeElements.SCOPE_Y;
 
             if (mouseX + 5 > x && mouseX - 4 <= x && mouseY + 5 > z && mouseY - 4 <= z) {
@@ -217,7 +217,7 @@ public class ScreenMachineRadar extends ScreenInfoContainer<MenuMachineRadar> {
                 ((lastMouseX - leftPos - RadarScopeElements.SCOPE_X)
                                 * ((double) be.getRange() * 2 + 1)
                                 / SCOPE_REVERSE_SPAN
-                        + be.getBlockPos().getX());
+                        + be.scanCenter().getX());
     }
 
     private int targetZ(BlockEntityMachineRadar be) {
@@ -225,7 +225,7 @@ public class ScreenMachineRadar extends ScreenInfoContainer<MenuMachineRadar> {
                 ((lastMouseY - topPos - RadarScopeElements.SCOPE_Y)
                                 * ((double) be.getRange() * 2 + 1)
                                 / SCOPE_REVERSE_SPAN
-                        + be.getBlockPos().getZ());
+                        + be.scanCenter().getZ());
     }
 
     @Override
@@ -261,11 +261,11 @@ public class ScreenMachineRadar extends ScreenInfoContainer<MenuMachineRadar> {
         for (RadarEntry m : be.entries) {
             int x =
                     leftPos
-                            + (int) blipOffset(m.posX - be.getBlockPos().getX(), range)
+                            + (int) blipOffset(m.posX - be.scanCenter().getX(), range)
                             + RadarScopeElements.SCOPE_X;
             int z =
                     topPos
-                            + (int) blipOffset(m.posZ - be.getBlockPos().getZ(), range)
+                            + (int) blipOffset(m.posZ - be.scanCenter().getZ(), range)
                             + RadarScopeElements.SCOPE_Y;
 
             if (lastMouseX + 5 > x

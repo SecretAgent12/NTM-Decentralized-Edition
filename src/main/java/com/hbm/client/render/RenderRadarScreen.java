@@ -104,11 +104,12 @@ public class RenderRadarScreen
         state.staticV = STATIC_V + ThreadLocalRandom.current().nextInt(STATIC_ROWS);
 
         state.blips.clear();
+        BlockPos center = be.scanCenter(); // backport-fix: BF-059
         for (RadarEntry entry : be.entries) {
             state.blips.add(
                     new Blip(
-                            (entry.posX - be.refX) / ((double) be.range + 1) * SCOPE_SPAN,
-                            (entry.posZ - be.refZ) / ((double) be.range + 1) * SCOPE_SPAN,
+                            (entry.posX - center.getX()) / ((double) be.range + 1) * SCOPE_SPAN,
+                            (entry.posZ - center.getZ()) / ((double) be.range + 1) * SCOPE_SPAN,
                             entry.blipLevel));
         }
     }

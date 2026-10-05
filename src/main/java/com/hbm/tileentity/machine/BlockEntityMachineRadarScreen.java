@@ -104,6 +104,19 @@ public class BlockEntityMachineRadarScreen extends BlockEntityCompat
         networkPackNT(25);
     }
 
+    /**
+     * backport-fix: BF-059 where the linked radar scans around: the world block where it's drawn
+     * when it stands on a physics build (its blips are world positions), else its own block. The
+     * ref position stays the radar's own block, which the screen opens the radar's map from.
+     */
+    public BlockPos scanCenter() {
+        BlockPos ref = new BlockPos(refX, refY, refZ);
+        if (level == null) return ref;
+        double x = refX + 0.5D, z = refZ + 0.5D;
+        if (!com.hbm.backport.SubLevelSpace.inSubLevel(level, x, z)) return ref;
+        return BlockPos.containing(com.hbm.backport.SubLevelSpace.toWorld(level, x, refY + 0.5D, z));
+    }
+
     public @Nullable BlockPos linkedRadar() {
         return linkedLastSync ? new BlockPos(refX, refY, refZ) : null;
     }

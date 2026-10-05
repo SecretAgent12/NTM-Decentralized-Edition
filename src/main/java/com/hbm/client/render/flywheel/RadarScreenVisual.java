@@ -198,6 +198,7 @@ public final class RadarScreenVisual
             lastBlipLevel = Arrays.copyOf(lastBlipLevel, size);
             lastBlipVisible = Arrays.copyOf(lastBlipVisible, size);
         }
+        net.minecraft.core.BlockPos center = blockEntity.scanCenter(); // backport-fix: BF-059
         for (int i = 0; i < blips.size(); i++) {
             UvTransformedInstance instance = blips.get(i);
             if (!linked || i >= count) {
@@ -207,11 +208,11 @@ public final class RadarScreenVisual
             }
             RadarEntry entry = blockEntity.entries.get(i);
             double x =
-                    (entry.posX - blockEntity.refX)
+                    (entry.posX - center.getX())
                             / ((double) blockEntity.range + 1D)
                             * SCOPE_SPAN;
             double z =
-                    (entry.posZ - blockEntity.refZ)
+                    (entry.posZ - center.getZ())
                             / ((double) blockEntity.range + 1D)
                             * SCOPE_SPAN;
             boolean changed =
