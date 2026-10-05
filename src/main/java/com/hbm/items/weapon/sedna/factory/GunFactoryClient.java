@@ -558,6 +558,17 @@ public class GunFactoryClient {
             RenderBulletMK4.setRenderer(rocket, LegoClient.RENDER_RPZB);
         for (BulletConfig rocket : XFactoryRocket.rocket_ncrpa)
             RenderBulletMK4.setRenderer(rocket, LegoClient.RENDER_RPZB);
+        // backport-fix: BF-058 the universal grenade's renderers (1.7.10 GunFactoryClient) were missing:
+        // the laser filling's beams were invisible, fragments and pellets had no tracers
+        for (BulletConfig fragment :
+                new BulletConfig[] {
+                    com.hbm.items.weapon.grenade.ItemGrenadeFilling.fragmentation,
+                    com.hbm.items.weapon.grenade.ItemGrenadeFilling.pellets,
+                    com.hbm.items.weapon.grenade.ItemGrenadeFilling.pellets_heavy
+                }) if (fragment != null) RenderBulletMK4.setRenderer(fragment, LegoClient.RENDER_FRAGMENTATION);
+        if (com.hbm.items.weapon.grenade.ItemGrenadeFilling.laser != null)
+            RenderBeam.setRenderer(
+                    com.hbm.items.weapon.grenade.ItemGrenadeFilling.laser, LegoClient.RENDER_LASER_RED);
         RenderBeam.setRenderer(XFactoryAccelerator.ni4ni_arc, LegoClient.RENDER_NI4NI_BOLT);
         RenderBeam.setRenderer(XFactoryAccelerator.tau_uranium, LegoClient.RENDER_TAU);
         RenderBeam.setRenderer(
