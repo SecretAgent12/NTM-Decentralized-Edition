@@ -3,6 +3,7 @@
 
 package com.hbm.client;
 
+import com.hbm.backport.SubLevelSpace;
 import com.hbm.tileentity.machine.BlockEntityMachineChemicalFactory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -12,6 +13,7 @@ public final class ChemFactorySound {
 
     private ChemFactorySound() {}
 
+    // backport-fix: BF-061 — distance to where the machine is drawn (a contraption is in a far plot)
     public static void tick(BlockEntityMachineChemicalFactory be) {
         LocalPlayer me = Minecraft.getInstance().player;
         BlockPos pos = be.getBlockPos();
@@ -19,7 +21,7 @@ public final class ChemFactorySound {
         be.audioLoop(
                 be.anyProcessing()
                         && me != null
-                        && me.distanceToSqr(pos.getX(), pos.getY(), pos.getZ())
+                        && me.distanceToSqr(SubLevelSpace.toWorld(me.level(), pos.getX(), pos.getY(), pos.getZ()))
                                 < 50 * 50,
                 1F);
     }

@@ -177,13 +177,15 @@ public class BlockEntityMachineCompressor extends BlockEntityMachineBase
             piston -= randSpeed;
             if (piston <= 0) {
 
-                level.playSound(
-                        null,
+                // backport-fix: BF-062 — this runs on the client, where playSound(null, ...) is
+                // silent (it only plays for the local player); 1.7.10 played it client-side
+                level.playLocalSound(
                         worldPosition,
                         ModSounds.COMPRESSOR_PISTON.get(),
                         SoundSource.BLOCKS,
                         getVolume(0.5F),
-                        0.75F);
+                        0.75F,
+                        false);
                 pistonDir = false;
             }
         } else {

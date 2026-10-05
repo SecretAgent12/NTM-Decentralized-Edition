@@ -3,6 +3,7 @@
 
 package com.hbm.client;
 
+import com.hbm.backport.SubLevelSpace;
 import com.hbm.tileentity.machine.BlockEntityMachineCentrifuge;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -13,6 +14,7 @@ public final class CentrifugeSound {
 
     private CentrifugeSound() {}
 
+    // backport-fix: BF-061 — distance to where the machine is drawn (a contraption is in a far plot)
     public static void tick(BlockEntityMachineCentrifuge be) {
         be.audioDuration += be.isProgressing ? 2 : -3;
         be.audioDuration = Mth.clamp(be.audioDuration, 0, 60);
@@ -25,9 +27,9 @@ public final class CentrifugeSound {
                         && me != null
                         && me.getEyePosition()
                                         .distanceToSqr(
-                                                pos.getX() + 0.5,
+                                                SubLevelSpace.toWorld(me.level(), pos.getX() + 0.5,
                                                 pos.getY() + 0.5,
-                                                pos.getZ() + 0.5)
+                                                pos.getZ() + 0.5))
                                 < 25 * 25,
                 1F,
                 (be.audioDuration - 10) / 100F + 0.5F);

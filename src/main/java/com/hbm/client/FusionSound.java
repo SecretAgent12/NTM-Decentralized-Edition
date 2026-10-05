@@ -3,6 +3,7 @@
 
 package com.hbm.client;
 
+import com.hbm.backport.SubLevelSpace;
 import com.hbm.tileentity.AudioLoop;
 import com.hbm.tileentity.machine.fusion.BlockEntityFusionKlystron;
 import com.hbm.tileentity.machine.fusion.BlockEntityFusionKlystronCreative;
@@ -17,6 +18,7 @@ public final class FusionSound {
 
     private FusionSound() {}
 
+    // backport-fix: BF-061 — distance to where the machine is drawn (a contraption is in a far plot)
     public static void tick(BlockEntityFusionTorus be) {
         loop(be, be.magnetSpeed / 30F, 50F, 2.5D);
     }
@@ -43,9 +45,9 @@ public final class FusionSound {
                         && me != null
                         && me.getEyePosition()
                                         .distanceToSqr(
-                                                pos.getX() + 0.5,
+                                                SubLevelSpace.toWorld(me.level(), pos.getX() + 0.5,
                                                 pos.getY() + centreY,
-                                                pos.getZ() + 0.5)
+                                                pos.getZ() + 0.5))
                                 < range * range,
                 speed,
                 speed);

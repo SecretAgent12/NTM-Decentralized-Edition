@@ -3,6 +3,7 @@
 
 package com.hbm.client;
 
+import com.hbm.backport.SubLevelSpace;
 import com.hbm.sound.ModSounds;
 import com.hbm.tileentity.machine.BlockEntityMachineAssemblyFactory;
 import java.util.Random;
@@ -20,6 +21,7 @@ public final class AssemblyFactorySound {
 
     private AssemblyFactorySound() {}
 
+    // backport-fix: BF-061 — distance to where the machine is drawn (a contraption is in a far plot)
     public static void tick(BlockEntityMachineAssemblyFactory be) {
         LocalPlayer me = Minecraft.getInstance().player;
         BlockPos pos = be.getBlockPos();
@@ -27,7 +29,7 @@ public final class AssemblyFactorySound {
         be.audioLoop(
                 be.anyProcessing()
                         && me != null
-                        && me.distanceToSqr(pos.getX(), pos.getY(), pos.getZ())
+                        && me.distanceToSqr(SubLevelSpace.toWorld(me.level(), pos.getX(), pos.getY(), pos.getZ()))
                                 < 50 * 50,
                 0.5F,
                 0.75F);

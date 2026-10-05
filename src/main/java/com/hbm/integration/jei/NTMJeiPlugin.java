@@ -112,6 +112,8 @@ public class NTMJeiPlugin implements IModPlugin {
     public void registerAdvanced(IAdvancedRegistration registration) {
         for (JeiLookupPlugin<?> plugin : lookupPlugins.values())
             addLookupPlugin(registration, plugin);
+        // backport-fix: BF-063 — R on any multi fluid identifier shows its crafting recipe
+        registration.addTypedRecipeManagerPlugin(RecipeTypes.CRAFTING, new FluidIdentifierRecipes());
     }
 
     private static <T> void addLookupPlugin(
