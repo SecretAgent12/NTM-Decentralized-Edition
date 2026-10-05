@@ -93,6 +93,12 @@ public final class NuclearTechNeoForge {
                 (AddPackFindersEvent event) -> {
                     for (ForeignModChange change : ForeignModChange.values()) {
                         if (!ModList.get().isLoaded(change.modId) || !change.enabled()) continue;
+                        // backport-fix: BF-048 the Tech Reborn pack only exists in NEXT's Fabric jar;
+                        // with Tech Reborn on NeoForge (Sinytra Connector) a missing pack is null and
+                        // world creation crashes in PackRepository. Only offer packs we ship.
+                        if (NuclearTechNeoForge.class.getResource(
+                                        "/resourcepacks/" + change.pack + "/pack.mcmeta")
+                                == null) continue;
                         event.addPackFinders(
                                 Library.id("resourcepacks/" + change.pack),
                                 PackType.SERVER_DATA,
