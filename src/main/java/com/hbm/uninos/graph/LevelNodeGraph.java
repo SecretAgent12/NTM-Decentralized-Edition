@@ -358,8 +358,7 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
                                         Codec.INT
                                                 .optionalFieldOf("v", 1)
                                                 .forGetter(GraphData::version),
-                                        provider.dataCodec()
-                                                .listOf()
+                                        nullableList(provider.dataCodec())
                                                 .fieldOf("data")
                                                 .forGetter(GraphData::data),
                                         NODE_CODEC
@@ -371,6 +370,27 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
                                                 .optionalFieldOf("segs", List.of())
                                                 .forGetter(GraphData::segments))
                                 .apply(i, GraphData::new));
+    }
+
+    /**
+     * backport-fix: BF-052 a list that may hold null entries (the foundry channel graph stores "no
+     * material" as null, saved as -1). DFU's own list codec builds its result with List.copyOf,
+     * which throws on null: the foundry channel graph failed to load every time and was rebuilt.
+     */
+    private static <D> Codec<List<D>> nullableList(Codec<D> element) {
+        return element.xmap(Optional::ofNullable, (Optional<D> o) -> o.orElse(null))
+                .listOf()
+                .xmap(
+                        list -> {
+                            List<D> out = new ArrayList<>(list.size());
+                            for (Optional<D> o : list) out.add(o.orElse(null));
+                            return out;
+                        },
+                        list -> {
+                            List<Optional<D>> out = new ArrayList<>(list.size());
+                            for (D d : list) out.add(Optional.ofNullable(d));
+                            return out;
+                        });
     }
 
     private static <D> GraphData<D> toData(LevelNodeGraph<D> graph) {
