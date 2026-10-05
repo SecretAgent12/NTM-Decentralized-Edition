@@ -139,8 +139,12 @@ public class BlockEntityTurretArty extends BlockEntityTurretBaseArtillery {
 
     @Override
     protected void alignTurret() {
-        Vec3 pos = barrelTip();
-        Vec3 delta = new Vec3(tPos.x - pos.x, tPos.y - pos.y, tPos.z - pos.z);
+        // backport-fix: BF-053 the arc is solved in the world, where gravity points down; in the
+        // frame of a build that's tilted even a fraction of a degree it doesn't, and the shells
+        // landed blocks off, differently wherever the build happened to settle
+        Vec3 pos = toWorld(barrelTip());
+        Vec3 aim = toWorld(tPos);
+        Vec3 delta = new Vec3(aim.x - pos.x, aim.y - pos.y, aim.z - pos.z);
         double targetYaw = -Math.atan2(delta.x, delta.z);
 
         double x = Math.sqrt(delta.x * delta.x + delta.z * delta.z);
@@ -154,7 +158,7 @@ public class BlockEntityTurretArty extends BlockEntityTurretBaseArtillery {
                         (v02 + Math.sqrt(v02 * v02 - g * (g * x * x + 2 * y * v02)) * upperLower)
                                 / (g * x));
 
-        turnTowardsAngle(targetPitch, targetYaw);
+        turnTowardsWorldAngle(targetPitch, targetYaw);
     }
 
     public double getV0() {
@@ -182,14 +186,16 @@ public class BlockEntityTurretArty extends BlockEntityTurretBaseArtillery {
     }
 
     public void spawnShell(ItemStack type) {
-        Vec3 vec = alongBarrel(getBarrelLength(), 0, 0);
-        Vec3 pos = getTurretPos().add(vec);
+        // backport-fix: BF-053 the shell leaves the turret's frame (a build's plot) into the world
+        Vec3 vec = toWorldDir(alongBarrel(getBarrelLength(), 0, 0));
+        Vec3 pos = toWorld(getTurretPos().add(alongBarrel(getBarrelLength(), 0, 0)));
+        Vec3 aim = toWorld(tPos);
 
         EntityArtilleryShell proj =
                 new EntityArtilleryShell(ModEntities.ARTILLERY_SHELL.get(), level);
         proj.moveTo(pos.x, pos.y, pos.z, 0.0F, 0.0F);
         proj.setThrowableHeading(vec.x, vec.y, vec.z, (float) getV0(), 0.0F);
-        proj.setTarget((int) tPos.x, (int) tPos.y, (int) tPos.z);
+        proj.setTarget((int) aim.x, (int) aim.y, (int) aim.z);
         proj.setType(ModItems.AMMO_ARTY.typeOf(type).ordinal());
 
         if (ModItems.AMMO_ARTY.is(type, ItemAmmoArty.ArtilleryShellType.CARGO)) {
@@ -227,7 +233,8 @@ public class BlockEntityTurretArty extends BlockEntityTurretBaseArtillery {
     @Override
     public void tickServer() {
         if (mode == MODE_MANUAL) {
-            if (!targetQueue.isEmpty()) tPos = targetQueue.get(0);
+            // backport-fix: BF-053 queued targets are world points, tPos is in the turret's frame
+            if (!targetQueue.isEmpty()) tPos = toPlot(targetQueue.get(0));
         } else {
             targetQueue.clear();
         }

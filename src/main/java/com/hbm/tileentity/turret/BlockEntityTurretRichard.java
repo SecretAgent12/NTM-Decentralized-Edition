@@ -122,7 +122,7 @@ public class BlockEntityTurretRichard extends BlockEntityTurretBaseNT {
 
     @Override
     public void spawnBullet(BulletConfig bullet, float baseDamage) {
-        Vec3 tip = barrelTip();
+        Vec3 tip = toWorld(barrelTip()); // backport-fix: BF-053
 
         EntityBulletBaseMK4 proj =
                 new EntityBulletBaseMK4(
@@ -130,8 +130,8 @@ public class BlockEntityTurretRichard extends BlockEntityTurretBaseNT {
                         bullet,
                         baseDamage,
                         bullet.spread,
-                        (float) rotationYaw,
-                        (float) rotationPitch);
+                        (float) worldYaw(),
+                        (float) worldPitch());
         proj.moveTo(tip.x, tip.y, tip.z, proj.getYRot(), proj.getXRot());
         proj.lockonTarget = target;
         level.addFreshEntity(proj);

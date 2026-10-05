@@ -65,6 +65,9 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
+import dev.ryanhcode.sable.companion.SableCompanion;
+import dev.ryanhcode.sable.companion.SubLevelAccess;
+import org.joml.Vector3d;
 import org.jspecify.annotations.Nullable;
 import com.hbm.backport.Nbt;
 
@@ -216,7 +219,8 @@ public abstract class BlockEntityTurretBaseNT extends BlockEntityMachineBase
         double closest = range;
 
         for (Entity entity :
-                level.getEntitiesOfClass(Entity.class, new AABB(pos, pos).inflate(range))) {
+                level.getEntitiesOfClass(
+                        Entity.class, new AABB(toWorld(pos), toWorld(pos)).inflate(range))) {
             double dist = getEntityPos(entity).subtract(pos).length();
             if (dist > range) continue;
             if (!entityAcceptableTarget(entity)) continue;
@@ -304,8 +308,8 @@ public abstract class BlockEntityTurretBaseNT extends BlockEntityMachineBase
     protected boolean isObstructedOpaque(Vec3 from, Vec3 to) {
         return level.clip(
                                 new ClipContext(
-                                        from,
-                                        to,
+                                        toWorld(from),
+                                        toWorld(to),
                                         ClipContext.Block.COLLIDER,
                                         ClipContext.Fluid.NONE,
                                         CollisionContext.empty()))
@@ -403,6 +407,7 @@ public abstract class BlockEntityTurretBaseNT extends BlockEntityMachineBase
 
     protected void muzzleFlash(Vec3 at, float size, int count) {
         if (!(level instanceof ServerLevel server)) return;
+        at = toWorld(at);
 
         if (count <= 1)
             server.sendParticles(ParticleTypes.EXPLOSION, at.x, at.y, at.z, 0, size, 0D, 0D, 1D);
@@ -413,7 +418,7 @@ public abstract class BlockEntityTurretBaseNT extends BlockEntityMachineBase
     public void manualSetup() {}
 
     public void spawnBullet(BulletConfig bullet, float baseDamage) {
-        Vec3 tip = barrelTip();
+        Vec3 tip = toWorld(barrelTip());
 
         EntityBulletBaseMK4 proj =
                 new EntityBulletBaseMK4(
@@ -421,8 +426,8 @@ public abstract class BlockEntityTurretBaseNT extends BlockEntityMachineBase
                         bullet,
                         baseDamage,
                         bullet.spread,
-                        (float) rotationYaw,
-                        (float) rotationPitch);
+                        (float) worldYaw(),
+                        (float) worldPitch());
         proj.moveTo(tip.x, tip.y, tip.z, proj.getYRot(), proj.getXRot());
         level.addFreshEntity(proj);
 
@@ -453,7 +458,7 @@ public abstract class BlockEntityTurretBaseNT extends BlockEntityMachineBase
         CasingEjector ej = getEjector();
         if (ej == null) return;
 
-        Vec3 spawn = getCasingSpawnPos();
+        Vec3 spawn = toWorld(getCasingSpawnPos());
         Vec3 motion = ej.getMotion();
 
         CasingCreator.composeEffect(
@@ -771,7 +776,78 @@ public abstract class BlockEntityTurretBaseNT extends BlockEntityMachineBase
     }
 
     public Vec3 getEntityPos(Entity e) {
-        return new Vec3(e.getX(), e.getY() + e.getBbHeight() * 0.5, e.getZ());
+        return toPlot(new Vec3(e.getX(), e.getY() + e.getBbHeight() * 0.5, e.getZ()));
+    }
+
+    /*
+     * backport-fix: BF-053 a turret standing on a physics build (Sable sub-level) lives in the
+     * build's far-away plot: it searched for targets around the plot, aimed from it and fired from
+     * it, so it never saw anything. The turret keeps thinking in its own (plot) frame, which is
+     * also the frame its model is drawn in: targets are brought into it (getEntityPos, toPlot), and
+     * whatever leaves the turret (the entity search, line of sight, projectiles, particles) is taken
+     * back out into the world (toWorld, worldYaw / worldPitch). Off a build these are no-ops.
+     */
+
+    private @Nullable SubLevelAccess frame() {
+        return level == null ? null : SableCompanion.INSTANCE.getContaining(level, worldPosition);
+    }
+
+    /** A world point in the turret's own frame (its plot when it stands on a build). */
+    public Vec3 toPlot(Vec3 world) {
+        SubLevelAccess sub = frame();
+        return sub == null ? world : sub.logicalPose().transformPositionInverse(world);
+    }
+
+    /** A point of the turret's own frame in the world. */
+    public Vec3 toWorld(Vec3 plot) {
+        SubLevelAccess sub = frame();
+        return sub == null ? plot : sub.logicalPose().transformPosition(plot);
+    }
+
+    /** A direction of the turret's own frame in the world. */
+    public Vec3 toWorldDir(Vec3 dir) {
+        SubLevelAccess sub = frame();
+        if (sub == null) return dir;
+        Vector3d v = sub.logicalPose().orientation().transform(new Vector3d(dir.x, dir.y, dir.z));
+        return new Vec3(v.x, v.y, v.z);
+    }
+
+    /**
+     * Turns towards a yaw / pitch given in the world (for aiming that depends on world gravity,
+     * like artillery arcs): converted into the turret's own frame first, so a build that sits a
+     * little tilted doesn't throw the shot off.
+     */
+    public void turnTowardsWorldAngle(double worldPitch, double worldYaw) {
+        SubLevelAccess sub = frame();
+        if (sub == null) {
+            turnTowardsAngle(worldPitch, worldYaw);
+            return;
+        }
+        double c = Math.cos(worldPitch);
+        Vector3d d =
+                sub.logicalPose()
+                        .orientation()
+                        .transformInverse(
+                                new Vector3d(
+                                        -Math.sin(worldYaw) * c,
+                                        Math.sin(worldPitch),
+                                        Math.cos(worldYaw) * c));
+        d.normalize();
+        turnTowardsAngle(Math.asin(d.y), -Math.atan2(d.x, d.z));
+    }
+
+    /** The barrel's yaw in the world (rotationYaw is in the turret's own frame). */
+    protected double worldYaw() {
+        if (frame() == null) return rotationYaw;
+        Vec3 d = toWorldDir(alongBarrel(1, 0, 0));
+        return -Math.atan2(d.x, d.z);
+    }
+
+    /** The barrel's pitch in the world (rotationPitch is in the turret's own frame). */
+    protected double worldPitch() {
+        if (frame() == null) return rotationPitch;
+        Vec3 d = toWorldDir(alongBarrel(1, 0, 0)).normalize();
+        return Math.asin(d.y);
     }
 
     public boolean hasPower() {

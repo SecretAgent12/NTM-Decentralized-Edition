@@ -164,7 +164,8 @@ public class BlockEntityTurretHIMARS extends BlockEntityTurretBaseArtillery {
     @Override
     public void tickServer() {
         if (mode == MODE_MANUAL) {
-            if (!targetQueue.isEmpty()) tPos = targetQueue.get(0);
+            // backport-fix: BF-053 queued targets are world points, tPos is in the turret's frame
+            if (!targetQueue.isEmpty()) tPos = toPlot(targetQueue.get(0));
         } else {
             targetQueue.clear();
         }
@@ -273,15 +274,19 @@ public class BlockEntityTurretHIMARS extends BlockEntityTurretBaseArtillery {
     }
 
     public void spawnShell(int type) {
-        Vec3 vec = alongBarrel(getBarrelLength(), 0, 0);
-        Vec3 pos = getTurretPos().add(vec);
+        // backport-fix: BF-053 the rocket leaves the turret's frame (a build's plot) into the world
+        Vec3 vec = toWorldDir(alongBarrel(getBarrelLength(), 0, 0));
+        Vec3 pos = toWorld(getTurretPos().add(alongBarrel(getBarrelLength(), 0, 0)));
 
         EntityArtilleryRocket proj = new EntityArtilleryRocket(ModEntities.HIMARS.get(), level);
         proj.moveTo(pos.x, pos.y, pos.z, 0.0F, 0.0F);
         proj.setThrowableHeading(vec.x, vec.y, vec.z, 25F, 0.0F);
 
         if (target != null) proj.setTarget(target);
-        else proj.setTarget(tPos.x, tPos.y, tPos.z);
+        else {
+            Vec3 aim = toWorld(tPos);
+            proj.setTarget(aim.x, aim.y, aim.z);
+        }
 
         proj.setType(type);
 

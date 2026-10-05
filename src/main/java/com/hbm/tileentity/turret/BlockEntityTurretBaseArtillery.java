@@ -56,7 +56,8 @@ public abstract class BlockEntityTurretBaseArtillery extends BlockEntityTurretBa
     }
 
     public void enqueueTarget(double x, double y, double z) {
-        Vec3 pos = getTurretPos();
+        // backport-fix: BF-053 queued targets are world points; the range is measured in the world
+        Vec3 pos = toWorld(getTurretPos());
         Vec3 delta = new Vec3(x - pos.x, y - pos.y, z - pos.z);
 
         if (delta.length() <= getDetectorRange()) targetQueue.add(new Vec3(x, y, z));

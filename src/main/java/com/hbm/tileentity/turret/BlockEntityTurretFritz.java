@@ -129,7 +129,7 @@ public class BlockEntityTurretFritz extends BlockEntityTurretBaseNT
         FT_Flammable trait = NTMFluidProperties.getTrait(type, FT_Flammable.class);
         tank.setFill(tank.getFill() - 2);
 
-        Vec3 tip = barrelTip();
+        Vec3 tip = toWorld(barrelTip()); // backport-fix: BF-053
         float damage = Math.min((float) (trait.getHeatEnergy() / 500_000F), 20F);
         EntityBulletBaseMK4 proj =
                 new EntityBulletBaseMK4(
@@ -139,8 +139,8 @@ public class BlockEntityTurretFritz extends BlockEntityTurretBaseNT
                                 : XFactoryFlamer.flame_nograv,
                         damage,
                         0.05F,
-                        (float) rotationYaw,
-                        (float) rotationPitch);
+                        (float) worldYaw(),
+                        (float) worldPitch());
         proj.moveTo(tip.x, tip.y, tip.z, proj.getYRot(), proj.getXRot());
         level.addFreshEntity(proj);
 
