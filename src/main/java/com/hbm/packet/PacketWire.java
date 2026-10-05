@@ -185,6 +185,7 @@ public final class PacketWire {
 
             if (!payload.compiledIncludesWirePrefix()) return;
             for (ServerPlayer p : recipients) {
+                if (!reachable(p)) continue;
                 OutboundBatch batch = OutboundBatch.take(p);
                 try {
                     batch.add(payload);
@@ -220,7 +221,17 @@ public final class PacketWire {
     static void enqueueSync(
             ServerPlayer player, ServerLevel level, long position, ThreadedPayload payload) {
         assert onServerThread();
+        if (!reachable(player)) return;
         batch(player).addSync(level, position, payload);
+    }
+
+    /**
+     * backport-fix: BF-055 whether the player has a network channel to send to. Mods can put
+     * "players" without a real connection into the player list (The Broken Script's Null joins
+     * as one); packets to them crashed the server tick with an NPE in framingContext.
+     */
+    static boolean reachable(ServerPlayer player) {
+        return Services.NETWORK.channelOf(player) != null;
     }
 
     static ChannelHandlerContext framingContext(Channel channel) {

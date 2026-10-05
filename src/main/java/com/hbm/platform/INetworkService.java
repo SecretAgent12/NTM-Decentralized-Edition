@@ -49,6 +49,7 @@ public interface INetworkService {
             Consumer<T> apply,
             Function<MinecraftServer, T> snapshot);
 
+    /** The player's network channel, or null for a player without a real connection. */
     Channel channelOf(ServerPlayer player);
 
     Connection connectionOf(ServerPlayer player);

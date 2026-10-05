@@ -39,8 +39,6 @@ public final class GroundLift {
         state.clear();
         float lift = -(float) box.minY + 0.0625F;
         LIFTS.put(stack.getItem(), lift);
-        // TEMP DEBUG BF-054
-        com.hbm.NuclearTech.LOGGER.info("[BF-054] {} box={} lift={}", stack.getItem(), box, lift);
         return lift;
     }
 }

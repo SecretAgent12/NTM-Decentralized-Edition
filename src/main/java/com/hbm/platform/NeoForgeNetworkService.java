@@ -157,6 +157,9 @@ public final class NeoForgeNetworkService implements INetworkService {
 
     @Override
     public Channel channelOf(ServerPlayer player) {
+        // backport-fix: BF-055 a scripted "player" without a real connection (The Broken Script's
+        // Null) has no channel; the callers skip it (PacketWire)
+        if (player.connection == null || player.connection.getConnection() == null) return null;
         return player.connection.getConnection().channel();
     }
 
