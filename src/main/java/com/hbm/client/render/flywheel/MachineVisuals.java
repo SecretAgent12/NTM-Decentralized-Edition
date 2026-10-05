@@ -435,24 +435,10 @@ public final class MachineVisuals {
         SimpleBlockEntityVisualizer.builder(ModBlockEntities.NTM_SNOWGLOBE.get())
                 .factory(SnowglobeVisual::new)
                 .apply();
-        SimpleBlockEntityVisualizer.builder(ModBlockEntities.PYLON_REDWIRE.get())
-                .factory(PylonWiresVisual::new)
-                .apply();
-        SimpleBlockEntityVisualizer.builder(ModBlockEntities.PYLON_MEDIUM.get())
-                .factory(PylonWiresVisual::new)
-                .apply();
-        SimpleBlockEntityVisualizer.builder(ModBlockEntities.CONNECTOR_REDWIRE.get())
-                .factory(PylonWiresVisual::new)
-                .apply();
-        SimpleBlockEntityVisualizer.builder(ModBlockEntities.CONNECTOR_REDWIRE_SUPER.get())
-                .factory(PylonWiresVisual::new)
-                .apply();
-        SimpleBlockEntityVisualizer.builder(ModBlockEntities.PYLON_LARGE.get())
-                .factory(PylonWiresVisual::new)
-                .apply();
-        SimpleBlockEntityVisualizer.builder(ModBlockEntities.SUBSTATION.get())
-                .factory(PylonWiresVisual::new)
-                .apply();
+        // backport-fix: BF-049 power line wires (all pylons, connectors, substations) have no Flywheel
+        // visual: under Flywheel 1.0's indirect backend the long stretched wire strips broke up into
+        // dashes, while the instancing backend and the vanilla renderer draw them fine.
+        // RenderPylonWires (ClientRegistry) takes over; PylonWiresVisual stays in the source.
         SimpleBlockEntityVisualizer.builder(ModBlockEntities.TESLA_COIL.get())
                 .factory(TeslaVisual::new)
                 .apply();
