@@ -157,6 +157,7 @@ public final class ClientItems {
 
     static void onBakingCompleted(ModelEvent.BakingCompleted event) {
         ItemQuads.clearCache();
+        GroundLift.clear(); // backport-fix: BF-054
         Map<ModelResourceLocation, BakedModel> baked = event.getModels();
         BakedModel missing = event.getModelManager().getMissingModel();
         ItemModel missingItem = new BlockModelWrapper(missing, List.of(), new Matrix4f());
