@@ -4,6 +4,7 @@
 
 package com.hbm.explosion.vanillant;
 
+import com.hbm.backport.SubLevelBlast;
 import com.hbm.explosion.vanillant.interfaces.*;
 import com.hbm.explosion.vanillant.standard.*;
 import com.hbm.platform.Services;
@@ -61,6 +62,14 @@ public class ExplosionVNT extends Explosion {
     }
 
     public void explode() {
+
+        // backport-fix: BF-050 an explosion inside a physics build's plot happens where the build is
+        // drawn in the world (as Sable does for vanilla explosions); the allocators reach back
+        // into the build through SubLevelBlast, so both the build and the world around it get hit
+        Vec3 origin = SubLevelBlast.origin(world, posX, posY, posZ);
+        posX = origin.x;
+        posY = origin.y;
+        posZ = origin.z;
 
         boolean processBlocks = blockAllocator != null && blockProcessor != null;
         boolean processEntities = entityProcessor != null && playerProcessor != null;

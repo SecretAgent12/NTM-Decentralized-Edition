@@ -7,6 +7,7 @@ import com.hbm.NuclearTech;
 import com.hbm.advancement.AwardRegions;
 import com.hbm.advancement.DetonationTrigger;
 import com.hbm.advancement.HbmCriteria;
+import com.hbm.backport.SubLevelNuke;
 import com.hbm.config.BombConfig;
 import com.hbm.data.ExplosionData;
 import com.hbm.entity.ModEntities;
@@ -143,6 +144,9 @@ public class EntityNukeExplosionMK5 extends EntityExplosionChunkloading
             }
             explosion.setDetonator(detonator);
             if (level() instanceof ServerLevel server) {
+                // backport-fix: BF-050 the ray engine only sees world chunks; physics builds in
+                // reach get a pass of their own
+                SubLevelNuke.crater(server, getX(), getY(), getZ(), strength, radius);
                 SatelliteDetector.reportEvent(
                         server,
                         SatelliteDetector.DURATION_HIGH,
@@ -179,6 +183,9 @@ public class EntityNukeExplosionMK5 extends EntityExplosionChunkloading
                                 / 100);
         EntityFalloutRain rain =
                 EntityFalloutRain.statFac(level(), falloutScale, getX(), getY(), getZ());
+        // backport-fix: BF-050 the rain only works world columns; burn and contaminate the builds too
+        if (level() instanceof ServerLevel server)
+            SubLevelNuke.fallout(server, getX(), getY(), getZ(), falloutScale);
         if (level().addFreshEntity(rain) && !rain.isRemoved()) rain.holdGenerationTracking();
     }
 

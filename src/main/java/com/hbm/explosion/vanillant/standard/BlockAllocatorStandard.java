@@ -4,6 +4,7 @@
 
 package com.hbm.explosion.vanillant.standard;
 
+import com.hbm.backport.SubLevelBlast;
 import com.hbm.explosion.vanillant.ExplosionVNT;
 import com.hbm.explosion.vanillant.interfaces.IBlockAllocator;
 import java.util.HashSet;
@@ -29,6 +30,8 @@ public class BlockAllocatorStandard implements IBlockAllocator {
             ExplosionVNT explosion, Level world, double x, double y, double z, float size) {
 
         HashSet<BlockPos> affectedBlocks = new HashSet<>();
+        // backport-fix: BF-050 rays also hit the physics builds (Sable sub-levels) around the blast
+        SubLevelBlast ships = SubLevelBlast.around(world, x, y, z, size * 1.75D + 1D);
 
         for (int i = 0; i < this.resolution; ++i) {
             for (int j = 0; j < this.resolution; ++j) {
@@ -65,6 +68,14 @@ public class BlockAllocatorStandard implements IBlockAllocator {
                                             Mth.floor(currentY),
                                             Mth.floor(currentZ));
                             BlockState state = world.getBlockState(pos);
+                            if (state.isAir() && !ships.isEmpty()) {
+                                BlockPos onShip =
+                                        ships.plotBlock(world, currentX, currentY, currentZ);
+                                if (onShip != null) {
+                                    pos = onShip.immutable();
+                                    state = world.getBlockState(pos);
+                                }
+                            }
 
                             if (!state.isAir()) {
                                 float blockResistance =
