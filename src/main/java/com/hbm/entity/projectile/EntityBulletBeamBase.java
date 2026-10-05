@@ -4,6 +4,7 @@
 
 package com.hbm.entity.projectile;
 
+import com.hbm.backport.SubLevelSpace;
 import com.hbm.entity.ModEntities;
 import com.hbm.items.weapon.sedna.BulletConfig;
 import java.util.List;
@@ -208,7 +209,7 @@ public class EntityBulletBeamBase extends EntityCompat {
         }
 
         if (mop != null) {
-            nextPos = mop.getLocation();
+            nextPos = inWorld(mop.getLocation());
         }
 
         if (!this.level().isClientSide() && this.doesImpactEntities()) {
@@ -385,10 +386,22 @@ public class EntityBulletBeamBase extends EntityCompat {
                             .is(Blocks.NETHER_PORTAL))) {
                 this.onImpact(mop);
             }
-            this.entityData.set(BEAM_LENGTH, (float) mop.getLocation().distanceTo(pos));
+            this.entityData.set(BEAM_LENGTH, (float) inWorld(mop.getLocation()).distanceTo(pos));
         } else {
             this.entityData.set(BEAM_LENGTH, (float) nextPos.distanceTo(pos));
         }
+    }
+
+    /**
+     * backport-fix: BF-051 a block hit on a physics build (through Sable's raycast) lies in the
+     * build's far-away plot. Measured from the gun that's millions of blocks: the beam renderers
+     * then asked for millions of segments and crashed the JVM in native code, and the entity
+     * check ran towards the plot. Use the world point where the build is drawn instead.
+     */
+    private Vec3 inWorld(Vec3 hit) {
+        return SubLevelSpace.inSubLevel(this.level(), hit.x, hit.z)
+                ? SubLevelSpace.toWorld(this.level(), hit.x, hit.y, hit.z)
+                : hit;
     }
 
     protected void onImpact(HitResult mop) {

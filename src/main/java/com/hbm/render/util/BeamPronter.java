@@ -16,6 +16,8 @@ import net.minecraft.world.phys.Vec3;
 
 public class BeamPronter {
 
+    private static final int MAX_SEGMENTS = 1024;
+
     private static final float LINE_WIDTH = 1F;
 
     public static void prontBeam(
@@ -91,7 +93,7 @@ public class BeamPronter {
             int outerColor,
             int innerColor,
             int start,
-            int segments,
+            int requestedSegments,
             float size,
             int layers,
             float thickness,
@@ -107,6 +109,10 @@ public class BeamPronter {
         ps.mulPose(Axis.YP.rotationDegrees(sYaw));
         ps.mulPose(Axis.XP.rotationDegrees(sPitch - 90));
 
+        // backport-fix: BF-051 never more segments than a sane beam needs: a bogus length (a hit
+        // reported in a physics build's plot, millions of blocks away) asked for millions and
+        // overran the vertex buffer, killing the JVM with an access violation
+        int segments = Mth.clamp(requestedSegments, 1, MAX_SEGMENTS);
         Random rand = new Random(start);
         double length = skeleton.length();
         double segLength = length / segments;
