@@ -57,7 +57,7 @@
     "scalablelux.MixinScalableLuxSimpleQueue"
   ],
   "client": [
-    "MixinGui",
+    "MixinGameRenderer",
     "MixinKeyboardHandler",
     "MixinMouseHandler",
     "MixinAvatarRenderState",
