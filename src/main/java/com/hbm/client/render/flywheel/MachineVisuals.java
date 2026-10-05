@@ -244,8 +244,11 @@ public final class MachineVisuals {
         SimpleBlockEntityVisualizer.builder(ModBlockEntities.CONDENSER_POWERED.get())
                 .factory(CondenserPoweredVisual::new)
                 .apply();
+        // backport-fix: BF-064 the visual draws the piston, RenderConveyorPress the belt (the belt
+        // mesh breaks under the indirect backend, like BF-047/BF-049)
         SimpleBlockEntityVisualizer.builder(ModBlockEntities.CONVEYOR_PRESS.get())
                 .factory(ConveyorPressVisual::new)
+                .neverSkipVanillaRender()
                 .apply();
         SimpleBlockEntityVisualizer.builder(ModBlockEntities.ACIDOMATIC.get())
                 .factory(CrystallizerVisual::new)

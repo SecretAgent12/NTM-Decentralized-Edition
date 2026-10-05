@@ -8,19 +8,21 @@ import com.hbm.main.ResourceManager;
 import com.hbm.render.loader.HFRWavefrontObject;
 import com.hbm.tileentity.machine.BlockEntityConveyorPress;
 import com.hbm.util.Facing;
-import com.hbm.util.GameTime;
 import dev.engine_room.flywheel.api.instance.Instance;
 import dev.engine_room.flywheel.api.visual.ShaderLightVisual;
 import dev.engine_room.flywheel.api.visualization.VisualizationContext;
 import com.hbm.backport.client.flywheel.InstanceTypes;
 import dev.engine_room.flywheel.lib.instance.TransformedInstance;
-import com.hbm.lib.crankshaft.UvTransformedInstance;
 import java.util.function.Consumer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
 import org.joml.Matrix4f;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * backport-fix: BF-064 — only the piston; the belt is drawn by RenderConveyorPress (its scrolling
+ * mesh broke under Flywheel's indirect backend).
+ */
 public final class ConveyorPressVisual extends HbmDynamicBlockEntityVisual<BlockEntityConveyorPress>
         implements ShaderLightVisual {
     private static final HFRWavefrontObject MODEL = ResourceManager.conveyor_press;
@@ -29,21 +31,14 @@ public final class ConveyorPressVisual extends HbmDynamicBlockEntityVisual<Block
                     MODEL.groups[MODEL.partId("Piston")],
                     MODEL.smoothing(),
                     MeshPart.litCutout(ResourceManager.conveyor_press_tex));
-    private static final MeshPart BELT_PART =
-            MeshPart.obj(
-                    MODEL.groups[MODEL.partId("Belt")],
-                    MODEL.smoothing(),
-                    MeshPart.litCutout(ResourceManager.conveyor_press_belt_tex));
     private final AABB bodyBounds;
     private final TransformedInstance piston;
-    private final UvTransformedInstance belt;
     private final Matrix4f base = new Matrix4f();
     private final Matrix4f pistonPose = new Matrix4f();
     private final Matrix4f world = new Matrix4f();
     private final double[] lightBoundsAccumulator = new double[6];
     private @Nullable AABB lastLightBounds;
     private float lastPress = Float.NaN;
-    private float lastBeltOffset = Float.NaN;
     private boolean lastStamped;
     private boolean initialized;
 
@@ -58,10 +53,6 @@ public final class ConveyorPressVisual extends HbmDynamicBlockEntityVisual<Block
         piston =
                 instancerProvider()
                         .instancer(InstanceTypes.TRANSFORMED, PISTON_PART.model())
-                        .createInstance();
-        belt =
-                instancerProvider()
-                        .instancer(InstanceTypes.UV_TRANSFORMED, BELT_PART.model())
                         .createInstance();
         updateMovingParts(partialTick);
     }
@@ -78,12 +69,10 @@ public final class ConveyorPressVisual extends HbmDynamicBlockEntityVisual<Block
                 (float)
                         (blockEntity.lastPress
                                 + (blockEntity.renderPress - blockEntity.lastPress) * partialTick);
-        float beltOffset = ((GameTime.now() % 16L) - 2L) / 16F;
         boolean stamped = !blockEntity.syncStack.isEmpty();
         boolean poseChanged = !initialized || press != lastPress;
         boolean stampedChanged = !initialized || stamped != lastStamped;
-        boolean beltChanged = !initialized || beltOffset != lastBeltOffset;
-        if (!poseChanged && !stampedChanged && !beltChanged) return;
+        if (!poseChanged && !stampedChanged) return;
         if (poseChanged || stampedChanged) {
             lastPress = press;
             lastStamped = stamped;
@@ -100,12 +89,6 @@ public final class ConveyorPressVisual extends HbmDynamicBlockEntityVisual<Block
                         lightBoundsAccumulator, PISTON_PART.model(), pistonPose, pos);
             lastLightBounds =
                     LightBounds.sections(lightSections, lightBoundsAccumulator, lastLightBounds);
-        }
-        if (beltChanged) {
-            lastBeltOffset = beltOffset;
-            world.translation(visualPos.getX(), visualPos.getY(), visualPos.getZ()).mul(base);
-            belt.setTransform(world).light(0);
-            belt.uvRegion(0F, beltOffset, 1F, 1F).setChanged();
         }
         initialized = true;
     }
@@ -126,12 +109,10 @@ public final class ConveyorPressVisual extends HbmDynamicBlockEntityVisual<Block
     @Override
     public void collectCrumblingInstances(Consumer<Instance> consumer) {
         consumer.accept(piston);
-        consumer.accept(belt);
     }
 
     @Override
     protected void _delete() {
         piston.delete();
-        belt.delete();
     }
 }

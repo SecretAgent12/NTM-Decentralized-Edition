@@ -4,6 +4,7 @@
 package com.hbm.client.render;
 
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
+import com.hbm.client.render.flywheel.HbmBlockEntityVisual;
 import com.hbm.main.ResourceManager;
 import com.hbm.tileentity.machine.BlockEntityConveyorPress;
 import com.hbm.util.Facing;
@@ -78,6 +79,8 @@ public class RenderConveyorPress
         BlockEntityRenderer.super.extractRenderState(
                 be, state, partialTicks, cameraPosition, breakProgress);
 
+        // backport-fix: BF-064 with Flywheel on, the visual draws the piston and this the belt only
+        state.beltOnly = HbmBlockEntityVisual.hasVisual(be);
         state.yaw = Facing.yaw(BlockMultiblockCore.coreFacing(be.getBlockState()), 90);
         state.press = (float) (be.lastPress + (be.renderPress - be.lastPress) * partialTicks);
         state.stamped = !be.syncStack.isEmpty();
@@ -98,7 +101,7 @@ public class RenderConveyorPress
         poseStack.translate(0.5, 0.0, 0.5);
         poseStack.mulPose(Axis.YP.rotationDegrees(state.yaw));
 
-        if (state.stamped) {
+        if (state.stamped && !state.beltOnly) {
             poseStack.pushPose();
             poseStack.translate(0.0, -state.press * STROKE, 0.0);
             collector.submitCustomGeometry(
@@ -126,5 +129,6 @@ public class RenderConveyorPress
         public float press;
         public boolean stamped;
         public float beltOffset;
+        public boolean beltOnly;
     }
 }
