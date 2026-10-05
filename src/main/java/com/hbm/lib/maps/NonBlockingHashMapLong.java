@@ -18,6 +18,8 @@ import java.util.function.Function;
 import java.util.function.LongFunction;
 
 import static com.hbm.lib.internal.UnsafeHolder.U;
+import static com.hbm.lib.internal.UnsafeHolder.arrayBase;
+import static com.hbm.lib.internal.UnsafeHolder.arrayScale;
 import static com.hbm.lib.internal.UnsafeHolder.fieldOffset;
 
 public class NonBlockingHashMapLong<TypeV> extends AbstractLong2ObjectMap<TypeV>
@@ -27,10 +29,10 @@ public class NonBlockingHashMapLong<TypeV> extends AbstractLong2ObjectMap<TypeV>
 
     private static final int REPROBE_LIMIT = 10;
 
-    private static final long _Obase = U.arrayBaseOffset(Object[].class);
-    private static final int _Oscale = U.arrayIndexScale(Object[].class);
-    private static final long _Lbase = U.arrayBaseOffset(long[].class);
-    private static final int _Lscale = U.arrayIndexScale(long[].class);
+    private static final long _Obase = arrayBase(Object[].class);
+    private static final int _Oscale = arrayScale(Object[].class);
+    private static final long _Lbase = arrayBase(long[].class);
+    private static final int _Lscale = arrayScale(long[].class);
     private static final long _chm_offset = fieldOffset(NonBlockingHashMapLong.class, "_chm");
     private static final long _val_1_offset = fieldOffset(NonBlockingHashMapLong.class, "_val_1");
     private static final int MIN_SIZE_LOG = 4;

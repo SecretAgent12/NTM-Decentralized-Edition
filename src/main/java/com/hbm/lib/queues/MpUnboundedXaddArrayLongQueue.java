@@ -8,6 +8,8 @@ import it.unimi.dsi.fastutil.HashCommon;
 import java.util.Arrays;
 
 import static com.hbm.lib.internal.UnsafeHolder.U;
+import static com.hbm.lib.internal.UnsafeHolder.arrayBase;
+import static com.hbm.lib.internal.UnsafeHolder.arrayScale;
 import static com.hbm.lib.internal.UnsafeHolder.fieldOffset;
 
 abstract class MpUnboundedXaddArrayLongQueue<R extends MpUnboundedXaddChunkLong<R>>
@@ -184,9 +186,9 @@ abstract class MpUnboundedXaddChunkLong<R> {
     static final long NEXT_OFFSET = fieldOffset(MpUnboundedXaddChunkLong.class, "next");
     static final long INDEX_OFFSET = fieldOffset(MpUnboundedXaddChunkLong.class, "index");
 
-    static final long LONG_ARR_BASE = U.arrayBaseOffset(long[].class);
+    static final long LONG_ARR_BASE = arrayBase(long[].class);
     static final int LONG_ARR_SHIFT =
-            Integer.numberOfTrailingZeros(U.arrayIndexScale(long[].class));
+            Integer.numberOfTrailingZeros(arrayScale(long[].class));
 
     final boolean pooled;
     final long[] buffer;

@@ -4,28 +4,38 @@
 package com.hbm.lib.internal;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import jdk.internal.misc.Unsafe;
 
 public final class UnsafeHolder {
     public static final Unsafe U = UnsafeBootstrap.U;
 
-    public static final long IA_BASE = U.arrayBaseOffset(int[].class);
+    /*
+     * backport-fix: BF-056 jdk.internal.misc.Unsafe.arrayBaseOffset returns int on Java 21 and long
+     * on newer JDKs (25 at least). Compiled against 21, a direct call links to the int descriptor
+     * and dies on 25 with NoSuchMethodError (server crash on the first chunk load, through the
+     * radiation system's queues). Looked up by name instead, whatever its return type.
+     */
+    private static final Method ARRAY_BASE_OFFSET = unsafeMethod("arrayBaseOffset");
+    private static final Method ARRAY_INDEX_SCALE = unsafeMethod("arrayIndexScale");
+
+    public static final long IA_BASE = arrayBase(int[].class);
     public static final int IA_SHIFT = arrayShift(int[].class);
-    public static final long JA_BASE = U.arrayBaseOffset(long[].class);
+    public static final long JA_BASE = arrayBase(long[].class);
     public static final int JA_SHIFT = arrayShift(long[].class);
-    public static final long BA_BASE = U.arrayBaseOffset(byte[].class);
+    public static final long BA_BASE = arrayBase(byte[].class);
     public static final int BA_SHIFT = arrayShift(byte[].class);
-    public static final long ZA_BASE = U.arrayBaseOffset(boolean[].class);
+    public static final long ZA_BASE = arrayBase(boolean[].class);
     public static final int ZA_SHIFT = arrayShift(boolean[].class);
-    public static final long SA_BASE = U.arrayBaseOffset(short[].class);
+    public static final long SA_BASE = arrayBase(short[].class);
     public static final int SA_SHIFT = arrayShift(short[].class);
-    public static final long CA_BASE = U.arrayBaseOffset(char[].class);
+    public static final long CA_BASE = arrayBase(char[].class);
     public static final int CA_SHIFT = arrayShift(char[].class);
-    public static final long FA_BASE = U.arrayBaseOffset(float[].class);
+    public static final long FA_BASE = arrayBase(float[].class);
     public static final int FA_SHIFT = arrayShift(float[].class);
-    public static final long DA_BASE = U.arrayBaseOffset(double[].class);
+    public static final long DA_BASE = arrayBase(double[].class);
     public static final int DA_SHIFT = arrayShift(double[].class);
-    public static final long RA_BASE = U.arrayBaseOffset(Object[].class);
+    public static final long RA_BASE = arrayBase(Object[].class);
     public static final int RA_SHIFT = arrayShift(Object[].class);
 
     private UnsafeHolder() {}
@@ -87,8 +97,34 @@ public final class UnsafeHolder {
         }
     }
 
+    /** Unsafe.arrayBaseOffset on any JDK (int on 21, long later). */
+    public static long arrayBase(Class<?> arrayClass) {
+        return ((Number) invoke(ARRAY_BASE_OFFSET, arrayClass)).longValue();
+    }
+
+    /** Unsafe.arrayIndexScale on any JDK. */
+    public static int arrayScale(Class<?> arrayClass) {
+        return ((Number) invoke(ARRAY_INDEX_SCALE, arrayClass)).intValue();
+    }
+
+    private static Method unsafeMethod(String name) {
+        try {
+            return Unsafe.class.getMethod(name, Class.class);
+        } catch (NoSuchMethodException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
+
+    private static Object invoke(Method method, Class<?> arrayClass) {
+        try {
+            return method.invoke(U, arrayClass);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Unsafe." + method.getName() + " failed", e);
+        }
+    }
+
     private static int arrayShift(Class<?> arrayClass) {
-        int scale = U.arrayIndexScale(arrayClass);
+        int scale = arrayScale(arrayClass);
         if (scale <= 0 || (scale & (scale - 1)) != 0) {
             throw new ExceptionInInitializerError(
                     "Unsupported array index scale " + scale + " for " + arrayClass.getTypeName());
