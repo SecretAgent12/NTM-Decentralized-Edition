@@ -7,7 +7,6 @@ import com.hbm.client.particle.ContrailVisuals;
 import com.hbm.client.particle.DebrisVisuals;
 import com.hbm.client.particle.ParticleGasFlame;
 import com.hbm.client.particle.ParticleRadiationFog;
-import com.hbm.client.particle.RadFogVisuals;
 import com.hbm.client.particle.RocketFlameVisuals;
 import com.hbm.packet.toclient.JetpackParticlePayload;
 import com.hbm.particle.CoolingTowerParticleOptions;
@@ -490,7 +489,9 @@ public final class ClientEffects {
     }
 
     private static void spawnRadFog(Level level, double x, double y, double z) {
-        if (RadFogVisuals.trySpawnInstanced(level, x, y, z)) return;
+        // backport-fix: BF-066 always the vanilla particle: the Flywheel fog (RadFogVisuals) hid the
+        // water behind it (seen through the fog, a lake showed only its bottom). RadFogVisuals stays
+        // in the source.
         spawnRadFogVanilla(level, x, y, z);
     }
 
