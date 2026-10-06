@@ -12,6 +12,7 @@ import com.hbm.inventory.recipes.PressRecipes;
 import com.hbm.items.machine.ItemStamp.StampType;
 import com.hbm.items.machine.ItemStamp;
 import com.hbm.packet.SyncField;
+import com.hbm.util.TickPhase;
 import com.hbm.packet.SyncSlots;
 import com.hbm.packet.SyncUnitSchema;
 import com.hbm.sound.ModSounds;
@@ -110,6 +111,11 @@ public class BlockEntityMachinePress extends BlockEntityMachineBase
     public void tickServer() {
         int prevProgress = progress;
         int prevSpeed = speed;
+
+        // backport-fix: BF-065 the preheater was only noticed when a block next to the press
+        // changed, so a press built onto a preheater that was already there stayed cold. 1.7.10
+        // looks every tick; once a second is enough
+        if (TickPhase.every(this, 20)) refreshPreheater();
 
         boolean canProcess = canProcess();
 
