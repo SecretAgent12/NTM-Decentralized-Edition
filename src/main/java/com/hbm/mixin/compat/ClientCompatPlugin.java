@@ -21,6 +21,13 @@ public final class ClientCompatPlugin implements IMixinConfigPlugin {
                             .getClassLoader()
                             .getResource("mezz/jei/neoforge/platform/FluidHelper.class")
                     != null;
+        // backport-fix: BF-069 Create's JEI Item Drain page, only with Create installed
+        if (mixin.contains(".create."))
+            return getClass()
+                            .getClassLoader()
+                            .getResource(
+                                    "com/simibubi/create/compat/jei/category/ItemDrainCategory.class")
+                    != null;
         if (mixin.contains(".sodium."))
             return getClass()
                             .getClassLoader()
