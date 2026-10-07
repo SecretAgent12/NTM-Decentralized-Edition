@@ -99,10 +99,15 @@ public abstract class ContainerScreenCompat<T extends AbstractContainerMenu> ext
      * 26.x draws the labels before the slots (several tree screens draw their GUI texture in
      * extractLabels); 1.21.1 after. The labels are drawn at the first slot of the frame instead
      * (the pose is already translated to leftPos/topPos there), or in renderLabels without slots.
+     *
+     * <p>backport-fix: BF-072 — only a slot of this menu counts. TrashSlot draws its own trash slot
+     * through renderSlot from the background event, before the pose is translated; taking that
+     * call drew the labels (and the GUI textures some screens draw with them) at the screen corner
+     * and blocked the real draw for the frame.
      */
     @Override
     protected void renderSlot(GuiGraphics graphics, Slot slot) {
-        if (backport$inVanillaRender && !backport$labelsDone) {
+        if (backport$inVanillaRender && !backport$labelsDone && this.menu.slots.contains(slot)) {
             backport$labelsDone = true;
             // 1.21.1 resets hoveredSlot before this loop and sets it while drawing slots; labels
             // that ask for it (tooltips) get this frame's hovered slot

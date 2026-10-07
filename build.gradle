@@ -137,6 +137,8 @@ dependencies {
     compileOnly sourceSets.sableStubs.output
     // JEI for 1.21.1 NeoForge (19.x): recipe pages, ghost ingredients, lookups (com.hbm.integration.jei)
     implementation "curse.maven:jei-238222:8964989"
+    implementation "curse.maven:balm-531761:8969738"
+    implementation "curse.maven:trashslot-235577:8163135"
     // WTHIT 12.10.2 for 1.21.1 NeoForge: energy/fluid info, multiblock cells show their core (com.hbm.integration.wthit,
     // wthit_plugins.json). Compile only; dev runs get it through run/mods (devModWthit below)
     compileOnly "maven.modrinth:6AQIaxuO:IeXnWQRE"
