@@ -5,6 +5,7 @@ package com.hbm.registration;
 
 import com.hbm.NuclearTech;
 import com.hbm.blocks.fluid.ClassicFluid;
+import com.hbm.blocks.fluid.ClassicLiquidType;
 import com.hbm.blocks.fluid.InertFluidType;
 import com.hbm.blocks.fluid.NeoForgeClassicFluid;
 import com.hbm.inventory.BlockMenuContext;
@@ -68,7 +69,6 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProc
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.storage.loot.providers.number.NumberProvider;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.common.NeoForgeMod;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
@@ -407,8 +407,11 @@ public final class NeoForgeRegistrar implements IRegistrar {
                 DeferredHolder.create(Registries.FLUID, idOf(flowingName));
         Supplier<? extends FluidType> type =
                 switch (spec.physics()) {
-                    case WATER -> NeoForgeMod.WATER_TYPE::value;
-                    case LAVA -> NeoForgeMod.LAVA_TYPE::value;
+                    // backport-fix: BF-070 own types (not vanilla water/lava), so the fluid can
+                    // carry its own textures in 1.21.1
+                    case WATER ->
+                            fluidTypes.register(name, () -> ClassicLiquidType.waterLike(spec));
+                    case LAVA -> fluidTypes.register(name, () -> ClassicLiquidType.lavaLike(spec));
                     case NONE -> fluidTypes.register(name, () -> new InertFluidType(spec));
                 };
         DeferredHolder<Fluid, NeoForgeClassicFluid.Source> still =
