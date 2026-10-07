@@ -18,7 +18,8 @@ public final class KeyOverlap {
 
         if (mc.screen != null) return false;
 
-        InputConstants.Key key = mapping.getDefaultKey();
+        // backport-fix: BF-071 the key the player bound, not the default one (rebinding did nothing)
+        InputConstants.Key key = mapping.getKey();
         Window window = mc.getWindow();
         return switch (key.getType()) {
             case KEYSYM -> InputConstants.isKeyDown(window.getWindow(), key.getValue());
