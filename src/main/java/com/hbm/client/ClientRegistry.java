@@ -1088,6 +1088,7 @@ public final class ClientRegistry {
         reg.accept(ModMenus.NUKE_CUSTOM.get(), ScreenNukeCustom::new);
         reg.accept(ModMenus.NUKE_FSTBMB.get(), ScreenNukeFstbmb::new);
         reg.accept(ModMenus.BOMB_MULTI.get(), ScreenBombMulti::new);
+        reg.accept(ModMenus.KALL_BOMB.get(), com.hbm.client.gui.ScreenKallBomb::new);
         reg.accept(ModMenus.SOYUZ_CAPSULE.get(), ScreenSoyuzCapsule::new);
         reg.accept(ModMenus.SOYUZ_LAUNCHER.get(), ScreenSoyuzLauncher::new);
         reg.accept(ModMenus.LAUNCHPAD_SOYUZ.get(), ScreenLaunchpadSoyuz::new);

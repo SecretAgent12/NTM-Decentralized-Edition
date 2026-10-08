@@ -311,6 +311,8 @@ public final class ModSounds {
     public static RegistryHandle<SoundEvent> SOYUZ_TAKEOFF;
 
     public static RegistryHandle<SoundEvent> ROBIN_EXPLOSION;
+    public static RegistryHandle<SoundEvent> KALL_BOMB;
+    public static RegistryHandle<SoundEvent> KALL_BOMB_EXPLOSION;
 
     public static RegistryHandle<SoundEvent> MORTAR_WHISTLE;
 
@@ -607,6 +609,8 @@ public final class ModSounds {
         SOYUZ_READY = r.registerSound("block.soyuz_ready");
         SOYUZ_TAKEOFF = r.registerSound("entity.soyuz_takeoff");
         ROBIN_EXPLOSION = r.registerSound("weapon.robin_explosion");
+        KALL_BOMB = r.registerSound("weapon.kall_bomb");
+        KALL_BOMB_EXPLOSION = r.registerSound("weapon.kall_bomb_explosion");
         MORTAR_WHISTLE = r.registerSound("turret.mortar_whistle");
         NULL_MINE = r.registerSound("misc.null_mine");
         CHOPPER_CHARGE = r.registerSound("entity.chopper_charge");

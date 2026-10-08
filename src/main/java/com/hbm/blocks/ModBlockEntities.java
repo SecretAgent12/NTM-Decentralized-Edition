@@ -1013,6 +1013,8 @@ public final class ModBlockEntities {
             machine("nuke_fstbmb", BlockEntityNukeBalefire::new, ModBlocks.NUKE_FSTBMB);
     public static final RegistryHandle<BlockEntityType<BlockEntityBombMulti>> BOMB_MULTI =
             be("bombmulti", BlockEntityBombMulti::new, ModBlocks.BOMB_MULTI);
+    public static final RegistryHandle<BlockEntityType<com.hbm.tileentity.bomb.BlockEntityKallBomb>> KALL_BOMB =
+            be("kall_bomb", com.hbm.tileentity.bomb.BlockEntityKallBomb::new, ModBlocks.KALL_BOMB);
     public static final RegistryHandle<BlockEntityType<BlockEntityFireworks>> FIREWORK_BOX =
             be("firework_box", BlockEntityFireworks::new, ModBlocks.FIREWORKS)
                     .ticksServerAt(BlockEntityFireworks::tick);

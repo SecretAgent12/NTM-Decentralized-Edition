@@ -50,6 +50,7 @@ public class ItemStarterKit extends ItemCompat {
         GADGET(ItemStarterKit::gadget, Haz.PLAIN, true, true),
         BOY(ItemStarterKit::boy, Haz.PLAIN, true, true),
         MAN(ItemStarterKit::man, Haz.PLAIN, true, true),
+        KALL(ItemStarterKit::kall, Haz.PLAIN, true, true),
         MIKE(ItemStarterKit::mike, Haz.PLAIN, true, true),
         TSAR(ItemStarterKit::tsar, Haz.PLAIN, true, true),
         MULTI(ItemStarterKit::multi, null, true, false),
@@ -329,6 +330,18 @@ public class ItemStarterKit extends ItemCompat {
                 new ItemStack(ModItems.EARLY_EXPLOSIVE_LENSES),
                 new ItemStack(ModItems.MAN_IGNITER),
                 new ItemStack(ModItems.MAN_CORE));
+    }
+
+    private static List<ItemStack> kall() {
+        return List.of(
+                new ItemStack(ModBlocks.KALL_BOMB),
+                new ItemStack(ModItems.EARLY_EXPLOSIVE_LENSES),
+                new ItemStack(ModItems.EARLY_EXPLOSIVE_LENSES),
+                new ItemStack(ModItems.EARLY_EXPLOSIVE_LENSES),
+                new ItemStack(ModItems.EARLY_EXPLOSIVE_LENSES),
+                new ItemStack(ModItems.MAN_IGNITER),
+                filled(ModItems.FLUID_TANK, NTMFluids.WATZ_MUD, 1_000, 64),
+                new ItemStack(ModItems.DETONATOR));
     }
 
     private static List<ItemStack> mike() {
