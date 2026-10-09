@@ -10,6 +10,7 @@ import com.hbm.api.fluidmk2.FluidFlushSender;
 import com.hbm.api.fluidmk2.FlushLanes;
 import com.hbm.api.redstoneoverradio.IRORInteractive;
 import com.hbm.api.redstoneoverradio.IRORValueProvider;
+import com.hbm.backport.SubLevelSpace;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.blocks.ModBlocks;
 import com.hbm.blocks.machine.BlockPWR;
@@ -223,11 +224,20 @@ public class BlockEntityMachinePWRController extends BlockEntityMachineBase
         int chunkX = worldPosition.getX() >> 4;
         int chunkZ = worldPosition.getZ() >> 4;
         var cs = level.getChunkSource();
-        if (!cs.hasChunk(chunkX, chunkZ)
-                || !cs.hasChunk(chunkX + 2, chunkZ + 2)
-                || !cs.hasChunk(chunkX + 2, chunkZ - 2)
-                || !cs.hasChunk(chunkX - 2, chunkZ + 2)
-                || !cs.hasChunk(chunkX - 2, chunkZ - 2)) {
+        // backport-fix: BF-073 — on a physics contraption (Sable sub-level) the chunks two away from
+        // the controller are plot chunks outside the build, which are never loaded: the reactor
+        // stayed "unloading" forever (no fuel loaded, nothing ran). The build loads as a whole, and
+        // the check is only there for fluid sources in nearby chunks, so there only the own chunk
+        // counts.
+        boolean onContraption =
+                SubLevelSpace.inSubLevel(level, worldPosition.getX(), worldPosition.getZ());
+        if (!cs.hasChunk(chunkX, chunkZ)) {
+            this.unloadDelay = 60;
+        } else if (!onContraption
+                && (!cs.hasChunk(chunkX + 2, chunkZ + 2)
+                        || !cs.hasChunk(chunkX + 2, chunkZ - 2)
+                        || !cs.hasChunk(chunkX - 2, chunkZ + 2)
+                        || !cs.hasChunk(chunkX - 2, chunkZ - 2))) {
             this.unloadDelay = 60;
         }
 
