@@ -18,7 +18,8 @@ public final class HazardTransformerSophisticatedBackpacks implements IHazardTra
     public boolean appliesTo(ItemStack stack) {
         return stack.getItem() instanceof BackpackItem
                 && stack.has(ModCoreDataComponents.STORAGE_UUID.get())
-                && !stack.has(ModCoreDataComponents.LINKED_STORAGE_ENDPOINT.get());
+                // backport-fix: BF-082 the component only exists on Sophisticated Core 1.5+
+                && !SophisticatedLinkedStorage.hasEndpointComponent(stack);
     }
 
     @Override

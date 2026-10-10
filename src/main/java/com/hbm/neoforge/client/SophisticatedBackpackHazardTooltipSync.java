@@ -29,7 +29,9 @@ final class SophisticatedBackpackHazardTooltipSync {
 
     static void request(ItemStack stack) {
         if (!(stack.getItem() instanceof BackpackItem)
-                || stack.has(ModCoreDataComponents.LINKED_STORAGE_ENDPOINT.get())) return;
+                // backport-fix: BF-082 the component only exists on Sophisticated Core 1.5+
+                || com.hbm.neoforge.hazard.SophisticatedLinkedStorage.hasEndpointComponent(stack))
+            return;
         UUID id = stack.get(ModCoreDataComponents.STORAGE_UUID.get());
         if (id == null) return;
         Minecraft minecraft = Minecraft.getInstance();

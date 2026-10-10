@@ -18,11 +18,35 @@ public final class SophisticatedLinkedStorage {
 
     private static final boolean PRESENT = probe();
 
+    // backport-fix: BF-082 the LINKED_STORAGE_ENDPOINT data component is just as new (1.5.x)
+    private static final boolean COMPONENT_PRESENT = probeComponent();
+
     private SophisticatedLinkedStorage() {}
 
     /** True when {@code backpack} is only a linked endpoint whose items live elsewhere. */
     public static boolean isEndpoint(ItemStack backpack) {
         return PRESENT && Linked.isEndpoint(backpack);
+    }
+
+    /**
+     * backport-fix: BF-082 — true when {@code stack} carries Sophisticated Core's linked storage
+     * endpoint component. Read straight from {@code ModCoreDataComponents} it threw
+     * NoSuchFieldError on Core 1.4.x every time a backpack was looked at: creative search (its
+     * tooltips), and every tick for a mob wearing a backpack (Sophisticated Backpacks gives them
+     * to zombies, creepers...), which froze and crashed the game in such worlds.
+     */
+    public static boolean hasEndpointComponent(ItemStack stack) {
+        return COMPONENT_PRESENT && Linked.hasEndpointComponent(stack);
+    }
+
+    private static boolean probeComponent() {
+        try {
+            net.p3pp3rf1y.sophisticatedcore.init.ModCoreDataComponents.class.getField(
+                    "LINKED_STORAGE_ENDPOINT");
+            return true;
+        } catch (NoSuchFieldException | LinkageError e) {
+            return false;
+        }
     }
 
     private static boolean probe() {
@@ -38,6 +62,13 @@ public final class SophisticatedLinkedStorage {
     }
 
     private static final class Linked {
+        static boolean hasEndpointComponent(ItemStack stack) {
+            return stack.has(
+                    net.p3pp3rf1y.sophisticatedcore.init.ModCoreDataComponents
+                            .LINKED_STORAGE_ENDPOINT
+                            .get());
+        }
+
         static boolean isEndpoint(ItemStack backpack) {
             return LinkedStorageStackLifecycle.classifyEndpoint(backpack)
                     == LinkedStorageEndpointStackState.ENDPOINT;
