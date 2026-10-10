@@ -191,6 +191,28 @@ public abstract class BlockTNTBase extends TntBlockCompat implements IToolable, 
         return true;
     }
 
+    /**
+     * backport-fix: BF-085 the block hit something hard on a physics contraption (Sable,
+     * com.hbm.backport.SableTntImpact): goes off as its own charge with a short fuse and leaves its
+     * place, like vanilla TNT there.
+     */
+    public boolean primeOnImpact(ServerLevel level, BlockPos pos, int fuse) {
+        if (!TntRule.explodes(level)) return false;
+        EntityTntNtm tnt =
+                new EntityTntNtm(
+                        ModEntities.TNT_NTM.get(),
+                        level,
+                        pos.getX() + 0.5D,
+                        pos.getY(),
+                        pos.getZ() + 0.5D,
+                        null,
+                        defaultBlockState());
+        tnt.setFuse(fuse);
+        level.addFreshEntity(tnt);
+        level.setBlock(pos, Blocks.AIR.defaultBlockState(), 11);
+        return true;
+    }
+
     @Override
     public boolean onScrew(
             Level level,
