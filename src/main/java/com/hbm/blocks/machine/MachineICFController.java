@@ -36,9 +36,10 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.BlockCompat;
+import com.hbm.backport.SubLevelRebuild;
 
 public class MachineICFController extends BlockCompat
-        implements ITickingBlock, ILookOverlay, ICapabilityBlock {
+        implements ITickingBlock, ILookOverlay, ICapabilityBlock, SubLevelRebuild.Owner {
 
     public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
     private static final int MAX_SIZE = 1024;
@@ -91,6 +92,34 @@ public class MachineICFController extends BlockCompat
     }
 
     private void assemble(Level level, BlockPos pos, BlockState state, Player player) {
+        Scan scan = scan(level, pos, state, false);
+
+        if (!scan.errors.isEmpty()) {
+            if (player instanceof ServerPlayer sp) {
+                Services.NETWORK.sendTo(new MarkerPayload(0xff0000, 5000, 128.0, scan.errors), sp);
+            }
+            return;
+        }
+
+        claim(level, pos, scan);
+    }
+
+    /** The structure behind the controller, as the assembly finds it. */
+    private record Scan(
+            Map<BlockPos, BlockState> assembly,
+            Set<BlockPos> ports,
+            Set<BlockPos> cells,
+            Set<BlockPos> emitters,
+            Set<BlockPos> capacitors,
+            Set<BlockPos> turbochargers,
+            Map<BlockPos, Component> errors) {}
+
+    /**
+     * Walks the structure from the block behind the controller. With {@code shells} (rebuilding
+     * an assembled ICF, BF-074) an ICF shell counts as the block it stands for; the first assembly
+     * sees only the original blocks, as in ntm-next.
+     */
+    private static Scan scan(Level level, BlockPos pos, BlockState state, boolean shells) {
         Map<BlockPos, BlockState> assembly = new HashMap<>();
         Set<BlockPos> ports = new HashSet<>();
         Set<BlockPos> cells = new HashSet<>();
@@ -114,6 +143,7 @@ public class MachineICFController extends BlockCompat
             }
 
             BlockState s = level.getBlockState(p);
+            if (shells && s.getBlock() instanceof BlockICF) s = s.getValue(BlockICF.PART).original();
             Block b = s.getBlock();
 
             if (b == ModBlocks.ICF_CASING.get()) {
@@ -146,27 +176,63 @@ public class MachineICFController extends BlockCompat
 
             errors.put(p, Component.translatable("marker.hbm.icf.non_laser"));
         }
+        return new Scan(assembly, ports, cells, emitters, capacitors, turbochargers, errors);
+    }
 
-        if (!errors.isEmpty()) {
-            if (player instanceof ServerPlayer sp) {
-                Services.NETWORK.sendTo(new MarkerPayload(0xff0000, 5000, 128.0, errors), sp);
-            }
-            return;
-        }
-
-        List<BlockPos> members = new ArrayList<>(assembly.size());
-        for (Map.Entry<BlockPos, BlockState> entry : assembly.entrySet()) {
+    private static void claim(Level level, BlockPos pos, Scan scan) {
+        List<BlockPos> members = new ArrayList<>(scan.assembly.size());
+        for (Map.Entry<BlockPos, BlockState> entry : scan.assembly.entrySet()) {
             BlockPos partPos = entry.getKey();
             if (partPos.equals(pos)) continue;
-            level.setBlock(partPos, BlockICF.shellOf(entry.getValue()), 3);
+            BlockState shell = BlockICF.shellOf(entry.getValue());
+            if (level.getBlockState(partPos) != shell) level.setBlock(partPos, shell, 3);
             members.add(partPos);
         }
         AssembledMembers.assemble((ServerLevel) level, pos, members);
 
         if (level.getBlockEntity(pos) instanceof BlockEntityMachineICFController controller) {
-            controller.setup(ports, cells, emitters, capacitors, turbochargers);
+            controller.setup(
+                    scan.ports, scan.cells, scan.emitters, scan.capacitors, scan.turbochargers);
             controller.assembled(
-                    BoundingBox.encapsulatingPositions(assembly.keySet()).orElseThrow());
+                    BoundingBox.encapsulatingPositions(scan.assembly.keySet()).orElseThrow());
+        }
+    }
+
+    /** backport-fix: BF-077 — see SubLevelRebuild.Owner#structure (Aeronautics assembler, SimulatedCompat). */
+    @Override
+    public List<BlockPos> structure(ServerLevel level, BlockPos pos) {
+        if (!(level.getBlockEntity(pos) instanceof BlockEntityMachineICFController controller)
+                || !controller.assembled) return List.of();
+        BlockState state = level.getBlockState(pos);
+        if (!(state.getBlock() instanceof MachineICFController)) return List.of();
+        return List.copyOf(scan(level, pos, state, true).assembly.keySet());
+    }
+
+    /**
+     * backport-fix: BF-074 — after a Sable move or a reload on a contraption the shells have no
+     * owner and the controller's stored positions are stale: find the shells again and claim them
+     * (ports and bounds are recomputed). An ICF that didn't come through whole is taken apart.
+     */
+    @Override
+    public void rebuild(ServerLevel level, BlockPos pos) {
+        if (!(level.getBlockEntity(pos) instanceof BlockEntityMachineICFController controller)
+                || !controller.assembled) return;
+        BlockState state = level.getBlockState(pos);
+        if (!(state.getBlock() instanceof MachineICFController)) return;
+
+        Scan scan = scan(level, pos, state, true);
+        if (scan.errors.isEmpty()) {
+            claim(level, pos, scan);
+            return;
+        }
+
+        controller.abandon();
+        for (BlockPos partPos : scan.assembly.keySet()) {
+            BlockState shell = level.getBlockState(partPos);
+            if (shell.getBlock() instanceof BlockICF) {
+                AssembledMembers.release(level, partPos);
+                level.setBlock(partPos, shell.getValue(BlockICF.PART).original(), UPDATE_ALL);
+            }
         }
     }
 

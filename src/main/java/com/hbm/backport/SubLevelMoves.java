@@ -3,6 +3,7 @@
 
 package com.hbm.backport;
 
+import com.hbm.blocks.multiblock.AssembledMembers;
 import com.hbm.blocks.multiblock.BlockMultiblockCell;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.platform.Services;
@@ -14,6 +15,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 
@@ -23,7 +25,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
  * when Sable is installed) for every hbm block Sable moves.
  *
  * <p>backport: not in ntm-next (26.2 has no Sable). Sable moves blocks with its own chunk writes
- * while onPlace/onRemove are suppressed (SubLevelAssemblyHelper.moveBlocks), so nothing ntm-next
+ * while onPlace is suppressed (SubLevelAssemblyHelper.moveBlocks), so nothing ntm-next
  * keeps outside the block/block entity follows the block: the cable/pipe/tube graph nodes
  * (LevelNodeGraph, keyed by position) stay at the old position and the new position has none,
  * and the per-chunk multiblock core index (cell -> core) is not written for the moved cells.
@@ -32,6 +34,14 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
  * done: move each graph node (data, open faces, self-endpoint) from the old to the new
  * position, unindex the old cells and re-index the moved core's cells once the whole move is
  * done, and invalidate capability / endpoint caches on both sides.
+ *
+ * <p>backport-fix: BF-076 onRemove is NOT suppressed (level.captureBlockSnapshots only stops
+ * onPlace): when Sable clears the old positions after copying, the old block's removal hooks ran
+ * as if it had been broken. An assembled PWR's shells and controller put their original blocks
+ * back there, leaving an unassembled copy of the reactor (without its controller) behind: in the
+ * world when a contraption was made, in the plot (so the contraption stayed) when it was taken
+ * apart. The positions being moved away from are recorded ({@link #vacating}) and the compat
+ * onRemove skips its removal side effects for them.
  */
 public final class SubLevelMoves {
 
@@ -41,6 +51,7 @@ public final class SubLevelMoves {
             ServerLevel origin, ServerLevel resulting, BlockState state, BlockPos oldPos, BlockPos newPos) {
         BlockPos from = oldPos.immutable();
         BlockPos to = newPos.immutable();
+        markVacating(origin, from);
         BlockState moved = resulting.getBlockState(to);
         int turns = quarterTurns(state, moved);
 
@@ -50,13 +61,49 @@ public final class SubLevelMoves {
 
         if (state.getBlock() instanceof BlockMultiblockCell || state.getBlock() instanceof BlockMultiblockCore)
             BlockMultiblockCore.unindexCell(origin, from);
+        // backport-fix: BF-074 a shell of an assembled multiblock (PWR, ICF) leaves its old index
+        // entry and endpoint behind like a cell does; its controller claims it again in finish()
+        if (state.getBlock() instanceof AssembledMembers.Member)
+            AssembledMembers.release(origin, from);
 
         Services.CAPS.invalidateCaps(origin, from);
         Services.CAPS.invalidateCaps(resulting, to);
         LevelNodeGraph.invalidateEndpointsAround(origin, from);
         LevelNodeGraph.invalidateEndpointsAt(resulting, to);
 
-        schedule(resulting, to, moved.getBlock() instanceof BlockMultiblockCore);
+        schedule(
+                resulting,
+                to,
+                moved.getBlock() instanceof BlockMultiblockCore
+                        || moved.getBlock() instanceof SubLevelRebuild.Owner);
+    }
+
+    // backport-fix: BF-076 positions Sable is moving blocks away from, until the move is done
+    private static final java.util.Map<ServerLevel, it.unimi.dsi.fastutil.longs.LongOpenHashSet>
+            VACATING = new java.util.IdentityHashMap<>();
+
+    /** True while Sable is moving the block at {@code pos} away (its old position is cleared). */
+    public static boolean vacating(ServerLevel level, BlockPos pos) {
+        it.unimi.dsi.fastutil.longs.LongOpenHashSet set = VACATING.get(level);
+        return set != null && set.contains(pos.asLong());
+    }
+
+    private static void markVacating(ServerLevel level, BlockPos from) {
+        it.unimi.dsi.fastutil.longs.LongOpenHashSet set = VACATING.get(level);
+        if (set == null) {
+            it.unimi.dsi.fastutil.longs.LongOpenHashSet fresh =
+                    new it.unimi.dsi.fastutil.longs.LongOpenHashSet();
+            VACATING.put(level, fresh);
+            MinecraftServer server = level.getServer();
+            // Sable clears the old positions in the same call, before this runs
+            server.tell(
+                    server.wrapRunnable(
+                            () -> {
+                                if (VACATING.get(level) == fresh) VACATING.remove(level);
+                            }));
+            set = fresh;
+        }
+        set.add(from.asLong());
     }
 
     // one task per level and move: runs after Sable has moved (and notified) every block
@@ -85,8 +132,10 @@ public final class SubLevelMoves {
         // the cells were moved one by one before or after their core: index them now, like
         // FoldedCoreResident.onLoad does for a loaded core
         for (BlockPos core : batch.cores) {
-            if (level.getBlockState(core).getBlock() instanceof BlockMultiblockCore block)
-                block.reindexLoadedCells(level, core);
+            Block block = level.getBlockState(core).getBlock();
+            if (block instanceof BlockMultiblockCore folded) folded.reindexLoadedCells(level, core);
+            // backport-fix: BF-074 assembled multiblocks find their shells again (see SubLevelRebuild)
+            else if (block instanceof SubLevelRebuild.Owner owner) owner.rebuild(level, core);
         }
         // Sable's neighbour-shape pass ran before the cells were indexed, so cables next to a
         // moved multiblock cell decided "nothing to connect to"; recompute their shapes now

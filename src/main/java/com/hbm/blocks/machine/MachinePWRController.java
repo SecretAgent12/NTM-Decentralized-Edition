@@ -37,8 +37,10 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.BlockCompat;
+import com.hbm.backport.SubLevelRebuild;
 
-public class MachinePWRController extends BlockCompat implements ITickingBlock, ICapabilityBlock {
+public class MachinePWRController extends BlockCompat
+        implements ITickingBlock, ICapabilityBlock, SubLevelRebuild.Owner {
 
     public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
     private static final int MAX_SIZE = 4096;
@@ -123,6 +125,30 @@ public class MachinePWRController extends BlockCompat implements ITickingBlock, 
     }
 
     private void assemble(Level level, BlockPos pos, BlockState state, Player player) {
+        Scan scan = scan(level, pos, state, false);
+
+        if (!scan.errors.isEmpty()) {
+            if (player instanceof ServerPlayer sp) {
+                Services.NETWORK.sendTo(new MarkerPayload(0xff0000, 5000, 128.0, scan.errors), sp);
+            }
+            return;
+        }
+
+        claim(level, pos, scan);
+    }
+
+    /** The structure behind the controller, as the assembly finds it. */
+    private record Scan(
+            Map<BlockPos, BlockState> assembly,
+            Map<BlockPos, BlockState> fuelRods,
+            Map<BlockPos, Component> errors) {}
+
+    /**
+     * Walks the structure from the block behind the controller. With {@code shells} (rebuilding
+     * an assembled reactor, BF-074) a PWR shell counts as the block it stands for; the first
+     * assembly sees only the original blocks, as in ntm-next.
+     */
+    private static Scan scan(Level level, BlockPos pos, BlockState state, boolean shells) {
         Map<BlockPos, BlockState> assembly = new HashMap<>();
         Map<BlockPos, BlockState> fuelRods = new HashMap<>();
         int sources = 0;
@@ -143,6 +169,7 @@ public class MachinePWRController extends BlockCompat implements ITickingBlock, 
             }
 
             BlockState s = level.getBlockState(p);
+            if (shells && s.getBlock() instanceof BlockPWR) s = s.getValue(BlockPWR.PART).original();
             Block b = s.getBlock();
 
             if (isValidCasing(b)) {
@@ -171,27 +198,64 @@ public class MachinePWRController extends BlockCompat implements ITickingBlock, 
         if (sources == 0) {
             errors.put(pos, Component.translatable("marker.hbm.pwr.source_required"));
         }
+        return new Scan(assembly, fuelRods, errors);
+    }
 
-        if (!errors.isEmpty()) {
-            if (player instanceof ServerPlayer sp) {
-                Services.NETWORK.sendTo(new MarkerPayload(0xff0000, 5000, 128.0, errors), sp);
-            }
-            return;
-        }
-
-        List<BlockPos> members = new ArrayList<>(assembly.size());
-        for (Map.Entry<BlockPos, BlockState> entry : assembly.entrySet()) {
+    private static void claim(Level level, BlockPos pos, Scan scan) {
+        List<BlockPos> members = new ArrayList<>(scan.assembly.size());
+        for (Map.Entry<BlockPos, BlockState> entry : scan.assembly.entrySet()) {
             BlockPos partPos = entry.getKey();
             if (partPos.equals(pos)) continue;
-            level.setBlock(partPos, BlockPWR.shellOf(entry.getValue()), 3);
+            BlockState shell = BlockPWR.shellOf(entry.getValue());
+            if (level.getBlockState(partPos) != shell) level.setBlock(partPos, shell, 3);
             members.add(partPos);
         }
         AssembledMembers.assemble((ServerLevel) level, pos, members);
 
         if (level.getBlockEntity(pos) instanceof BlockEntityMachinePWRController controller) {
-            controller.setup(assembly, fuelRods);
+            controller.setup(scan.assembly, scan.fuelRods);
             controller.assembled = true;
             controller.markChanged();
+        }
+    }
+
+    /** backport-fix: BF-077 — see SubLevelRebuild.Owner#structure (Aeronautics assembler, SimulatedCompat). */
+    @Override
+    public List<BlockPos> structure(ServerLevel level, BlockPos pos) {
+        if (!(level.getBlockEntity(pos) instanceof BlockEntityMachinePWRController controller)
+                || !controller.assembled) return List.of();
+        BlockState state = level.getBlockState(pos);
+        if (!(state.getBlock() instanceof MachinePWRController)) return List.of();
+        return List.copyOf(scan(level, pos, state, true).assembly.keySet());
+    }
+
+    /**
+     * backport-fix: BF-074 — after a Sable move or a reload on a contraption the shells have no
+     * owner and the controller's stored positions are stale: find the shells again and claim them
+     * (positions, ports, rods and bounds are recomputed by setup). A reactor that didn't come
+     * through whole is taken apart instead.
+     */
+    @Override
+    public void rebuild(ServerLevel level, BlockPos pos) {
+        if (!(level.getBlockEntity(pos) instanceof BlockEntityMachinePWRController controller)
+                || !controller.assembled) return;
+        BlockState state = level.getBlockState(pos);
+        if (!(state.getBlock() instanceof MachinePWRController)) return;
+
+        Scan scan = scan(level, pos, state, true);
+        if (scan.errors.isEmpty()) {
+            claim(level, pos, scan);
+            return;
+        }
+
+        controller.assembled = false;
+        controller.markChanged();
+        for (BlockPos partPos : scan.assembly.keySet()) {
+            BlockState shell = level.getBlockState(partPos);
+            if (shell.getBlock() instanceof BlockPWR) {
+                AssembledMembers.release(level, partPos);
+                level.setBlock(partPos, shell.getValue(BlockPWR.PART).original(), UPDATE_ALL);
+            }
         }
     }
 }

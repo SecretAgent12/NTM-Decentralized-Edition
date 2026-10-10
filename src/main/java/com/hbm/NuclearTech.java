@@ -183,6 +183,7 @@ public final class NuclearTech {
         ChunkUtil.init();
         PendingCoreInvalidation.init();
         AssembledMembers.init();
+        com.hbm.backport.SubLevelChunks.init(); // backport-fix: BF-075 contraption chunk hooks
         ResolvedCapCache.init();
         EndpointRegistry.init();
         ComputerCraft.init();

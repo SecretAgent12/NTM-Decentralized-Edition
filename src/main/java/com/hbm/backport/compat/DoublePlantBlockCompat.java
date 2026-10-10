@@ -119,7 +119,10 @@ public abstract class DoublePlantBlockCompat extends net.minecraft.world.level.b
 
     @Override
     protected final void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
-        boolean changed = !state.is(newState.getBlock());
+        // backport-fix: BF-076 Sable moving the block onto / off a physics contraption is not a
+        // removal: no removal side effects at the old position (SubLevelMoves.vacating)
+        boolean changed = !state.is(newState.getBlock())
+                && !(level instanceof ServerLevel moving && com.hbm.backport.SubLevelMoves.vacating(moving, pos));
         if (changed && level.getBlockEntity(pos) instanceof com.hbm.backport.BlockEntityCompat be) be.preRemoveSideEffects(pos, state);
         super.onRemove(state, level, pos, newState, moved);
         if (changed && level instanceof ServerLevel server) affectNeighborsAfterRemoval(state, server, pos, moved);

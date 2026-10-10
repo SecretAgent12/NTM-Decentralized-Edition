@@ -163,6 +163,13 @@ public class BlockEntityMachineICFController extends BlockEntityCompat
         markChanged();
     }
 
+    /** backport-fix: BF-074 — stop being assembled without touching the members (the caller does). */
+    public void abandon() {
+        assembled = false;
+        members = null;
+        markChanged();
+    }
+
     public void disassemble() {
         if (!assembled) return;
         assembled = false;
@@ -771,5 +778,7 @@ public class BlockEntityMachineICFController extends BlockEntityCompat
     public void clearRemoved() {
         super.clearRemoved();
         com.hbm.tileentity.FoldedCoreResident.onLoad(this);
+        // backport-fix: BF-074 on a contraption, find the shells again once loaded
+        com.hbm.backport.SubLevelRebuild.onLoad(this);
     }
 }

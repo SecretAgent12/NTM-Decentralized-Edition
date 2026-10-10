@@ -117,12 +117,19 @@ public class BlockEntityCore extends BlockEntityMachineBase
         int chunkX = worldPosition.getX() >> 4;
         int chunkZ = worldPosition.getZ() >> 4;
         var source = level.getChunkSource();
+        // backport-fix: BF-074 on a physics contraption the neighbouring plot chunks are never
+        // loaded (only the build's own), so the core counted as "unloading" forever: it never
+        // overheated into an explosion and its field never dropped. There the own chunk counts.
+        boolean onContraption =
+                com.hbm.backport.SubLevelSpace.inSubLevel(
+                        level, worldPosition.getX(), worldPosition.getZ());
         this.lastTickValid =
                 source.hasChunk(chunkX, chunkZ)
-                        && source.hasChunk(chunkX + 1, chunkZ + 1)
-                        && source.hasChunk(chunkX + 1, chunkZ - 1)
-                        && source.hasChunk(chunkX - 1, chunkZ + 1)
-                        && source.hasChunk(chunkX - 1, chunkZ - 1);
+                        && (onContraption
+                                || source.hasChunk(chunkX + 1, chunkZ + 1)
+                                        && source.hasChunk(chunkX + 1, chunkZ - 1)
+                                        && source.hasChunk(chunkX - 1, chunkZ + 1)
+                                        && source.hasChunk(chunkX - 1, chunkZ - 1));
 
         if (lastTickValid && heat > 0 && heat >= field) detonate();
 

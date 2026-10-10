@@ -10,6 +10,7 @@ import com.hbm.api.fluidmk2.FluidFlushSender;
 import com.hbm.api.fluidmk2.FlushLanes;
 import com.hbm.api.redstoneoverradio.IRORInteractive;
 import com.hbm.api.redstoneoverradio.IRORValueProvider;
+import com.hbm.backport.SubLevelRebuild;
 import com.hbm.backport.SubLevelSpace;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.blocks.ModBlocks;
@@ -733,6 +734,13 @@ public class BlockEntityMachinePWRController extends BlockEntityMachineBase
 
     private void hbm$audioRemove() {
         audioLoop(false, 0F);
+    }
+
+    // backport-fix: BF-074 on a contraption, find the shells again once loaded (see SubLevelRebuild)
+    @Override
+    public void clearRemoved() {
+        super.clearRemoved();
+        SubLevelRebuild.onLoad(this);
     }
 
     @Override
