@@ -107,6 +107,7 @@ public class TileEntityGlyphidSpawner extends BlockEntityCompat {
     public void tickServer() {
         if (!(level instanceof ServerLevel serverLevel)) return;
         if (serverLevel.getDifficulty() == Difficulty.PEACEFUL) return;
+        if (!Services.CONFIG.runtime().glyphidsEnabled()) return; // backport: glyphids.enabled
         if (!initialSpawn && serverLevel.getGameTime() % MobData.swarmCooldown() != 0) return;
 
         initialSpawn = false;

@@ -121,6 +121,7 @@ public class GlyphidHiveFeature extends Feature<NoneFeatureConfiguration> {
     @Override
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> ctx) {
         if (!MobData.ENABLE_HIVES.get()) return false;
+        if (!Services.CONFIG.runtime().glyphidsEnabled()) return false; // backport: glyphids.enabled
         if (ctx.random().nextInt(MobData.HIVE_SPAWN.get()) != 0) return false;
 
         WorldGenLevel level = ctx.level();
@@ -153,6 +154,8 @@ public class GlyphidHiveFeature extends Feature<NoneFeatureConfiguration> {
             RandomSource rand,
             boolean infected,
             boolean loot) {
+        // backport: glyphids.enabled - also stops a scout already in the world from building a hive
+        if (!Services.CONFIG.runtime().glyphidsEnabled()) return;
         int subtype = infected ? EntityGlyphid.TYPE_INFECTED : EntityGlyphid.TYPE_NORMAL;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 

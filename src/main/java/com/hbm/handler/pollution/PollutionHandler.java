@@ -283,6 +283,7 @@ public class PollutionHandler {
 
     public static void rampantScoutPopulator(ServerLevel level, BlockPos pos) {
         if (!MobData.rampantNaturalScoutSpawn()) return;
+        if (!Services.CONFIG.runtime().glyphidsEnabled()) return; // backport: glyphids.enabled
         if (level.dimension() != Level.OVERWORLD) return;
         if (!level.canSeeSky(pos)) return;
 

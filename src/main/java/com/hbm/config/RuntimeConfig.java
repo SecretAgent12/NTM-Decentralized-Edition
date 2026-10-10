@@ -47,6 +47,11 @@ public interface RuntimeConfig {
         return store().get(ConfigSchema.WAYPOINT_DEBUG);
     }
 
+    // backport: see ConfigSchema.GLYPHIDS_ENABLED
+    default boolean glyphidsEnabled() {
+        return store().get(ConfigSchema.GLYPHIDS_ENABLED);
+    }
+
     default int toolRecursionDepth() {
         return store().get(ConfigSchema.TOOL_RECURSION_DEPTH);
     }

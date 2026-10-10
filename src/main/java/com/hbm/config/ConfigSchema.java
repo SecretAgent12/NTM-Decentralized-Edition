@@ -311,6 +311,19 @@ public final class ConfigSchema {
                     false,
                     "Allows glyphid waypoints to be seen, mainly used for debugging, also useful as an aid against them");
 
+    // backport: switch for glyphids appearing on their own (not in ntm-next; the datapack's
+    // mob_config glyphids "enabled" only covers hive world generation)
+    public static final ConfigEntry<Boolean> GLYPHIDS_ENABLED =
+            bool(
+                    Domain.RUNTIME,
+                    "glyphids",
+                    "enabled",
+                    true,
+                    "Whether glyphids and their hives appear on their own. When false: no hives generate in new"
+                            + " chunks, hive blocks already in the world stop spawning glyphids, scouts no longer spawn"
+                            + " from soot or build new hives. Glyphids already in the world stay; spawn eggs and"
+                            + " commands still work.");
+
     public static final ConfigEntry<Integer> TOOL_RECURSION_DEPTH =
             integer(
                     Domain.RUNTIME,
@@ -520,6 +533,7 @@ public final class ConfigSchema {
                     BOMB_MAX_THREADS,
                     FOREIGN_EXPORT_RESERVE,
                     WAYPOINT_DEBUG,
+                    GLYPHIDS_ENABLED,
                     TOOL_RECURSION_DEPTH,
                     DAMAGE_COMPATIBILITY_MODE,
                     ITEM_HAZARD_DROP_TICKRATE,
