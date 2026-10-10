@@ -379,28 +379,53 @@ public final class ArmorModHandler {
         if (entity instanceof Creeper creeper && HbmLivingProps.isDefused(creeper)) {
             ItemModDefuser.castrateCreeper(creeper, null, false);
         }
-        for (Holder<Attribute> attribute : MODIFIABLE) {
-            AttributeInstance instance = entity.getAttribute(attribute);
-            if (instance == null) continue;
-            for (ResourceLocation id : PIECE_MODIFIERS) instance.removeModifier(id);
-        }
+        // backport-fix: BF-083 the modifiers used to be removed from every attribute and added
+        // back while the mods ran. A mod that gives an effect each tick (servos: haste, jump
+        // boost) made 1.21.1 refresh the dirty attributes right then (LivingEntity
+        // .onEffectUpdated -> refreshDirtyAttributes), with the health mod's MAX_HEALTH bonus
+        // removed for that moment, so health was clamped to 20 every tick: natural regeneration
+        // used up food and never got past 20. Now the wanted modifiers are worked out first and
+        // only changed ones are touched; the mods' own updates run afterwards.
+        ItemStack[][] installed = new ItemStack[ArmorUtil.ARMOR_SLOTS.length][];
+        Map<Holder<Attribute>, Map<ResourceLocation, AttributeModifier>> wanted =
+                new IdentityHashMap<>();
         for (int i = 0; i < ArmorUtil.ARMOR_SLOTS.length; i++) {
             ItemStack armor = entity.getItemBySlot(ArmorUtil.ARMOR_SLOTS[i]);
             if (!isArmor(armor)) continue;
             ResourceLocation id = PIECE_MODIFIERS[i];
-            for (ItemStack mod : pryMods(armor)) {
+            installed[i] = pryMods(armor);
+            for (ItemStack mod : installed[i]) {
                 if (!(mod.getItem() instanceof ItemArmorMod armorMod)) continue;
-                armorMod.modUpdate(entity, armor);
-                HazardSystem.applyHazards(mod, entity);
                 armorMod.collectModifiers(
                         armor,
                         id,
                         (attribute, modifier) -> {
                             assert MODIFIABLE.contains(attribute);
-                            AttributeInstance instance = entity.getAttribute(attribute);
-
-                            if (instance != null) instance.addOrUpdateTransientModifier(modifier);
+                            // a later mod of the same piece replaces an earlier one, as before
+                            wanted.computeIfAbsent(attribute, a -> new java.util.HashMap<>())
+                                    .put(modifier.id(), modifier);
                         });
+            }
+        }
+        for (Holder<Attribute> attribute : MODIFIABLE) {
+            AttributeInstance instance = entity.getAttribute(attribute);
+            if (instance == null) continue;
+            Map<ResourceLocation, AttributeModifier> forAttribute =
+                    wanted.getOrDefault(attribute, Map.of());
+            for (ResourceLocation id : PIECE_MODIFIERS) {
+                AttributeModifier modifier = forAttribute.get(id);
+                if (modifier == null) instance.removeModifier(id);
+                else if (!modifier.equals(instance.getModifier(id)))
+                    instance.addOrUpdateTransientModifier(modifier);
+            }
+        }
+        for (int i = 0; i < ArmorUtil.ARMOR_SLOTS.length; i++) {
+            if (installed[i] == null) continue;
+            ItemStack armor = entity.getItemBySlot(ArmorUtil.ARMOR_SLOTS[i]);
+            for (ItemStack mod : installed[i]) {
+                if (!(mod.getItem() instanceof ItemArmorMod armorMod)) continue;
+                armorMod.modUpdate(entity, armor);
+                HazardSystem.applyHazards(mod, entity);
             }
         }
         if (entity.getHealth() > entity.getMaxHealth()) entity.setHealth(entity.getMaxHealth());
