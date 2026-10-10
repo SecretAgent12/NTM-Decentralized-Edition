@@ -48,8 +48,18 @@ public record RadioTorchModel() implements BlockModel<HFRWavefrontObject> {
         return switch (facing) {
             case DOWN -> com.hbm.backport.Octahedral.blockRot('z', 180);
             case UP -> OctahedralGroup.IDENTITY;
-            case NORTH -> com.hbm.backport.Octahedral.blockRot('y', 90).compose(com.hbm.backport.Octahedral.blockRot('z', 90));
-            case SOUTH -> com.hbm.backport.Octahedral.blockRot('y', 270).compose(com.hbm.backport.Octahedral.blockRot('z', 90));
+            // backport-fix: BF-080 on the north and south walls ntm-next's rotation came out turned
+            // 90 degrees anticlockwise on 1.21.1 (seen in game, like BF-079): a quarter turn
+            // clockwise seen from above is added - ry 270 here (ry 90 turned it the wrong way in
+            // game), multiplied out in Octahedral.product. West, east, floor and ceiling were right
+            case NORTH ->
+                    com.hbm.backport.Octahedral.product(
+                            com.hbm.util.Facing.ry(270),
+                            com.hbm.backport.Octahedral.blockRot('y', 90).compose(com.hbm.backport.Octahedral.blockRot('z', 90)));
+            case SOUTH ->
+                    com.hbm.backport.Octahedral.product(
+                            com.hbm.util.Facing.ry(270),
+                            com.hbm.backport.Octahedral.blockRot('y', 270).compose(com.hbm.backport.Octahedral.blockRot('z', 90)));
             case WEST -> com.hbm.backport.Octahedral.blockRot('y', 180).compose(com.hbm.backport.Octahedral.blockRot('z', 90));
             case EAST -> com.hbm.backport.Octahedral.blockRot('z', 90);
         };

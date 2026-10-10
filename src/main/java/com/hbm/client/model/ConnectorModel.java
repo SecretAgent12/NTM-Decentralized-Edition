@@ -30,8 +30,16 @@ public record ConnectorModel(ResourceLocation obj) implements BlockModel<HFRWave
             case UP -> OctahedralGroup.IDENTITY;
             case NORTH -> Facing.rx(90).compose(Facing.rz(180));
             case SOUTH -> Facing.rx(90);
-            case WEST -> Facing.rx(90).compose(Facing.rz(90));
-            case EAST -> Facing.rx(90).compose(Facing.rz(270));
+            // backport-fix: BF-080 on the west and east walls ntm-next's rotation came out turned
+            // 90 degrees anticlockwise on 1.21.1 (seen in game, like BF-079): a quarter turn
+            // clockwise seen from above is added - ry 270 here (ry 90 turned it the wrong way in
+            // game), multiplied out in Octahedral.product. North, south, floor and ceiling were right
+            case WEST ->
+                    com.hbm.backport.Octahedral.product(
+                            Facing.ry(270), Facing.rx(90).compose(Facing.rz(90)));
+            case EAST ->
+                    com.hbm.backport.Octahedral.product(
+                            Facing.ry(270), Facing.rx(90).compose(Facing.rz(270)));
         };
     }
 
