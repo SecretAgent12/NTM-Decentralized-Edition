@@ -44,7 +44,8 @@ public final class CrankShaftInstanceTypes {
                         writeTransformed(ptr, instance);
                     })
                     .vertexShader(rl("instance/crankshaft/transformed_uv.vert"))
-                    .cullShader(flw("instance/cull/transformed.glsl"))
+                    // backport-fix: BF-086 own cull file (layout differs from TRANSFORMED; see CullShaderCheck)
+                    .cullShader(rl("instance/cull/transformed_uv.glsl"))
                     .build();
 
     public static final InstanceType<AffineUvTransformedInstance> AFFINE_UV_TRANSFORMED =
@@ -68,7 +69,8 @@ public final class CrankShaftInstanceTypes {
                         writeTransformed(ptr, instance);
                     })
                     .vertexShader(rl("instance/crankshaft/transformed_affine_uv.vert"))
-                    .cullShader(flw("instance/cull/transformed.glsl"))
+                    // backport-fix: BF-086 own cull file (layout differs from TRANSFORMED; see CullShaderCheck)
+                    .cullShader(rl("instance/cull/transformed_affine_uv.glsl"))
                     .build();
 
     public static final InstanceType<ClipTransformedInstance> CLIP_TRANSFORMED =
@@ -116,10 +118,6 @@ public final class CrankShaftInstanceTypes {
 
     static ResourceLocation rl(String path) {
         return ResourceLocation.fromNamespaceAndPath("hbm", path);
-    }
-
-    private static ResourceLocation flw(String path) {
-        return ResourceLocation.fromNamespaceAndPath("flywheel", path);
     }
 
     static void seedColoredLitOverlay(long ptr) {

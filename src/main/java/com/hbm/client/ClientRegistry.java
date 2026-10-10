@@ -361,6 +361,7 @@ public final class ClientRegistry {
         TurretVisuals.register();
         EntityVisuals.register();
         MultiblockCrumblingVisuals.register();
+        com.hbm.backport.client.flywheel.CullShaderCheck.run(); // backport-fix: BF-086
     }
 
     public static ParticleProvider<SimpleParticleType> radFogProvider(SpriteSet sprites) {
