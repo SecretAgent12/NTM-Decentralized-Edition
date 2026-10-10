@@ -30,10 +30,14 @@ public record AnchorModel() implements BlockModel<HFRWavefrontObject> {
         return switch (facing) {
             case DOWN -> Facing.rx(180);
             case UP -> OctahedralGroup.IDENTITY;
-            case NORTH -> Facing.rx(90).compose(Facing.rz(180));
+            // backport-fix: BF-079 (GitHub #16) the south wall (rx 90) is right in game; the other
+            // walls are that same tilt turned about the vertical, multiplied out in
+            // Octahedral.product (west 270 / east 90: 90 / 270 came out swapped in game).
+            // ntm-next's rx.compose(rz) pointed the anchor away from its wall on 1.21.1
             case SOUTH -> Facing.rx(90);
-            case WEST -> Facing.rx(90).compose(Facing.rz(90));
-            case EAST -> Facing.rx(90).compose(Facing.rz(270));
+            case NORTH -> com.hbm.backport.Octahedral.product(Facing.ry(180), Facing.rx(90));
+            case WEST -> com.hbm.backport.Octahedral.product(Facing.ry(270), Facing.rx(90));
+            case EAST -> com.hbm.backport.Octahedral.product(Facing.ry(90), Facing.rx(90));
         };
     }
 

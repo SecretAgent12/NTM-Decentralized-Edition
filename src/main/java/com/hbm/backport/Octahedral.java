@@ -46,6 +46,19 @@ public final class Octahedral {
         return new Matrix3f(MATRICES[group.ordinal()]);
     }
 
+    /**
+     * backport-fix: BF-079 — the element whose matrix is {@code matrix(first)} followed by {@code
+     * matrix(then)} ({@code then * first}), worked out from the matrices instead of 1.21.1's
+     * {@code OctahedralGroup.compose}, whose operand order didn't match the ported 26.x code.
+     */
+    public static OctahedralGroup product(OctahedralGroup then, OctahedralGroup first) {
+        Matrix3f want = new Matrix3f(MATRICES[then.ordinal()]).mul(MATRICES[first.ordinal()]);
+        for (OctahedralGroup g : OctahedralGroup.values()) {
+            if (same(MATRICES[g.ordinal()], want)) return g;
+        }
+        throw new IllegalStateException("no octahedral element for " + then + " * " + first);
+    }
+
     public static OctahedralGroup blockRot(char axis, int degrees) {
         float a = (float) Math.toRadians(-degrees);
         Matrix3f want = switch (axis) {
