@@ -65,7 +65,7 @@ public final class OreGenerationProfiles {
             ResourceLocation biomeId =
                     biome.unwrapKey()
                             .map(key -> key.location())
-                            .orElseGet(() -> anonymous("biome", Biome.DIRECT_CODEC, biome.value()));
+                            .orElseGet(() -> anonymous("biome", Biome.DIRECT_CODEC, biome.value(), level));
             for (int step = 0; step < steps.size(); step++) {
                 for (Holder<PlacedFeature> feature : steps.get(step)) {
                     ResourceLocation id =
@@ -76,7 +76,8 @@ public final class OreGenerationProfiles {
                                                     anonymous(
                                                             "feature",
                                                             PlacedFeature.DIRECT_CODEC,
-                                                            feature.value()));
+                                                            feature.value(),
+                                                            level));
                     Key key = new Key(id, step, feature.value());
                     attachments.computeIfAbsent(key, ignored -> new LinkedHashSet<>()).add(biomeId);
                 }
@@ -252,7 +253,8 @@ public final class OreGenerationProfiles {
                                     + anonymous(
                                                     "attachment",
                                                     ResourceLocation.CODEC.listOf(),
-                                                    orderedBiomes)
+                                                    orderedBiomes,
+                                                    level)
                                             .getPath());
         return new OreGenerationProfile(
                 id,
@@ -356,11 +358,26 @@ public final class OreGenerationProfiles {
         return Component.translatable("ore.hbm." + key, args);
     }
 
-    private static <T> ResourceLocation anonymous(String kind, Codec<T> codec, T value) {
+    /**
+     * backport-fix: BF-081 — an unregistered (inline) feature or biome is named by a hash of its
+     * encoded form. Encoded with plain JsonOps, any part that refers to a registry entry (a block
+     * state provider, a holder) failed with "Can't access registry minecraft:block", and
+     * getOrThrow crashed the server on start: seen in a modpack where some mod (via Sinytra
+     * Connector) adds inline placed features to biomes. Now encoded with the level's registries,
+     * and if it still can't be encoded the value's text is hashed instead of crashing.
+     */
+    private static <T> ResourceLocation anonymous(
+            String kind, Codec<T> codec, T value, LevelHeightAccessor level) {
+        com.mojang.serialization.DynamicOps<com.google.gson.JsonElement> ops =
+                level instanceof net.minecraft.world.level.Level registries
+                        ? net.minecraft.resources.RegistryOps.create(
+                                JsonOps.INSTANCE, registries.registryAccess())
+                        : JsonOps.INSTANCE;
         byte[] encoded =
-                codec.encodeStart(JsonOps.INSTANCE, value)
-                        .getOrThrow()
-                        .toString()
+                codec.encodeStart(ops, value)
+                        .result()
+                        .map(Object::toString)
+                        .orElseGet(() -> kind + ":" + value)
                         .getBytes(StandardCharsets.UTF_8);
         try {
             return Library.id(
