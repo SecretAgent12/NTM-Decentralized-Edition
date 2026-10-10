@@ -3,6 +3,9 @@
 
 package com.hbm.packet.toserver;
 
+import com.hbm.backport.SubLevelSpace;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 import com.hbm.api.fluidmk2.FluidPipeGraph;
 import com.hbm.api.fluidmk2.FluidPipeTintData;
 import com.hbm.api.fluidmk2.PipeData;
@@ -59,8 +62,7 @@ public final class FluidPipeTintRequestPayload extends ThreadedPayload {
         int playerChunkZ = player.blockPosition().getZ() >> 4;
         for (long key : payload.posKeys) {
             BlockPos pos = BlockPos.of(key);
-            if (Math.abs((pos.getX() >> 4) - playerChunkX) > view
-                    || Math.abs((pos.getZ() >> 4) - playerChunkZ) > view
+            if (!withinView(level, pos, playerChunkX, playerChunkZ, view)
                     || !level.isLoaded(pos)) continue;
             if (!(level.getBlockState(pos).getBlock() instanceof FluidDuctBlockBase)) continue;
             PipeData data = FluidPipeGraph.dataAt(level, key);
@@ -71,6 +73,22 @@ public final class FluidPipeTintRequestPayload extends ThreadedPayload {
                 byFluid.reference2ObjectEntrySet()) {
             FluidPipeTintData.syncTo(player, entry.getValue().toLongArray(), entry.getKey());
         }
+    }
+
+    /**
+     * backport-fix: BF-078 a pipe on a physics contraption sits in the contraption's plot, millions
+     * of blocks from the player: its position is checked where the contraption is in the world.
+     * Without it every pipe on a contraption was refused and drew as "no fluid" until the
+     * contraption was taken apart.
+     */
+    private static boolean withinView(
+            ServerLevel level, BlockPos pos, int playerChunkX, int playerChunkZ, int view) {
+        if (Math.abs((pos.getX() >> 4) - playerChunkX) <= view
+                && Math.abs((pos.getZ() >> 4) - playerChunkZ) <= view) return true;
+        if (!SubLevelSpace.inSubLevel(level, pos.getX(), pos.getZ())) return false;
+        Vec3 world = SubLevelSpace.toWorld(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+        return Math.abs((Mth.floor(world.x) >> 4) - playerChunkX) <= view
+                && Math.abs((Mth.floor(world.z) >> 4) - playerChunkZ) <= view;
     }
 
     @Override
