@@ -222,8 +222,7 @@ public final class ArcFurnaceVisual
 
         long now = level.getGameTime();
         int slot = 0;
-        // backport-fix: BF-047 pour streams are drawn by RenderArcFurnace (neverSkipVanillaRender)
-        for (PourStream stream : java.util.List.<PourStream>of()) {
+        for (PourStream stream : blockEntity.streams) {
             while (pours.size() <= slot)
                 pours.add(new PourVisual(visualizationContext, level, pos));
             float age = (float) (now - stream.birth()) + partialTick;
