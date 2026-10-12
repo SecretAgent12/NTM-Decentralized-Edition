@@ -196,6 +196,8 @@ configurations {
     devModWthit { transitive = false }
     devModKubejs { transitive = false }
     devModWorldedit { transitive = false }
+    devModIris { transitive = false }
+    devModColorwheel { transitive = false }
 }
 dependencies {
     devModSodium "maven.modrinth:AANobbMI:uMOpc5uV"                  // Sodium 0.8.13 for 1.21.1 NeoForge
@@ -207,6 +209,14 @@ dependencies {
     devModKubejs "maven.modrinth:sk9knFPE:SqkDvOLG"                  // Rhino 2101.2.8-build.91
     devModKubejs "maven.modrinth:iHLDc0eo:uPFbnD32"                  // Better Advanced Tooltips 2101.1.0-build.5
     devModWorldedit "maven.modrinth:1u6JkXh5:WTAFvuRx"               // WorldEdit 7.3.8 (NeoForge 1.21.1)
+    // Iris shaders (needs Sodium, so only with dev_sodium on). With a shader pack active Flywheel switches
+    // its instancing/indirect backends off and everything is drawn by the vanilla block entity renderers
+    // Iris 1.8.14-beta.1 (1.21.1 NeoForge): the first one for Sodium 0.8; 1.8.12 and older are built for
+    // Sodium 0.6 and crash on joining a world (SodiumGameOptions$PerformanceSettings is gone in 0.8)
+    devModIris "maven.modrinth:YL57xq9U:KduFYu4t"
+    // Colorwheel 1.3.0 (1.21.1 NeoForge, LGPL-3.0, djefrey): draws Flywheel instances through the shader pack, so
+    // instancing/indirect stay on under Iris. Not bundled: it requires Iris; players add it themselves
+    devModColorwheel "curse.maven:colorwheel-1254143:8990905"
 }
 tasks.register('syncDevMods') {
     def modsDir = file('run/mods')
@@ -216,6 +226,11 @@ tasks.register('syncDevMods') {
             [configurations.devModWthit, project.findProperty('dev_wthit') != 'false'],
             [configurations.devModKubejs, project.findProperty('dev_kubejs') != 'false'],
             [configurations.devModWorldedit, project.findProperty('dev_worldedit') != 'false'],
+            [configurations.devModIris, project.findProperty('dev_iris') == 'true'
+                    && project.findProperty('dev_sodium') != 'false'],
+            [configurations.devModColorwheel, project.findProperty('dev_colorwheel') == 'true'
+                    && project.findProperty('dev_iris') == 'true'
+                    && project.findProperty('dev_sodium') != 'false'],
     ]
     sets.each { inputs.files(it[0]) }
     doLast {

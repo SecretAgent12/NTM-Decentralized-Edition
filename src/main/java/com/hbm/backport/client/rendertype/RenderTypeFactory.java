@@ -3,6 +3,7 @@
 
 package com.hbm.backport.client.rendertype;
 
+import com.hbm.backport.client.compat.iris.IrisCompat;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
@@ -186,6 +187,13 @@ public final class RenderTypeFactory {
      * _nofog) with ALPHA_CUTOUT / EMISSIVE / NO_OVERLAY / NO_CARDINAL_LIGHTING / APPLY_TEXTURE_MATRIX as
      * uniforms; particle family likewise (ALPHA_CUTOUT, default 0.1); lightning, lines, text, tracer ribbon;
      * plain vanilla programs (position*, gui, crumbling, lines, text) map to the 1.21.1 vanilla shaders.
+     *
+     * <p>backport: iris — 1.21.1 Iris only swaps in its pack programs when a vanilla {@code GameRenderer}
+     * shader getter is called; our own programs drawn under a pack ended up invisible (glyphids, FEL and other
+     * beams, nuke flash and clouds). So while a pack is active every backport program gives way to the nearest
+     * vanilla getter (see {@link #program}), picked per draw, so toggling the pack needs no reload. Lost under a
+     * pack only: our fade and no-fog variants. Tracer ribbons have no vanilla counterpart (their vertex shader
+     * builds the quad) and keep their own program.
      */
     public static RenderStateShard.ShaderStateShard shader(RenderPipeline p) {
         String vs = p.getVertexShader().toString();
@@ -193,11 +201,11 @@ public final class RenderTypeFactory {
         ShaderDefines d = p.getShaderDefines();
         switch (fs) {
             case "minecraft:core/entity":
-                return entity(HbmShaders::entity, d);
+                return entity(HbmShaders::entity, p);
             case "hbm:core/entity_fade":
-                return entity(HbmShaders::entityFade, d);
+                return entity(HbmShaders::entityFade, p);
             case "hbm:core/entity_nofog":
-                return entity(HbmShaders::entityNoFog, d);
+                return entity(HbmShaders::entityNoFog, p);
             case "minecraft:core/particle":
                 if (d.isEmpty()) return new RenderStateShard.ShaderStateShard(GameRenderer::getParticleShader);
                 return particle(HbmShaders::particle, d);
@@ -222,7 +230,10 @@ public final class RenderTypeFactory {
             case "hbm:core/text_fade": {
                 float gray = d.has("IS_GRAYSCALE") ? 1F : 0F;
                 float cutout = alphaCutout(d, 0.1F);
-                return program(HbmShaders::textFade, GameRenderer::getRendertypeTextShader, s -> {
+                Supplier<ShaderInstance> vanilla = d.has("IS_GRAYSCALE")
+                        ? GameRenderer::getRendertypeTextIntensityShader
+                        : GameRenderer::getRendertypeTextShader;
+                return program(HbmShaders::textFade, vanilla, s -> {
                     s.safeGetUniform("HbmGrayscale").set(gray);
                     s.safeGetUniform("AlphaCutout").set(cutout);
                 });
@@ -234,7 +245,8 @@ public final class RenderTypeFactory {
                 float padding = d.floatValue("RIBBON_FILTER_PADDING", 1F);
                 Supplier<ShaderInstance> prog =
                         fs.endsWith("_nofog") ? HbmShaders::tracerRibbonNoFog : HbmShaders::tracerRibbon;
-                return program(prog, GameRenderer::getPositionColorShader, s -> {
+                // backport: iris — no vanilla program builds the ribbon quad, so this one stays ours under a pack
+                return ownProgram(prog, GameRenderer::getPositionColorShader, s -> {
                     s.safeGetUniform("HbmEmissive").set(emissive);
                     s.safeGetUniform("MinRibbonWidth").set(minWidth);
                     s.safeGetUniform("RibbonFilterPadding").set(padding);
@@ -287,7 +299,7 @@ public final class RenderTypeFactory {
             LOGGER.warn("backport: no 1.21.1 shader for pipeline {} ({}); using a format-matched vanilla one",
                     p.getLocation(), what);
         VertexFormat f = p.getVertexFormat();
-        if (f == DefaultVertexFormat.NEW_ENTITY) return entity(HbmShaders::entity, p.getShaderDefines());
+        if (f == DefaultVertexFormat.NEW_ENTITY) return entity(HbmShaders::entity, p);
         if (f == DefaultVertexFormat.PARTICLE) return particle(HbmShaders::particle, p.getShaderDefines());
         if (f == DefaultVertexFormat.POSITION_COLOR_NORMAL) return RenderStateShard.RENDERTYPE_LINES_SHADER;
         if (f == DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP) return RenderStateShard.RENDERTYPE_TEXT_SHADER;
@@ -306,17 +318,31 @@ public final class RenderTypeFactory {
     }
 
     /** backport: the 26.x entity shader's defines as the backport programs' uniforms. */
-    private static RenderStateShard.ShaderStateShard entity(Supplier<ShaderInstance> program, ShaderDefines d) {
+    private static RenderStateShard.ShaderStateShard entity(Supplier<ShaderInstance> program, RenderPipeline p) {
+        ShaderDefines d = p.getShaderDefines();
         float cardinal = d.has("NO_CARDINAL_LIGHTING") ? 0F : 1F;
         float lightmap = d.has("EMISSIVE") ? 0F : 1F;
         float overlay = d.has("NO_OVERLAY") ? 0F : 1F;
         float textureMatrix = d.has("APPLY_TEXTURE_MATRIX") ? 1F : 0F;
         // no ALPHA_CUTOUT: nothing is discarded (texture alpha is never below -1)
         float cutout = alphaCutout(d, -1F);
-        return program(program, GameRenderer::getRendertypeEntityTranslucentShader, s -> {
+        return program(program, vanillaEntity(p), s -> {
             s.safeGetUniform("HbmFlags").set(cardinal, lightmap, overlay, textureMatrix);
             s.safeGetUniform("AlphaCutout").set(cutout);
         });
+    }
+
+    /**
+     * backport: iris — the vanilla entity program closest to a 26.x entity pipeline: emissive (no lightmap) ->
+     * translucent_emissive, blended -> translucent, ALPHA_CUTOUT -> cutout_no_cull (culling is the cull shard's
+     * job), otherwise solid. All take NEW_ENTITY, which Iris widens to its entity format itself.
+     */
+    private static Supplier<ShaderInstance> vanillaEntity(RenderPipeline p) {
+        ShaderDefines d = p.getShaderDefines();
+        if (d.has("EMISSIVE")) return GameRenderer::getRendertypeEntityTranslucentEmissiveShader;
+        if (p.getColorTargetState().blendFunction().isPresent()) return GameRenderer::getRendertypeEntityTranslucentShader;
+        if (alphaCutout(d, -1F) >= 0F) return GameRenderer::getRendertypeEntityCutoutNoCullShader;
+        return GameRenderer::getRendertypeEntitySolidShader;
     }
 
     private static RenderStateShard.ShaderStateShard particle(Supplier<ShaderInstance> program, ShaderDefines d) {
@@ -327,10 +353,23 @@ public final class RenderTypeFactory {
 
     /**
      * A shader shard for a backport program: RenderSystem.setShader calls the supplier during setup, so the
-     * per-type uniforms are written right before the draw uploads them. Falls back to a vanilla shader
-     * while the program is missing (failed to load).
+     * per-type uniforms are written right before the draw uploads them. Uses the vanilla shader instead
+     * while the program is missing (failed to load) or an Iris shader pack is active.
      */
     private static RenderStateShard.ShaderStateShard program(
+            Supplier<ShaderInstance> program, Supplier<ShaderInstance> vanilla, Consumer<ShaderInstance> uniforms) {
+        return new RenderStateShard.ShaderStateShard(() -> {
+            // backport: iris — the getter is what Iris replaces with the pack's program (shadow pass included)
+            if (IrisCompat.isShaderPackInUse()) return vanilla.get();
+            ShaderInstance s = program.get();
+            if (s == null) return vanilla.get();
+            uniforms.accept(s);
+            return s;
+        });
+    }
+
+    /** {@link #program} without the shader-pack swap, for programs no vanilla shader can stand in for. */
+    private static RenderStateShard.ShaderStateShard ownProgram(
             Supplier<ShaderInstance> program, Supplier<ShaderInstance> fallback, Consumer<ShaderInstance> uniforms) {
         return new RenderStateShard.ShaderStateShard(() -> {
             ShaderInstance s = program.get();

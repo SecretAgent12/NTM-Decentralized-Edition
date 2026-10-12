@@ -48,6 +48,10 @@ in fact a **backport of [NTM: NEXT](https://github.com/Warfactory-Official/ntm-n
 
 That's it — **Flywheel** and **Ponder** are bundled inside the jar.
 
+**Playing with shaders?** NTM: DE works with **Iris** from 1.0.0-beta.10. Also install
+**[Colorwheel](https://modrinth.com/mod/colorwheel)**: without it Flywheel switches off whenever a shader pack is active, and every machine
+is drawn the slow way, which costs a lot of FPS on a big base. More in [Shaders](docs/compatibility.md#shaders).
+
 > [!WARNING]
 > This is a **beta**: the whole mod is in and stable, but it hasn't been through many worlds and modpacks yet.
 > Keep backups, and please report what breaks.
@@ -73,7 +77,7 @@ Without it the mod falls back to plain Java.
 | Lithium | ✅ | |
 | ImmediatelyFast, Gnetum | ✅ | From 1.0.0-beta.4 (older versions: dark machine GUIs) |
 | ScalableLux | ✅ | Recommended (0.3.x) — relights nuke craters much faster; can't be used together with Sable |
-| Iris / shaders | ❌ | Planned |
+| Iris / shaders | ✅ | From 1.0.0-beta.10. Install [Colorwheel](https://modrinth.com/mod/colorwheel) too, see [Shaders](docs/compatibility.md#shaders) |
 | REI, Compact Storage | ❌ | Not planned for now |
 | Trinkets | ❌ | No NeoForge 1.21.1 builds exist |
 
@@ -105,6 +109,10 @@ integrations.
 
 **Can I use it with Create?**
 Yes. It bundles the same Flywheel and Ponder that Create 6 uses, and it is tested together with Create: Aeronautics.
+
+**Does it work with shaders?**
+Yes, with Iris, from 1.0.0-beta.10. Add [Colorwheel](https://modrinth.com/mod/colorwheel) so machines keep rendering
+fast under a shader pack; see [Shaders](docs/compatibility.md#shaders).
 
 **Can I use it on a server?**
 Yes — install it on the server and on every client.

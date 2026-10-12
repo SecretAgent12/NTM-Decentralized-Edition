@@ -4,6 +4,7 @@
 
 package com.hbm.items.weapon.sedna.factory;
 
+import com.hbm.backport.client.compat.iris.IrisCompat;
 import com.hbm.client.render.FlatCutout;
 import com.hbm.client.render.ParticleRenderTypes;
 import com.hbm.client.render.RenderBeam;
@@ -769,6 +770,10 @@ public class LegoClient {
             int lc) {
 
         if (RibbonPass.isShadow()) return;
+        if (IrisCompat.isShaderPackInUse()) {
+            submitTracerBox(pose, collector, dark, light, length, widthF, widthB, lc);
+            return;
+        }
         collector.submitCustomGeometry(
                 pose,
                 type,
@@ -782,5 +787,45 @@ public class LegoClient {
                                 0xFF000000 | light,
                                 0xFF000000 | dark,
                                 lc));
+    }
+
+    /**
+     * backport: iris — under a shader pack the ribbon program draws nothing (Iris only swaps in pack programs for
+     * vanilla shaders, and the ribbon has no vanilla counterpart: its vertex shader builds the quad). Tracers then
+     * fall back to the 1.7.10 box ({@code renderBulletStandard(Tessellator, ...)} there: untextured, unculled,
+     * head {@code light} to tail {@code dark}) on a vanilla entity type that Iris does swap. No minimum pixel width.
+     */
+    private static void submitTracerBox(
+            PoseStack pose,
+            SubmitNodeCollector collector,
+            int dark,
+            int light,
+            double length,
+            double widthF,
+            double widthB,
+            int lc) {
+        float l = (float) length;
+        float f = (float) widthF;
+        float b = (float) widthB;
+        int d = 0xFF000000 | dark;
+        int h = 0xFF000000 | light;
+        // x, y, z, tail? per vertex, quads in the 1.7.10 order
+        float[] box = {
+            l, b, -b, 1, l, b, b, 1, 0, f, f, 0, 0, f, -f, 0,
+            l, -b, -b, 1, l, -b, b, 1, 0, -f, f, 0, 0, -f, -f, 0,
+            l, -b, b, 1, l, b, b, 1, 0, f, f, 0, 0, -f, f, 0,
+            l, -b, -b, 1, l, b, -b, 1, 0, f, -f, 0, 0, -f, -f, 0,
+            l, b, b, 1, l, b, -b, 1, l, -b, -b, 1, l, -b, b, 1,
+            0, f, f, 0, 0, f, -f, 0, 0, -f, -f, 0, 0, -f, f, 0
+        };
+        collector.submitCustomGeometry(
+                pose,
+                WeaponRenderTypes.UNTEXTURED,
+                (p, buf) -> {
+                    for (int i = 0; i < box.length; i += 4)
+                        Vertices.emit(
+                                buf, p, box[i], box[i + 1], box[i + 2], box[i + 3] > 0F ? d : h, 0.5F, 0.5F, lc,
+                                0F, 1F, 0F);
+                });
     }
 }
