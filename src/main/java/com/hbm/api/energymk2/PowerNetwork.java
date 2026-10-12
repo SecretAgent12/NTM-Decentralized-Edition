@@ -67,6 +67,7 @@ public final class PowerNetwork {
         for (ServerLevel level : server.getAllLevels()) {
             LevelNodeGraph<CableData> graph = PowerGraph.get(level);
             graph.applyCompiledSwaps();
+            graph.sweep(level); // backport-fix: BF-087 self-healing probe sweep
             for (NodeNetwork<CableData> net : graph.networks()) {
                 distribute(level, graph, net);
             }
@@ -603,7 +604,7 @@ public final class PowerNetwork {
                                     ? FaceCache.self(level, cellPos)
                                     : FaceCache.face(level, cellPos, DIRS[faceIndex]);
         }
-        fc.memoise(level, owner);
+        fc.memoise(level, owner, p, r);
         return role(ef, bit, p, r);
     }
 
@@ -677,10 +678,13 @@ public final class PowerNetwork {
             memoReceiver = null;
         }
 
-        void memoise(ServerLevel level, @Nullable BlockEntity owner) {
+        void memoise(
+                ServerLevel level, @Nullable BlockEntity owner, boolean wantProvider, boolean wantReceiver) {
             if (owner == null) return;
             IEnergyHandlerMK2 p = provider.find();
             IEnergyHandlerMK2 r = receiver.find();
+            // backport-fix: BF-087 never memoise half a face (see FluidNetwork.FaceCache.memoise)
+            if ((wantProvider && p == null) || (wantReceiver && r == null)) return;
             BlockEntity pa = p == null ? null : p instanceof BlockEntity be ? be : owner;
             BlockEntity ra = r == null ? null : r instanceof BlockEntity be ? be : owner;
             BlockEntity be = pa != null ? pa : ra;

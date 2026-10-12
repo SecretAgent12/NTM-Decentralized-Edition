@@ -4,6 +4,7 @@
 package com.hbm.uninos.graph;
 
 import com.hbm.api.fluidmk2.FlushIndex;
+import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.capability.ICapabilityBlock;
 import com.hbm.lib.Library;
 import com.hbm.platform.Services;
@@ -25,8 +26,10 @@ import java.util.stream.LongStream;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
+import net.minecraft.server.level.FullChunkStatus;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -92,6 +95,14 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
     private final ConcurrentLinkedQueue<CompiledFold<D>> readySwaps = new ConcurrentLinkedQueue<>();
 
     public long probeBlocker = NO_BLOCKER;
+
+    // backport-fix: BF-087 self-healing sweep (see sweep): snapshot of every cell, walked a slice per tick
+    private static final int SWEEP_PERIOD_TICKS = 200;
+    private static final int SWEEP_MIN_CELLS = 16;
+    private static final int SWEEP_MAX_CELLS = 512;
+    private long[] sweepKeys = EMPTY_INTERIOR;
+    private int sweepCursor;
+    private final BlockPos.MutableBlockPos sweepPos = new BlockPos.MutableBlockPos();
 
     private int floodGeneration;
 
@@ -324,6 +335,17 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         return graph;
     }
 
+    /**
+     * backport-fix: BF-087 re-probe every face of the graph cell AT {@code pos}, its own self-endpoint face
+     * included. {@link #invalidateEndpointsAround} only resets the faces of the neighbours that look at
+     * {@code pos}, so a storage block whose own self-endpoint had been probed "absent" stayed out of its network
+     * after reloading.
+     */
+    public static void invalidateNodeAt(ServerLevel level, BlockPos pos) {
+        List<LevelNodeGraph<?>> graphs = level.hbm$graphs();
+        for (int i = 0; i < graphs.size(); i++) graphs.get(i).invalidateNode(pos.asLong());
+    }
+
     public static void invalidateEndpointsAround(ServerLevel level, BlockPos pos) {
         List<LevelNodeGraph<?>> graphs = level.hbm$graphs();
         for (int i = 0; i < graphs.size(); i++) graphs.get(i).invalidateAround(pos.asLong());
@@ -339,6 +361,9 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
             LevelNodeGraph<?> graph = graphs.get(i);
             if (graph.nodeCount() == 0) continue;
             graph.queueNodesIn(chunkKey);
+            // backport-fix: BF-087 nothing probed before the chunk went away is trusted after it is back:
+            // every face of every cell in it (own self-endpoints included) is probed again
+            graph.resetProbesIn(chunkKey);
             graph.unparkChunk(chunkKey);
             for (var entry : chunk.getBlockEntities().entrySet()) {
                 if (entry.getValue() instanceof GraphResident) continue;
@@ -1084,6 +1109,118 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         }
     }
 
+    /** backport-fix: BF-087 forget every probe verdict of the cells in a chunk and queue them again. */
+    public void resetProbesIn(long chunkKey) {
+        LongOpenHashSet inChunk = nodesByChunk.get(chunkKey);
+        if (inChunk == null) return;
+        for (LongIterator it = inChunk.iterator(); it.hasNext(); ) invalidateNode(it.nextLong());
+    }
+
+    /**
+     * backport-fix: BF-087 whether a face may be probed now. A verdict is only final when the block it is about
+     * is really there: the target's chunk must be loaded and FULL, and a block that carries a block entity must
+     * have a live one. Otherwise (chunk not loaded yet, or the tick between a chunk unloading its block entities
+     * and leaving the chunk map, when the chunk still reads as present but its block entities are already removed)
+     * the probe used to answer ABSENT, and that answer was never looked at again. Returns the chunk to wait for,
+     * or NO_BLOCKER when the face can be probed.
+     */
+    private static long notReady(ServerLevel level, long posKey) {
+        LevelChunk chunk =
+                level.getChunkSource()
+                        .getChunkNow(
+                                SectionPos.blockToSectionCoord(BlockPos.getX(posKey)),
+                                SectionPos.blockToSectionCoord(BlockPos.getZ(posKey)));
+        long chunkKey = chunkOf(posKey);
+        if (chunk == null || !chunk.getFullStatus().isOrAfter(FullChunkStatus.FULL)) return chunkKey;
+        BlockPos pos = BlockPos.of(posKey);
+        if (chunk.getBlockState(pos).hasBlockEntity()) {
+            BlockEntity be = chunk.getBlockEntity(pos, LevelChunk.EntityCreationType.CHECK);
+            if (be == null || be.isRemoved()) return chunkKey;
+        }
+        return NO_BLOCKER;
+    }
+
+    /**
+     * backport-fix: BF-087 self-healing, the safety net 1.7.10 had by re-subscribing every machine every tick.
+     * Probe verdicts are otherwise only revisited on events (neighbour change, chunk load, block entity load);
+     * a missed event left a face "absent" or unprobed for good, silently (a battery or tank dropping out of its
+     * network, a reactor losing its water). Each tick a slice of all cells is checked, so every cell comes up
+     * about every {@value #SWEEP_PERIOD_TICKS} ticks (slower only past {@value #SWEEP_MAX_CELLS} cells per tick):
+     * faces probed "absent" that look at something able to be an endpoint (a block entity, a capability block, a
+     * multiblock surface) are probed again, and cells with unprobed faces that nobody queued are queued. Faces
+     * looking at air or plain blocks cost one block state read.
+     */
+    public void sweep(ServerLevel level) {
+        if (sweepCursor >= sweepKeys.length) {
+            int total = nodesByPos.size() + interiorIndex.size();
+            if (total == 0) return;
+            long[] keys = new long[total];
+            int n = 0;
+            for (LongIterator it = nodesByPos.keySet().iterator(); it.hasNext() && n < total; )
+                keys[n++] = it.nextLong();
+            for (LongIterator it = interiorIndex.keySet().iterator(); it.hasNext() && n < total; )
+                keys[n++] = it.nextLong();
+            sweepKeys = n == total ? keys : Arrays.copyOf(keys, n);
+            sweepCursor = 0;
+        }
+        int budget =
+                Math.min(
+                        SWEEP_MAX_CELLS,
+                        Math.max(
+                                SWEEP_MIN_CELLS,
+                                (sweepKeys.length + SWEEP_PERIOD_TICKS - 1) / SWEEP_PERIOD_TICKS));
+        int end = Math.min(sweepKeys.length, sweepCursor + budget);
+        while (sweepCursor < end) sweepCell(level, sweepKeys[sweepCursor++]);
+    }
+
+    private void sweepCell(ServerLevel level, long posKey) {
+        if (!resident(level, posKey)) return;
+        GraphNode<D> node = nodesByPos.get(posKey);
+        if (node != null) {
+            NodeNetwork<D> net = node.net;
+            EdgeFaces ef = node.ef;
+            if (net == null || ef == null || net.edgeFaces == null) return;
+            boolean requeue = (ef.mask & ~ef.probedMask) != 0;
+            int stale = ef.mask & ef.probedMask & ~ef.activeMask;
+            for (int f = 0; stale != 0 && f <= EdgeFaces.SELF; f++) {
+                int bit = 1 << f;
+                if ((stale & bit) == 0) continue;
+                stale &= ~bit;
+                long target = f == EdgeFaces.SELF ? posKey : offset(posKey, DIRS[f]);
+                if (!couldBeEndpoint(level, target)) continue;
+                ef.probedMask &= ~bit;
+                requeue = true;
+            }
+            if (requeue) queue(net, node);
+            return;
+        }
+        GraphSegment<D> s = segmentAtNoWrite(posKey);
+        if (s == null || s.net == null) return;
+        int i = s.offsetOf(posKey);
+        if (i < 0) return;
+        boolean requeue = s.hasUnprobed();
+        for (int f = 0; f < 6; f++) {
+            if (!s.probed(i, f)) continue;
+            if (!couldBeEndpoint(level, offset(posKey, DIRS[f]))) continue;
+            s.clearProbed(i, f);
+            requeue = true;
+        }
+        if (requeue) queue(s.net, s);
+    }
+
+    private boolean couldBeEndpoint(ServerLevel level, long posKey) {
+        LevelChunk chunk =
+                level.getChunkSource()
+                        .getChunkNow(
+                                SectionPos.blockToSectionCoord(BlockPos.getX(posKey)),
+                                SectionPos.blockToSectionCoord(BlockPos.getZ(posKey)));
+        if (chunk == null) return false;
+        BlockState state = chunk.getBlockState(sweepPos.set(posKey));
+        return state.hasBlockEntity()
+                || state.getBlock() instanceof ICapabilityBlock
+                || MultiblockSurface.isSurface(state);
+    }
+
     public ReferenceOpenHashSet<GraphNode<D>> drainProbes(
             NodeNetwork<D> net, ServerLevel level, FaceProbe<D> probe) {
         ReferenceOpenHashSet<GraphNode<D>> active = activeFaces(net);
@@ -1110,6 +1247,13 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
             for (int f = 0; f <= EdgeFaces.SELF; f++) {
                 int bit = 1 << f;
                 if ((todo & bit) == 0) continue;
+                // backport-fix: BF-087 no verdict about a block that isn't really there yet / any more
+                long gate =
+                        notReady(level, f == EdgeFaces.SELF ? node.posKey : offset(node.posKey, DIRS[f]));
+                if (gate != NO_BLOCKER) {
+                    park(node, gate);
+                    continue;
+                }
                 probeBlocker = NO_BLOCKER;
                 Probe verdict = probe.present(level, this, node.posKey, ef, f);
                 if (verdict == Probe.UNKNOWN) {
@@ -1153,6 +1297,13 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
                 for (int f = 0; f < 6; f++) {
                     if (f == runDirA || f == runDirB) continue;
                     if (seg.probed(i, f)) continue;
+                    // backport-fix: BF-087 as in drainNodeProbes
+                    long gate = notReady(level, offset(cell, DIRS[f]));
+                    if (gate != NO_BLOCKER) {
+                        parkSegment(seg, gate);
+                        leftUnprobed++;
+                        continue;
+                    }
                     probeBlocker = NO_BLOCKER;
                     Probe verdict = probe.present(level, this, cell, null, f);
                     if (verdict == Probe.UNKNOWN) {

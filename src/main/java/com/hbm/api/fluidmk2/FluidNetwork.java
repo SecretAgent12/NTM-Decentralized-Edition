@@ -53,6 +53,7 @@ public final class FluidNetwork {
         for (ServerLevel level : server.getAllLevels()) {
             for (LevelNodeGraph<PipeData> graph : FluidPipeGraph.all(level)) {
                 graph.applyCompiledSwaps();
+                graph.sweep(level); // backport-fix: BF-087 self-healing probe sweep
                 for (NodeNetwork<PipeData> net : graph.networks()) {
                     distribute(level, graph, net);
                 }
@@ -728,7 +729,7 @@ public final class FluidNetwork {
                                     ? FaceCache.self(level, cellPos)
                                     : FaceCache.face(level, cellPos, DIRS[faceIndex]);
         }
-        fc.memoise(level, owner);
+        fc.memoise(level, owner, p, r);
         return role(ef, bit, p, r);
     }
 
@@ -848,10 +849,14 @@ public final class FluidNetwork {
             memoReceiver = null;
         }
 
-        void memoise(ServerLevel level, @Nullable BlockEntity owner) {
+        void memoise(
+                ServerLevel level, @Nullable BlockEntity owner, boolean wantProvider, boolean wantReceiver) {
             if (owner == null) return;
             IFluidHandlerMK2 p = provider.find();
             IFluidHandlerMK2 r = receiver.find();
+            // backport-fix: BF-087 never memoise half a face: the probe found this role, so a null here means
+            // the lookup missed for a moment, and the memo would hide that role until the block changes
+            if ((wantProvider && p == null) || (wantReceiver && r == null)) return;
             BlockEntity pa = p == null ? null : p instanceof BlockEntity be ? be : owner;
             BlockEntity ra = r == null ? null : r instanceof BlockEntity be ? be : owner;
             BlockEntity be = pa != null ? pa : ra;

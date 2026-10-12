@@ -13,6 +13,9 @@ public interface GraphResident {
 
     static void onLoad(ServerLevel server, BlockEntity be) {
         LevelNodeGraph.invalidateEndpointsAround(server, be.getBlockPos());
+        // backport-fix: BF-087 also the cell of the block entity itself (its own self-endpoint face):
+        // a battery socket that had been probed "absent" while unloading stayed out of its network
+        LevelNodeGraph.invalidateNodeAt(server, be.getBlockPos());
 
         if (!(be.getBlockState().getBlock() instanceof BlockMultiblockCore)) {
             EndpointRegistry.declareSelfIfEndpoint(server, be);

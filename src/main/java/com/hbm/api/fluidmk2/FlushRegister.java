@@ -80,6 +80,12 @@ public final class FlushRegister {
         long gameTime = level.getGameTime();
         BlockPos pos = machine.getBlockPos();
 
+        // backport-fix: BF-087 a contact probed "nothing to push into" was only probed again on an exact
+        // invalidation of its position; every 5 s those are probed again (parked ones wait for their chunk)
+        if (TickPhase.every(gameTime, pos, 100)) {
+            for (int w = 0; w < probed.length; w++) probed[w] &= live[w];
+        }
+
         if (!anyLaneDue(gameTime, pos)) return;
         probePending(level);
 
