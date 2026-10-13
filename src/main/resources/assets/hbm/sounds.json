@@ -2914,6 +2914,25 @@
       }
     ]
   },
+  "weapon.kall_bomb": {
+    "category": "block",
+    "sounds": [
+      {
+        "name": "hbm:weapon/kall_bomb",
+        "stream": false
+      }
+    ]
+  },
+  "weapon.kall_bomb_explosion": {
+    "category": "block",
+    "sounds": [
+      {
+        "name": "hbm:weapon/muke_explosion",
+        "stream": false,
+        "volume": 0.65
+      }
+    ]
+  },
   "weapon.robin_explosion": {
     "category": "player",
     "sounds": [

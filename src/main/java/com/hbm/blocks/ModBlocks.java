@@ -5307,6 +5307,7 @@ public final class ModBlocks {
     public static RegistryHandle<BlockTaint> TAINT;
     public static RegistryHandle<BombFlameWar> FLAME_WAR;
     public static RegistryHandle<BlockEMPBomb> EMP_BOMB;
+    public static RegistryHandle<com.hbm.blocks.bomb.BlockKallBomb> KALL_BOMB;
     public static RegistryHandle<BlockFloatBomb> FLOAT_BOMB;
     public static RegistryHandle<BlockThermoBomb.Endothermic> THERM_ENDO;
     public static RegistryHandle<BlockThermoBomb.Exothermic> THERM_EXO;
@@ -6753,6 +6754,20 @@ public final class ModBlocks {
         Reg.item(
                 "emp_bomb",
                 props -> new BlockItem(EMP_BOMB.get(), props),
+                () -> new Item.Properties());
+
+        KALL_BOMB =
+                Reg.block(
+                        "kall_bomb",
+                        com.hbm.blocks.bomb.BlockKallBomb::new,
+                        () ->
+                                BlockBehaviour.Properties.of()
+                                        .strength(5.0F, 6.0F)
+                                        .noOcclusion()
+                                        .requiresCorrectToolForDrops());
+        Reg.item(
+                "kall_bomb",
+                props -> new BlockItem(KALL_BOMB.get(), props),
                 () -> new Item.Properties());
 
         FLOAT_BOMB =

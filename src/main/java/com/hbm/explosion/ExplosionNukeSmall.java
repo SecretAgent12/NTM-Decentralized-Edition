@@ -36,15 +36,17 @@ public class ExplosionNukeSmall {
                     new TargetPoint(level, posX, posY, posZ, 250));
         }
 
-        level.playSound(
-                null,
-                posX,
-                posY,
-                posZ,
-                ModSounds.GUN_MINI_NUKE_EXPLOSION.get(),
-                SoundSource.BLOCKS,
-                15.0F,
-                1.0F);
+        if (params.sound) {
+            level.playSound(
+                    null,
+                    posX,
+                    posY,
+                    posZ,
+                    ModSounds.GUN_MINI_NUKE_EXPLOSION.get(),
+                    SoundSource.BLOCKS,
+                    15.0F,
+                    1.0F);
+        }
 
         if (params.shrapnelCount > 0)
             ExplosionLarge.spawnShrapnels(level, posX, posY, posZ, params.shrapnelCount);
@@ -142,5 +144,6 @@ public class ExplosionNukeSmall {
         public boolean tinytot = false;
         public int shrapnelCount = 25;
         public int resolution = 64;
+        public boolean sound = true;
     }
 }

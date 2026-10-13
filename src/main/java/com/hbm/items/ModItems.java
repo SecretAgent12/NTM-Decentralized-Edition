@@ -8295,6 +8295,12 @@ public final class ModItems {
                             props -> new ItemStarterKit(props, ItemStarterKit.Kind.MAN),
                             () -> new Item.Properties().stacksTo(1))
                     .addTo(WEAPON_ALL);
+    public static final RegistryHandle<ItemStarterKit> KALL_KIT =
+            Reg.item(
+                            "kall_kit",
+                            props -> new ItemStarterKit(props, ItemStarterKit.Kind.KALL),
+                            () -> new Item.Properties().stacksTo(1))
+                    .addTo(WEAPON_ALL);
     public static final RegistryHandle<ItemStarterKit> MIKE_KIT =
             Reg.item(
                             "mike_kit",
