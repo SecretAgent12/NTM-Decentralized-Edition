@@ -3,6 +3,7 @@
 
 package com.hbm.mixin;
 
+import com.hbm.client.Keybinds;
 import com.hbm.client.qmaw.QMAWClient;
 import com.hbm.wiaj.CanneryClient;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -12,9 +13,16 @@ import net.minecraft.client.gui.screens.Screen;
 import com.hbm.backport.client.gui.input.KeyEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(KeyboardHandler.class)
 public abstract class MixinKeyboardHandler {
+    // backport: 1.21.1 keyPress(long window, int key, int scancode, int action, int modifiers); 26.x passed a KeyEvent
+    @Inject(method = "keyPress", at = @At("HEAD"))
+    private void hbm$guiKeys(long window, int key, int scancode, int action, int modifiers, CallbackInfo ci) {
+        Keybinds.key(window, action, new KeyEvent(key, scancode, modifiers));
+    }
 
     // backport: 1.21.1 calls Screen#keyPressed(int, int, int) inside keyPress's screen-error lambda
     // (lambda$keyPress$5, between NeoForge's ScreenEvent.KeyPressed Pre and Post), not with a KeyEvent

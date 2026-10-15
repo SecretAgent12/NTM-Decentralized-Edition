@@ -6,13 +6,11 @@ package com.hbm.api.energymk2;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import org.jspecify.annotations.Nullable;
 
 public final class ForeignEnergyBridge {
-
     public static final int RECEIVE_LATCH_TICKS = 4;
-
     private final Long2LongOpenHashMap latchByNeighbour = new Long2LongOpenHashMap();
-
     private final IEnergyHandlerMK2 injectedSource =
             new IEnergyHandlerMK2() {
 
@@ -36,14 +34,13 @@ public final class ForeignEnergyBridge {
                     return injectedHe;
                 }
             };
-
     private final EnergyConversion.Carry carry = new EnergyConversion.Carry();
     private long injectedHe;
     private long insertBudgetHe;
     private long extractBudgetHe;
     private long owedHe;
-
     private boolean distributing;
+    public @Nullable Object loaderStaging;
 
     public ForeignEnergyBridge() {
         latchByNeighbour.defaultReturnValue(Long.MIN_VALUE);

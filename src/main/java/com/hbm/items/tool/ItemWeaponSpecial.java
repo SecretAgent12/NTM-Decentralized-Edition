@@ -5,6 +5,7 @@ package com.hbm.items.tool;
 
 import com.hbm.entity.projectile.EntityRubble;
 import com.hbm.items.special.ItemCustomLore;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import java.util.function.Supplier;
 import net.minecraft.core.BlockPos;
@@ -22,7 +23,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
 
 public class ItemWeaponSpecial extends ItemCustomLore {
-
     private static final float CABER_BLAST = 7.5F;
     private static final int CABER_COST = 505;
     private static final float LOUD = 3.0F;
@@ -44,7 +44,6 @@ public class ItemWeaponSpecial extends ItemCustomLore {
             case LAUNCH ->
                     victim.setDeltaMovement(
                             victim.getDeltaMovement().add(attacker.getLookAngle().scale(5)));
-
             case CABER -> {
                 level.explode(
                         null,
@@ -59,8 +58,13 @@ public class ItemWeaponSpecial extends ItemCustomLore {
         }
         SoundEvent sound = effect.sound();
         if (sound != null) {
-            level.playSound(
-                    null, victim.blockPosition(), sound, SoundSource.PLAYERS, effect.volume, 1.0F);
+            EntitySounds.play(
+                    victim,
+                    victim.blockPosition(),
+                    sound,
+                    SoundSource.PLAYERS,
+                    effect.volume,
+                    1.0F);
         }
     }
 
@@ -72,7 +76,6 @@ public class ItemWeaponSpecial extends ItemCustomLore {
         if (player != null && context.getLevel() instanceof ServerLevel level) {
             BlockPos pos = context.getClickedPos();
             BlockState state = level.getBlockState(pos);
-
             if (!state.isAir() && state.getBlock().getExplosionResistance() < 6000F) {
                 EntityRubble rubble =
                         new EntityRubble(level, pos.getX() + 0.5F, pos.getY(), pos.getZ() + 0.5F);
@@ -91,21 +94,15 @@ public class ItemWeaponSpecial extends ItemCustomLore {
                 level.destroyBlock(pos, false);
             }
         }
-
         return InteractionResult.SUCCESS;
     }
 
     public enum Effect {
         INSTANT_KILL(() -> ModSounds.BONK.get(), LOUD),
-
         HALVE(() -> ModSounds.SLICE.get(), LOUD),
-
         LAUNCH(() -> ModSounds.BANG.get(), LOUD),
-
         CABER(null, 0F),
-
         SOUND_ONLY(() -> ModSounds.STOP.get(), 1.0F),
-
         NONE(null, 0F);
 
         private final @Nullable Supplier<SoundEvent> sound;

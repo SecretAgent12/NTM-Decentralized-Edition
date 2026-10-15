@@ -5,13 +5,14 @@ package com.hbm.items.tool;
 
 import com.hbm.NuclearTech;
 import com.hbm.capability.NtmContracts;
+import com.hbm.config.NeoForgeHbmConfig;
 import com.hbm.data.ItemData;
 import com.hbm.interfaces.IBomb;
 import com.hbm.interfaces.IItemEntityUpdate;
 import com.hbm.items.ModDataComponents;
 import com.hbm.items.ModItems;
-import com.hbm.platform.Services;
 import com.hbm.sound.ModSounds;
+import com.hbm.util.KeyHints;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -32,7 +33,6 @@ import net.minecraft.world.level.Level;
 import com.hbm.backport.compat.ItemCompat;
 
 public class ItemDeadManDetonator extends ItemCompat implements IItemEntityUpdate {
-
     private static final float SWITCH_BLAST = 0.0F;
     private static final float EXPLOSIVE_BLAST = 15.0F;
 
@@ -53,7 +53,7 @@ public class ItemDeadManDetonator extends ItemCompat implements IItemEntityUpdat
                 BlockPos target = ItemDetonator.bombTarget(level, BlockPos.of(packed));
                 IBomb bomb = NtmContracts.BOMB.at(level, target);
                 if (bomb != null) bomb.explode(level, target, entity);
-                if (bomb != null && Services.CONFIG.runtime().extendedLogging()) {
+                if (bomb != null && NeoForgeHbmConfig.runtime().extendedLogging()) {
                     NuclearTech.LOGGER.info(
                             "[DET] Tried to detonate block at {} / {} / {} by dead man's switch!",
                             target.getX(),
@@ -80,7 +80,7 @@ public class ItemDeadManDetonator extends ItemCompat implements IItemEntityUpdat
                     entity.getZ(),
                     EXPLOSIVE_BLAST,
                     Level.ExplosionInteraction.BLOCK);
-            if (Services.CONFIG.runtime().extendedLogging()) {
+            if (NeoForgeHbmConfig.runtime().extendedLogging()) {
                 NuclearTech.LOGGER.info(
                         "[DET] Detonated dead man's explosive at {} / {} / {}!",
                         (int) entity.getX(),
@@ -106,7 +106,7 @@ public class ItemDeadManDetonator extends ItemCompat implements IItemEntityUpdat
             IBomb bomb = NtmContracts.BOMB.at(level, target);
             if (bomb != null) {
                 bomb.explode(level, target, player);
-                if (Services.CONFIG.runtime().extendedLogging()) {
+                if (NeoForgeHbmConfig.runtime().extendedLogging()) {
                     NuclearTech.LOGGER.info(
                             "[DET] Tried to detonate block at {} / {} / {} by dead man's switch from {}!",
                             target.getX(),
@@ -142,8 +142,15 @@ public class ItemDeadManDetonator extends ItemCompat implements IItemEntityUpdat
             Consumer<Component> adder,
             TooltipFlag flag) {
         if (linked) {
-            adder.accept(Component.translatable("desc.item.deadman.shiftRightClick"));
-            adder.accept(Component.translatable("desc.item.deadman.dropToDetonate"));
+            adder.accept(
+                    Component.translatable(
+                            "tooltip.hbm.detonator.set_position",
+                            KeyHints.key("key.sneak", "key.keyboard.left.shift"),
+                            KeyHints.key("key.use", "key.mouse.right")));
+            adder.accept(
+                    Component.translatable(
+                            "tooltip.hbm.deadman.drop",
+                            KeyHints.key("key.drop", "key.keyboard.q")));
             Long packed = stack.get(ModDataComponents.DETONATOR_POS.get());
             if (packed == null) {
                 adder.accept(Component.translatable("desc.item.deadman.noPositionSet"));

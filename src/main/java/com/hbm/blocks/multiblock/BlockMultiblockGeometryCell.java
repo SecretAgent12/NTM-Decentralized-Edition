@@ -23,17 +23,23 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jspecify.annotations.Nullable;
 
 public class BlockMultiblockGeometryCell extends BlockMultiblockCell implements ClimbBox {
-
     public static final BooleanProperty OPEN = BooleanProperty.create("open");
 
     private static CellBuckets.@Nullable Geometry constructing;
 
     private final CellBuckets.Geometry bucket;
     private final boolean analog;
+    private Alphabet alphabet = Alphabet.EMPTY;
+
+    record Alphabet(VoxelShape[][] shapes, SoundType[] sounds, @Nullable AABB[] climbs) {
+        static final Alphabet EMPTY =
+                new Alphabet(new VoxelShape[0][], new SoundType[0], new AABB[0]);
+    }
 
     private BlockMultiblockGeometryCell(Properties properties) {
         super(properties);
@@ -109,6 +115,21 @@ public class BlockMultiblockGeometryCell extends BlockMultiblockCell implements 
         return bucket;
     }
 
+    void publish(Alphabet alphabet) {
+        this.alphabet = alphabet;
+        for (BlockState state : stateDefinition.getPossibleStates()) {
+            state.initCache();
+            state.initCache();
+        }
+    }
+
+    public VoxelShape shape(int id, boolean open, boolean forCollision) {
+        VoxelShape[][] shapes = alphabet.shapes();
+        return id < shapes.length
+                ? shapes[id][(open ? 2 : 0) | (forCollision ? 1 : 0)]
+                : Shapes.block();
+    }
+
     public GeometryCellPartition partition() {
         return bucket.part();
     }
@@ -132,24 +153,28 @@ public class BlockMultiblockGeometryCell extends BlockMultiblockCell implements 
 
     @Override
     protected SoundType getSoundType(BlockState state) {
-        return MultiblockCellShapes.sound(bucket, idOf(state));
+        SoundType[] sounds = alphabet.sounds();
+        int id = idOf(state);
+        return id < sounds.length ? sounds[id] : SoundType.STONE;
     }
 
     @Override
     protected VoxelShape getShape(
             BlockState state, BlockGetter level, BlockPos pos, CollisionContext ctx) {
-        return MultiblockCellShapes.shape(bucket, idOf(state), isOpen(state), false);
+        return shape(idOf(state), isOpen(state), false);
     }
 
     @Override
     protected VoxelShape getCollisionShape(
             BlockState state, BlockGetter level, BlockPos pos, CollisionContext ctx) {
-        return MultiblockCellShapes.shape(bucket, idOf(state), isOpen(state), true);
+        return shape(idOf(state), isOpen(state), true);
     }
 
     @Override
     public @Nullable AABB climbBox(BlockState state) {
-        return MultiblockCellShapes.climbBox(bucket, idOf(state));
+        @Nullable AABB[] climbs = alphabet.climbs();
+        int id = idOf(state);
+        return id < climbs.length ? climbs[id] : null;
     }
 
     @Override

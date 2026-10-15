@@ -14,10 +14,9 @@ import com.hbm.lib.Library;
 import com.hbm.lib.internal.UnsafeHolder;
 import com.hbm.lib.maps.NonBlockingHashMapLong;
 import com.hbm.packet.toclient.OcclusionRefreshPayload;
-import com.hbm.platform.Services;
-import com.hbm.registration.IRegistrar;
+import com.hbm.platform.NeoForgeServerEvents;
+import com.hbm.registration.NeoForgeRegistrar;
 import com.hbm.registration.RegistryHandle;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -25,7 +24,6 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongCollection;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +42,7 @@ import net.minecraft.server.level.*;
 import net.minecraft.world.Container;
 import net.minecraft.world.RandomizableContainer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseRailBlock;
@@ -54,6 +53,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.lighting.LightEngine;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
@@ -61,6 +61,16 @@ import org.jspecify.annotations.Nullable;
 import static com.hbm.lib.internal.UnsafeHolder.U;
 
 public final class ChunkUtil {
+    public static boolean resident(BlockEntity be, LevelChunk chunk) {
+        return !be.isRemoved() && chunk.getFullStatus().isOrAfter(FullChunkStatus.FULL);
+    }
+
+    public static void markUnsaved(BlockEntity be) {
+        if (!(be.getLevel() instanceof ServerLevel server)) return;
+        BlockPos pos = be.getBlockPos();
+        LevelChunk chunk = server.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4);
+        if (chunk != null) chunk.setUnsaved(true);
+    }
 
     private static final Object2IntOpenHashMap<ResourceLocation> activeTask =
             new Object2IntOpenHashMap<>();
@@ -80,12 +90,9 @@ public final class ChunkUtil {
                     });
     private static final ThreadLocal<BlockState[]> TL_OVERRIDES =
             ThreadLocal.withInitial(() -> new BlockState[4096]);
-
     private static final ThreadLocal<int[]> TL_CARVED =
             ThreadLocal.withInitial(() -> new int[4096]);
-
     public static RegistryHandle<TicketType> BLAST_LOAD;
-
     public static RegistryHandle<TicketType> ENTITY_HOLD;
     public static final int HOLD_RADIUS = 2; // backport: 26.x ServerPlayer.ENDER_PEARL_TICKET_RADIUS
     private static volatile int refCounter = 0;
@@ -95,10 +102,9 @@ public final class ChunkUtil {
     private ChunkUtil() {}
 
     public static void init() {
-        Services.SERVER.onChunkLoad(ChunkUtil::onChunkLoad);
-        Services.SERVER.onChunkUnload(ChunkUtil::onChunkUnload);
-
-        Services.SERVER.onServerStopping(
+        NeoForgeServerEvents.onChunkLoad(ChunkUtil::onChunkLoad);
+        NeoForgeServerEvents.onChunkUnload(ChunkUtil::onChunkUnload);
+        NeoForgeServerEvents.onServerStopping(
                 server -> {
                     BombForkJoinPool.onServerStopped();
                     onServerStopped();
@@ -113,7 +119,6 @@ public final class ChunkUtil {
             thisDim = new NonBlockingHashMapLong<>(4096);
             ServerChunkCache cache = level.getChunkSource();
             ChunkMap cm = cache.chunkMap;
-
             for (ChunkHolder holder : cm.visibleChunkMap.values()) {
                 LevelChunk chunk = fullChunkIfLoaded(holder);
                 if (chunk != null) thisDim.put(chunk.getPos().toLong(), chunk);
@@ -157,13 +162,13 @@ public final class ChunkUtil {
         refCounter--;
     }
 
-    public static void register(IRegistrar registrar) {
+    public static void register() {
         BLAST_LOAD =
-                registrar.registerTicketType(
+                NeoForgeRegistrar.registerTicketType(
                         "blast_load",
                         () -> new TicketType(TicketType.NO_TIMEOUT, TicketType.FLAG_LOADING));
         ENTITY_HOLD =
-                registrar.registerTicketType(
+                NeoForgeRegistrar.registerTicketType(
                         "entity_hold",
                         () ->
                                 new TicketType(
@@ -193,11 +198,16 @@ public final class ChunkUtil {
     @ServerThread
     public static void loadTickingForEntity(ServerLevel level, ChunkPos pos) {
         holdForEntity(level, pos, HOLD_RADIUS);
+        flushChunkTickets(level);
         level.getChunk(pos.x, pos.z);
         ChunkHolder holder = level.getChunkSource().chunkMap.getVisibleChunkIfPresent(pos.toLong());
         CompletableFuture<ChunkResult<LevelChunk>> ticking = holder.getEntityTickingChunkFuture();
         level.getServer().managedBlock(ticking::isDone);
-        ticking.join().orElseThrow(IllegalStateException::new);
+        ChunkResult<LevelChunk> result = ticking.join();
+        result.orElseThrow(
+                () ->
+                        new IllegalStateException(
+                                "entity-ticking chunk " + pos + ": " + result.getError()));
         // backport: 26.x ServerLevel.waitForEntities(pos, 0)
         level.getServer().managedBlock(() -> level.areEntitiesLoaded(pos.toLong()));
     }
@@ -206,7 +216,6 @@ public final class ChunkUtil {
     public static void addBlastTicket(ServerLevel level, long chunkPos) {
         Long2IntOpenHashMap held =
                 BLAST_LOAD_CLAIMS.computeIfAbsent(level, ignored -> new Long2IntOpenHashMap());
-
         if (held.addTo(chunkPos, 1) > 0) return;
         ChunkPos pos = new ChunkPos(ChunkPos.getX(chunkPos), ChunkPos.getZ(chunkPos));
         TicketType.addTicketWithRadius(level.getChunkSource(), BLAST_LOAD.get(), pos, 0);
@@ -281,7 +290,6 @@ public final class ChunkUtil {
             BlockState oldState,
             BlockState newState) {
         dispatchRemovalHook(level, pos, oldState, newState);
-
         newState.onPlace(level, pos, oldState, false);
         int lx = pos.getX() & 15;
         int ly = pos.getY();
@@ -294,7 +302,8 @@ public final class ChunkUtil {
                 .update(lx, ly, lz, newState);
         chunk.getOrCreateHeightmapUnprimed(Heightmap.Types.WORLD_SURFACE)
                 .update(lx, ly, lz, newState);
-        return Services.PLATFORM.hasDifferentLightProperties(chunk, pos, oldState, newState);
+        return LightEngine.hasDifferentLightProperties(
+                (BlockGetter) chunk, pos, oldState, newState);
     }
 
     @ServerThread
@@ -303,7 +312,6 @@ public final class ChunkUtil {
         BlockPos at = pos.immutable();
         if (level.getBlockState(at).hasBlockEntity()) {
             BlockEntity blockEntity = level.getBlockEntity(at);
-
             if (blockEntity instanceof RandomizableContainer loot) loot.setLootTable(null);
             if (blockEntity instanceof Container container) container.clearContent();
         }
@@ -549,7 +557,6 @@ public final class ChunkUtil {
             if (carveMask.get(idx)) return false;
             return !src.getBlockState(xLocal, yLocal, zLocal).isAir();
         }
-
         int nCx = chunkX, nCz = chunkZ, nSubY = subY;
         int nx = xLocal, ny = yLocal, nz = zLocal;
         if (xLocal < 0) {
@@ -573,7 +580,6 @@ public final class ChunkUtil {
             nSubY++;
             ny = 0;
         }
-
         if (loaded == null) return true;
         LevelChunk neighbor = loaded.get(ChunkPos.asLong(nCx, nCz));
         if (neighbor == null) return true;

@@ -15,11 +15,8 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import com.hbm.backport.client.itemmodel.PoseOps;
 
 public final class RenderBoxModel {
-
     public static final ModelPart CHOPPER_MINE = cube(32, 16, -4F, -4F, -4F, 8, 8, 8);
-
     public static final ModelPart SHRAPNEL = cube(16, 8, 1F, -0.5F, -0.5F, 4, 4, 4);
-
     public static final ModelPart BULLET = cube(8, 4, 1F, -0.5F, -0.5F, 2, 1, 1);
 
     private RenderBoxModel() {}

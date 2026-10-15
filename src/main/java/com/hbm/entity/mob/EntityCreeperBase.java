@@ -3,14 +3,9 @@
 
 package com.hbm.entity.mob;
 
-import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.tags.ItemTags;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.monster.Creeper;
-import net.minecraft.world.entity.monster.AbstractSkeleton;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import com.hbm.backport.compat.CreeperCompat;
 
@@ -21,19 +16,6 @@ public abstract class EntityCreeperBase extends CreeperCompat {
     }
 
     protected abstract void detonate(ServerLevel level);
-
-    @Override
-    protected void dropCustomDeathLoot(
-            ServerLevel level, DamageSource source, boolean killedByPlayer) {
-        super.dropCustomDeathLoot(level, source, killedByPlayer);
-
-        if (!(source.getEntity() instanceof AbstractSkeleton)) return;
-
-        level.registryAccess()
-                .registryOrThrow(Registries.ITEM)
-                .getRandomElementOf(ItemTags.CREEPER_DROP_MUSIC_DISCS, random)
-                .ifPresent(disc -> spawnAtLocation(new ItemStack(disc)));
-    }
 
     @Override
     public void tick() {

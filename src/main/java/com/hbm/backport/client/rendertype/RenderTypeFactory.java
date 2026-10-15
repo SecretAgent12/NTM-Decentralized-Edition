@@ -326,9 +326,12 @@ public final class RenderTypeFactory {
         float textureMatrix = d.has("APPLY_TEXTURE_MATRIX") ? 1F : 0F;
         // no ALPHA_CUTOUT: nothing is discarded (texture alpha is never below -1)
         float cutout = alphaCutout(d, -1F);
+        // DISCARD_ZERO_ALPHA (hbm:core/entity_nofog only; the other programs lack the uniform)
+        float discardZeroAlpha = d.has("DISCARD_ZERO_ALPHA") ? 1F : 0F;
         return program(program, vanillaEntity(p), s -> {
             s.safeGetUniform("HbmFlags").set(cardinal, lightmap, overlay, textureMatrix);
             s.safeGetUniform("AlphaCutout").set(cutout);
+            s.safeGetUniform("HbmDiscardZeroAlpha").set(discardZeroAlpha);
         });
     }
 

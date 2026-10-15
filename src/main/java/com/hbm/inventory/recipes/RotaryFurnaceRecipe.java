@@ -53,9 +53,7 @@ public class RotaryFurnaceRecipe extends GenericRecipe {
                     RotaryFurnaceRecipe::new, EXTRAS_STREAM_CODEC, APPLY_EXTRAS, EXTRACT_EXTRAS);
     public static final RecipeSerializer<RotaryFurnaceRecipe> SERIALIZER =
             RecipeSerializers.of(MAP_CODEC, STREAM_CODEC);
-
     public MaterialStack output;
-
     public int steam;
 
     public RotaryFurnaceRecipe(String name) {

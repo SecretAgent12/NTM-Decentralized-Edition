@@ -3,10 +3,10 @@
 
 package com.hbm.client.render;
 
+import com.hbm.blockentity.machine.BlockEntityCargoElevator;
 import com.hbm.client.model.Meshes;
 import com.hbm.lib.Library;
 import com.hbm.render.loader.HFRWavefrontObject;
-import com.hbm.tileentity.machine.BlockEntityCargoElevator;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.hbm.lib.crankshaft.ConcurrentRenderStateExtraction;
 import com.hbm.backport.client.core.SubmitNodeCollector;
@@ -43,7 +43,6 @@ public class RenderCargoElevator
 
     @Override
     public boolean shouldRenderOffScreen() {
-
         return true;
     }
 

@@ -7,7 +7,6 @@ import com.hbm.lib.Library;
 import net.minecraft.resources.ResourceLocation;
 
 public final class RenderTextures {
-
     public static final ResourceLocation WHITE = Library.id("textures/effect/white.png");
 
     private RenderTextures() {}

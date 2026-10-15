@@ -31,7 +31,6 @@ public class ItemHolotapeImage extends ItemCompat {
     @Override
     public InteractionResult backport$use(Level level, Player player, InteractionHand hand) {
         if (level.isClientSide()) OPEN_SCREEN.accept(hand);
-
         return InteractionResult.CONSUME;
     }
 

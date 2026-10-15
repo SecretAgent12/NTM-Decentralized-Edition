@@ -5,7 +5,7 @@ package com.hbm.integration.recipeviewer;
 
 import com.hbm.blocks.ModBlocks;
 import com.hbm.inventory.fluid.NTMFluids;
-import com.hbm.tileentity.machine.BlockEntityDeuteriumExtractor;
+import com.hbm.blockentity.machine.BlockEntityDeuteriumExtractor;
 import java.util.List;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import net.minecraft.core.registries.BuiltInRegistries;

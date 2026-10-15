@@ -3,14 +3,14 @@
 
 package com.hbm.world.gen;
 
+import com.hbm.blockentity.BlockEntityPedestal;
 import com.hbm.blocks.ModBlocks;
-import com.hbm.blocks.generic.BlockLoot.TileEntityLoot;
+import com.hbm.blocks.generic.BlockLoot.BlockEntityLoot;
 import com.hbm.blocks.generic.BlockRedBrick;
 import com.hbm.blocks.generic.BlockRedBrickKeyhole;
 import com.hbm.itempool.ItemPool;
 import com.hbm.itempool.ItemPools;
 import com.hbm.items.ModItems;
-import com.hbm.tileentity.BlockEntityPedestal;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -227,7 +227,8 @@ public final class RedRoom {
 
         if (rand == 0) {
             set(level, x, y + 1, z, ModBlocks.LOOT.get().defaultBlockState());
-            TileEntityLoot loot = (TileEntityLoot) level.getBlockEntity(new BlockPos(x, y + 1, z));
+            BlockEntityLoot loot =
+                    (BlockEntityLoot) level.getBlockEntity(new BlockPos(x, y + 1, z));
 
             if (random.nextInt(5) == 0) {
                 loot.addItem(new ItemStack(ModItems.NCRPA_HELMET.get()), 0, 0, 0);
@@ -241,7 +242,12 @@ public final class RedRoom {
                 loot.addItem(new ItemStack(ModItems.TRENCHMASTER_BOOTS.get()), 0, 0, 0);
             }
         } else {
-            pedestal(level, x, y + 1, z, ItemPool.getUnit(ItemPools.POOL_RED_PEDESTAL, random));
+            pedestal(
+                    level,
+                    x,
+                    y + 1,
+                    z,
+                    ItemPool.getUnit(ItemPools.POOL_RED_PEDESTAL, ItemPool.context(level, random)));
         }
 
         clearItems(level, x, y, z);
@@ -291,15 +297,16 @@ public final class RedRoom {
             }
         }
 
-        pedestal(level, x, y + 1, z, ItemPool.getStack(ItemPools.POOL_BLACK_SLAB, random));
+        var loot = ItemPool.context(level, random);
+        pedestal(level, x, y + 1, z, ItemPool.getStack(ItemPools.POOL_BLACK_SLAB, loot));
         if (random.nextBoolean())
-            pedestal(level, x + 2, y + 1, z, ItemPool.getStack(ItemPools.POOL_BLACK_PART, random));
+            pedestal(level, x + 2, y + 1, z, ItemPool.getStack(ItemPools.POOL_BLACK_PART, loot));
         if (random.nextBoolean())
-            pedestal(level, x - 2, y + 1, z, ItemPool.getStack(ItemPools.POOL_BLACK_PART, random));
+            pedestal(level, x - 2, y + 1, z, ItemPool.getStack(ItemPools.POOL_BLACK_PART, loot));
         if (random.nextBoolean())
-            pedestal(level, x, y + 1, z + 2, ItemPool.getStack(ItemPools.POOL_BLACK_PART, random));
+            pedestal(level, x, y + 1, z + 2, ItemPool.getStack(ItemPools.POOL_BLACK_PART, loot));
         if (random.nextBoolean())
-            pedestal(level, x, y + 1, z - 2, ItemPool.getStack(ItemPools.POOL_BLACK_PART, random));
+            pedestal(level, x, y + 1, z - 2, ItemPool.getStack(ItemPools.POOL_BLACK_PART, loot));
 
         clearItems(level, x, y, z);
     }
@@ -314,7 +321,6 @@ public final class RedRoom {
 
     private static void torch(ServerLevel level, int x, int y, int z) {
         BlockPos pos = new BlockPos(x, y, z);
-
         set(
                 level,
                 x,
@@ -344,9 +350,7 @@ public final class RedRoom {
 
     private static void door(ServerLevel level, BlockPos pos, Direction facing) {
         DoorBlock block = ModBlocks.DOOR_RED.get();
-
         level.setBlock(pos.above(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
-
         BlockState state =
                 block.getStateForPlacement(
                         new DirectionalPlaceContext(

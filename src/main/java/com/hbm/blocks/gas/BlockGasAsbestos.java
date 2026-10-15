@@ -61,7 +61,6 @@ public class BlockGasAsbestos extends BlockGasBase {
     @Override
     public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource rand) {
         super.animateTick(state, level, pos, rand);
-
         if (rand.nextInt(5) == 0) {
             level.addParticle(ParticleTypes.MYCELIUM, true, pos.getX() + rand.nextFloat(), pos.getY() + rand.nextFloat(), pos.getZ() + rand.nextFloat(), 0.0, 0.0, 0.0);
         }

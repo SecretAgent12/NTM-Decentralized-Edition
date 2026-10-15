@@ -4,9 +4,9 @@
 package com.hbm.mixin;
 
 import com.hbm.advancement.HbmCriteria;
+import com.hbm.api.entity.PlayerRespawns;
 import com.hbm.blocks.multiblock.MultiblockSurface;
-import com.hbm.handler.UnstableFuses;
-import com.hbm.hazard.HazardSystem;
+import com.hbm.inventory.InventoryChanges;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -14,21 +14,49 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Container;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.animal.horse.AbstractHorse;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.portal.DimensionTransition;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ServerPlayer.class)
 public abstract class MixinServerPlayer {
 
     @Inject(method = "initMenu", at = @At("TAIL"))
     private void hbm$watchMenuForHazards(AbstractContainerMenu container, CallbackInfo ci) {
-        container.addSlotListener(new HazardSystem.MenuWatcher((ServerPlayer) (Object) this));
-        container.addSlotListener(new UnstableFuses.MenuWatcher((ServerPlayer) (Object) this));
+        container.hbm$fuseOwner((ServerPlayer) (Object) this);
+        InventoryChanges.bindMenu(container, (ServerPlayer) (Object) this);
+        container.addSlotListener(new InventoryChanges.MenuWatcher((ServerPlayer) (Object) this));
+    }
+
+    @WrapOperation(
+            method = "doCloseContainer",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/world/inventory/AbstractContainerMenu;removed(Lnet/minecraft/world/entity/player/Player;)V"))
+    private void hbm$retireDeclaredMenu(
+            AbstractContainerMenu menu, Player player, Operation<Void> original) {
+        try {
+            original.call(menu, player);
+        } finally {
+            InventoryChanges.unbindMenu(menu);
+        }
+    }
+
+    @Inject(method = "openHorseInventory", at = @At("HEAD"))
+    private void hbm$bindHorseInventory(AbstractHorse horse, Container inventory, CallbackInfo ci) {
+        if (inventory instanceof SimpleContainer simple) simple.hbm$fuseOwner(horse);
     }
 
     @Inject(method = "onItemPickup", at = @At("HEAD"))
@@ -64,5 +92,16 @@ public abstract class MixinServerPlayer {
         return owned == null
                 ? 0
                 : original.call(level, owned, x, y, z, count, xDist, yDist, zDist, speed);
+    }
+
+    // backport: 26.x TeleportTransition / PostTeleportTransition are 1.21.1 DimensionTransition /
+    // PostDimensionTransition (same method, first parameter is keepInventory there)
+    @Inject(method = "findRespawnPositionAndUseSpawnBlock", at = @At("HEAD"), cancellable = true)
+    private void hbm$respawnRules(
+            boolean keepInventory,
+            DimensionTransition.PostDimensionTransition then,
+            CallbackInfoReturnable<DimensionTransition> cir) {
+        DimensionTransition transition = PlayerRespawns.respawn((ServerPlayer) (Object) this, then);
+        if (transition != null) cir.setReturnValue(transition);
     }
 }

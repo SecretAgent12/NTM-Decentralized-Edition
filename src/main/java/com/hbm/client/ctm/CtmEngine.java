@@ -3,7 +3,7 @@
 
 package com.hbm.client.ctm;
 
-import com.hbm.platform.Services;
+import com.hbm.platform.NeoForgePlatform;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
@@ -28,7 +28,11 @@ public enum CtmEngine {
     }
 
     public ResourceLocation packId() {
-        return ResourceLocation.fromNamespaceAndPath("hbm", pack);
+        return packId("hbm");
+    }
+
+    public ResourceLocation packId(String namespace) {
+        return ResourceLocation.fromNamespaceAndPath(namespace, pack);
     }
 
     public String directory() {
@@ -50,7 +54,7 @@ public enum CtmEngine {
                 // definition "hbm:ctm", which 1.21.1 cannot load. Selecting it would break those
                 // blocks' models, so it is never selected here.
                 if (engine == CTM_LIB) continue;
-                if (engine != NONE && Services.PLATFORM.isModLoaded(engine.mod)) return engine;
+                if (engine != NONE && NeoForgePlatform.isModLoaded(engine.mod)) return engine;
             }
             return NONE;
         }

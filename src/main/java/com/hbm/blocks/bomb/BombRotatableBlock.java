@@ -26,7 +26,6 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.BlockCompat;
 
 public abstract class BombRotatableBlock extends BlockCompat implements EntityBlock, IBomb {
-
     public static final IntegerProperty FACING = IntegerProperty.create("facing", 2, 5);
 
     protected BombRotatableBlock(Properties props) {
@@ -67,7 +66,6 @@ public abstract class BombRotatableBlock extends BlockCompat implements EntityBl
             BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (player.isSecondaryUseActive()) return InteractionResult.PASS;
         if (!level.isClientSide() && level.getBlockEntity(pos) instanceof MenuProvider provider) {
-
             if (provider instanceof IGUIProvider gui) {
                 IGUIProvider.openBlockMenu(player, gui, pos);
             } else {

@@ -9,7 +9,6 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
 
 public final class HbmBlockTags {
-
     public static final TagKey<Block> DEPTH_ROCK =
             TagKey.create(Registries.BLOCK, Library.id("depth_rock"));
 
@@ -21,6 +20,9 @@ public final class HbmBlockTags {
 
     public static final TagKey<Block> FBI_BREAKABLE =
             TagKey.create(Registries.BLOCK, Library.id("fbi_breakable"));
+
+    public static final TagKey<Block> METAL_FENCE_JOINS =
+            TagKey.create(Registries.BLOCK, Library.id("metal_fence_joins"));
 
     private HbmBlockTags() {}
 }

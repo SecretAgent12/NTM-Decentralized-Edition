@@ -15,7 +15,6 @@ import net.minecraft.world.item.ItemStack;
 import com.hbm.backport.Nbt;
 
 public final class SettingsToolInfo {
-
     private static final int FIRST_ID = 897;
     private static final int MILLIS = 4_000;
 

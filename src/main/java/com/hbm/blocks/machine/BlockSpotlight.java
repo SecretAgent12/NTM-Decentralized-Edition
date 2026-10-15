@@ -3,6 +3,7 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.api.block.BlockPlacements;
 import com.hbm.blocks.BlockDirectionalBase;
 import com.hbm.blocks.ModBlocks;
 import com.mojang.serialization.MapCodec;
@@ -46,12 +47,10 @@ public class BlockSpotlight extends BlockDirectionalBase
     public static final BooleanProperty BROKEN = BooleanProperty.create("broken");
 
     public static final BooleanProperty LIT = BlockStateProperties.LIT;
-
     public static final int MAX_BEAM_LENGTH = 32;
     private final int beamLength;
     private final LightType type;
     private final VoxelShape[] shapesByDirection = new VoxelShape[6];
-
     private final MapCodec<BlockSpotlight> ownCodec;
 
     public BlockSpotlight(int beamLength, LightType type, Properties props) {
@@ -243,8 +242,8 @@ public class BlockSpotlight extends BlockDirectionalBase
     private void repair(ServerLevel level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         if (!state.is(this) || !state.getValue(BROKEN)) return;
-
         level.setBlock(pos, state.setValue(BROKEN, false).setValue(LIT, true), Block.UPDATE_ALL);
+        BlockPlacements.repaired(level, pos);
         propagateBeam(level, pos, state.getValue(FACING), beamLength);
         for (Direction dir : Direction.VALUES) repair(level, pos.relative(dir));
     }

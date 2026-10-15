@@ -3,14 +3,13 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.BlockEntityMachineReactorBreeding;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.capability.ICapabilityBlock;
 import com.hbm.capability.MachineCaps;
-import com.hbm.tileentity.machine.BlockEntityMachineReactorBreeding;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import com.hbm.backport.InteractionResult;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Player;
@@ -22,33 +21,8 @@ import org.jspecify.annotations.Nullable;
 
 public class MachineReactorBreeding extends BlockMultiblockCore
         implements ITickingBlock, ICapabilityBlock {
-
-    private static final int[] DIMENSIONS = {2, 0, 0, 0, 0, 0};
-
     public MachineReactorBreeding(Properties props) {
         super(props);
-    }
-
-    @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 0;
-    }
-
-    @Override
-    protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
-        super.visitCells(core, facing, visitor);
-        visitor.cell(core.above(), MASK_ALL);
-        visitor.cell(core.above(2), MASK_ALL);
-    }
-
-    @Override
-    public int coreMask() {
-        return MASK_ALL;
     }
 
     @Override

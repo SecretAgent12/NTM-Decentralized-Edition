@@ -33,6 +33,8 @@ public final class HazardTransformerSophisticatedBackpacks implements IHazardTra
         // backport: 1.21.1 BackpackStorage returns the raw contents tag; SophisticatedStoredStacks decodes it
         float radiation =
                 StorageHazardSum.sum(
+                        id,
+                        true,
                         SophisticatedStoredStacks.stacks(
                                 id, BackpackStorage.get().getOrCreateBackpackContents(id)));
         if (radiation > 0F) entries.add(new HazardEntry(HazardRegistry.RADIATION, radiation));

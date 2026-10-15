@@ -3,12 +3,12 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.machine.rbmk.BlockEntityRBMKBoiler;
 import com.hbm.inventory.container.MenuRBMKBoiler;
 import com.hbm.inventory.fluid.NTMFluids;
 import com.hbm.lib.Library;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toserver.NbtControlPayload;
-import com.hbm.platform.Services;
-import com.hbm.tileentity.machine.rbmk.BlockEntityRBMKBoiler;
 import java.util.List;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.client.gui.input.MouseButtonEvent;
@@ -102,7 +102,7 @@ public class ScreenRBMKBoiler extends ScreenInfoContainer<MenuRBMKBoiler> {
             if (core != null) {
                 CompoundTag data = new CompoundTag();
                 data.putBoolean("compression", true);
-                Services.NETWORK.sendToServer(new NbtControlPayload(core, data));
+                PacketWire.sendToServer(new NbtControlPayload(core, data));
                 playClick();
             }
             return true;

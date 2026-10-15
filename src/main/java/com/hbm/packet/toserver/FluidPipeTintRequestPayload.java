@@ -13,6 +13,7 @@ import com.hbm.blocks.network.FluidDuctBlockBase;
 import com.hbm.lib.Library;
 import com.hbm.packet.IPayloadHandlerContext;
 import com.hbm.packet.threading.ThreadedPayload;
+import com.hbm.util.ChunkUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.DecoderException;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -20,8 +21,11 @@ import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.server.level.ChunkTrackingView;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
 import org.jetbrains.annotations.NotNull;
 
@@ -40,7 +44,6 @@ public final class FluidPipeTintRequestPayload extends ThreadedPayload {
 
     private static FluidPipeTintRequestPayload decode(ByteBuf buf) {
         int count = buf.readInt();
-
         if (count < 0 || count > buf.readableBytes() / Long.BYTES) {
             throw new DecoderException("fluid_pipe_tint_request count " + count);
         }
@@ -54,17 +57,12 @@ public final class FluidPipeTintRequestPayload extends ThreadedPayload {
         ServerLevel level = player.serverLevel();
         Reference2ObjectOpenHashMap<Fluid, LongArrayList> byFluid =
                 new Reference2ObjectOpenHashMap<>();
-        // backport-fix: BF-029 positions come from the client: only pipes in loaded chunks within the
-        // player's view distance. getBlockState on any other key loaded (or generated) that chunk on
-        // the main thread, so a forged packet with a few thousand far keys stalled the server
-        int view = player.server.getPlayerList().getViewDistance() + 1;
-        int playerChunkX = player.blockPosition().getX() >> 4;
-        int playerChunkZ = player.blockPosition().getZ() >> 4;
+        ChunkTrackingView view = player.getChunkTrackingView();
         for (long key : payload.posKeys) {
             BlockPos pos = BlockPos.of(key);
-            if (!withinView(level, pos, playerChunkX, playerChunkZ, view)
-                    || !level.isLoaded(pos)) continue;
-            if (!(level.getBlockState(pos).getBlock() instanceof FluidDuctBlockBase)) continue;
+            if (!withinView(level, pos, view)) continue;
+            BlockState state = ChunkUtil.blockStateIfLoaded(level, pos);
+            if (state == null || !(state.getBlock() instanceof FluidDuctBlockBase)) continue;
             PipeData data = FluidPipeGraph.dataAt(level, key);
             if (data == null) continue;
             byFluid.computeIfAbsent(data.fluid(), f -> new LongArrayList()).add(key);
@@ -81,14 +79,11 @@ public final class FluidPipeTintRequestPayload extends ThreadedPayload {
      * Without it every pipe on a contraption was refused and drew as "no fluid" until the
      * contraption was taken apart.
      */
-    private static boolean withinView(
-            ServerLevel level, BlockPos pos, int playerChunkX, int playerChunkZ, int view) {
-        if (Math.abs((pos.getX() >> 4) - playerChunkX) <= view
-                && Math.abs((pos.getZ() >> 4) - playerChunkZ) <= view) return true;
+    private static boolean withinView(ServerLevel level, BlockPos pos, ChunkTrackingView view) {
+        if (view.contains(new ChunkPos(pos))) return true;
         if (!SubLevelSpace.inSubLevel(level, pos.getX(), pos.getZ())) return false;
         Vec3 world = SubLevelSpace.toWorld(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
-        return Math.abs((Mth.floor(world.x) >> 4) - playerChunkX) <= view
-                && Math.abs((Mth.floor(world.z) >> 4) - playerChunkZ) <= view;
+        return view.contains(new ChunkPos(Mth.floor(world.x) >> 4, Mth.floor(world.z) >> 4));
     }
 
     @Override

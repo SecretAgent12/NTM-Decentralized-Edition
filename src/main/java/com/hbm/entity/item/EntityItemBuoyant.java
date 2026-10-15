@@ -27,7 +27,6 @@ public class EntityItemBuoyant extends ItemEntityCompat {
         this(ModEntities.ITEM_BUOYANT.get(), level);
         setPos(x, y, z);
         setItem(stack);
-
         setDeltaMovement(random.nextDouble() * 0.2 - 0.1, 0.2, random.nextDouble() * 0.2 - 0.1);
     }
 

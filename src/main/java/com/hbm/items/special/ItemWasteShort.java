@@ -15,9 +15,9 @@ import com.hbm.backport.compat.ItemCompat;
 
 public class ItemWasteShort extends ItemCompat {
 
-    public final WasteClass type;
+    public final Kind type;
 
-    public ItemWasteShort(Properties props, WasteClass type) {
+    public ItemWasteShort(Properties props, Kind type) {
         super(props);
         this.type = type;
     }
@@ -29,10 +29,14 @@ public class ItemWasteShort extends ItemCompat {
             TooltipDisplay display,
             Consumer<Component> adder,
             TooltipFlag flag) {
-        adder.accept(Component.literal(type.name).withStyle(ChatFormatting.ITALIC));
+        adder.accept(Component.literal(type.label()).withStyle(ChatFormatting.ITALIC));
     }
 
-    public enum WasteClass {
+    public interface Kind {
+        String label();
+    }
+
+    public enum WasteClass implements Kind {
         URANIUM235("Uranium-235", 0, 100),
         URANIUM233("Uranium-233", 50, 100),
         NEPTUNIUM("Neptunium-237", 150, 500),
@@ -52,6 +56,11 @@ public class ItemWasteShort extends ItemCompat {
             this.name = name;
             this.liquid = liquid;
             this.gas = gas;
+        }
+
+        @Override
+        public String label() {
+            return name;
         }
     }
 }

@@ -6,12 +6,13 @@ package com.hbm.uninos.graph;
 import com.hbm.api.fluidmk2.FlushIndex;
 import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.capability.ICapabilityBlock;
+import com.hbm.blockentity.GraphResident;
 import com.hbm.lib.Library;
-import com.hbm.platform.Services;
-import com.hbm.tileentity.GraphResident;
+import com.hbm.platform.NeoForgeServerEvents;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -26,6 +27,7 @@ import java.util.stream.LongStream;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.FullChunkStatus;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -38,16 +40,16 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.SavedDataCompat;
 
 public class LevelNodeGraph<D> extends SavedDataCompat {
-
     public static final long NO_BLOCKER = Long.MIN_VALUE;
-
-    public static final long BLOCKER_UNKNOWN = Long.MIN_VALUE + 1;
+    public static final long UNKNOWN = Long.MIN_VALUE + 1;
+    public static final long PRESENT = Long.MIN_VALUE + 2;
+    public static final long ABSENT = Long.MIN_VALUE + 3;
+    private static final List<Kind<?>> KINDS = new ArrayList<>();
+    private static final LevelNodeGraph<?>[] NO_GRAPHS = new LevelNodeGraph<?>[0];
     private static final Direction[] DIRS = Direction.VALUES;
     private static final int OPEN_ALL = 0x3F;
     private static final long[] EMPTY_INTERIOR = new long[0];
-
     private static final int COMPILE_GATE = 256;
-
     private static final Codec<long[]> LONGS =
             Codec.LONG_STREAM.xmap(LongStream::toArray, Arrays::stream);
     private static final MapCodec<long[]> REMOTE_CODEC =
@@ -65,6 +67,9 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
                                             Codec.BOOL
                                                     .optionalFieldOf("dev", false)
                                                     .forGetter(NodeEntry::dev),
+                                            Codec.BOOL
+                                                    .optionalFieldOf("owned", false)
+                                                    .forGetter(NodeEntry::owned),
                                             REMOTE_CODEC.forGetter(NodeEntry::remote))
                                     .apply(i, NodeEntry::new));
     private static final Codec<SegmentEntry> SEGMENT_CODEC =
@@ -79,22 +84,23 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
                                             LONGS.fieldOf("cells")
                                                     .forGetter(SegmentEntry::interior))
                                     .apply(i, SegmentEntry::new));
-    private static volatile Consumer<Runnable> COMPILER = defaultCompiler();
+    private static final Consumer<Runnable> COMPILER = defaultCompiler();
     private final IGraphProvider<D> provider;
+    private @Nullable ServerLevel ownerLevel;
+    private final Consumer<Runnable> compiler;
     private final Long2ObjectOpenHashMap<GraphNode<D>> nodesByPos = new Long2ObjectOpenHashMap<>();
     private final Long2ObjectOpenHashMap<GraphSegment<D>> interiorIndex =
             new Long2ObjectOpenHashMap<>();
     private final ReferenceOpenHashSet<NodeNetwork<D>> networks = new ReferenceOpenHashSet<>();
     private final Long2ObjectOpenHashMap<LongOpenHashSet> nodesByChunk =
             new Long2ObjectOpenHashMap<>();
+    private @Nullable Long2IntOpenHashMap capabilityChunks;
+
     private final Long2ObjectOpenHashMap<ReferenceOpenHashSet<GraphNode<D>>> parkedByChunk =
             new Long2ObjectOpenHashMap<>();
     private final Long2ObjectOpenHashMap<ReferenceOpenHashSet<GraphSegment<D>>>
             parkedSegmentsByChunk = new Long2ObjectOpenHashMap<>();
-
     private final ConcurrentLinkedQueue<CompiledFold<D>> readySwaps = new ConcurrentLinkedQueue<>();
-
-    public long probeBlocker = NO_BLOCKER;
 
     // backport-fix: BF-087 self-healing sweep (see sweep): snapshot of every cell, walked a slice per tick
     private static final int SWEEP_PERIOD_TICKS = 200;
@@ -107,7 +113,12 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
     private int floodGeneration;
 
     public LevelNodeGraph(IGraphProvider<D> provider) {
+        this(provider, COMPILER);
+    }
+
+    public LevelNodeGraph(IGraphProvider<D> provider, Consumer<Runnable> compiler) {
         this.provider = provider;
+        this.compiler = compiler;
     }
 
     private static <D> void topologyChanged(NodeNetwork<D> net) {
@@ -149,36 +160,27 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
     }
 
     public static void invalidateEndpointsAt(ServerLevel level, BlockPos pos) {
-        List<LevelNodeGraph<?>> graphs = level.hbm$graphs();
-        for (int i = 0; i < graphs.size(); i++) graphs.get(i).invalidateNode(pos.asLong());
+        for (LevelNodeGraph<?> graph : level.hbm$graphs()) {
+            if (graph != null) graph.invalidateNode(pos.asLong());
+        }
         FlushIndex.invalidateAt(level, pos.asLong());
-        watchForeignNeighbours(level, pos);
     }
 
-    public static void watchForeignNeighbours(ServerLevel level, BlockPos pos) {
+    public static void init() {
+        NeoForgeServerEvents.onServerTickPost(LevelNodeGraph::tickAll);
+    }
 
-        BlockPos.MutableBlockPos neighbour = new BlockPos.MutableBlockPos();
-        for (Direction dir : DIRS) {
-            neighbour.setWithOffset(pos, dir);
-            LevelChunk chunk =
-                    level.getChunkSource()
-                            .getChunkNow(
-                                    SectionPos.blockToSectionCoord(neighbour.getX()),
-                                    SectionPos.blockToSectionCoord(neighbour.getZ()));
-            if (chunk == null) continue;
-            BlockState state = chunk.getBlockState(neighbour);
-
-            if (state.hasBlockEntity() && !(state.getBlock() instanceof ICapabilityBlock)) {
-                Services.CAPS.watchForeignCaps(level, neighbour);
+    private static void tickAll(MinecraftServer server) {
+        for (ServerLevel level : server.getAllLevels()) {
+            for (LevelNodeGraph<?> graph : level.hbm$graphs()) {
+                if (graph != null) graph.tick(level);
             }
         }
     }
 
-    public static boolean anyEndpointLookingAt(ServerLevel level, BlockPos pos) {
-        List<LevelNodeGraph<?>> graphs = level.hbm$graphs();
-        for (int i = 0; i < graphs.size(); i++)
-            if (graphs.get(i).hasOpenFaceTowards(pos.asLong())) return true;
-        return false;
+    private void tick(ServerLevel level) {
+        applyCompiledSwaps();
+        if (!networks.isEmpty()) provider.tick(level, this);
     }
 
     public static long chunkOf(long posKey) {
@@ -188,11 +190,18 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
     }
 
     public static boolean resident(ServerLevel level, long posKey) {
-        return level.getChunkSource()
+        return residentChunk(level, posKey) != null;
+    }
+
+    private static @Nullable LevelChunk residentChunk(ServerLevel level, long posKey) {
+        LevelChunk chunk =
+                level.getChunkSource()
                         .getChunkNow(
                                 SectionPos.blockToSectionCoord(BlockPos.getX(posKey)),
-                                SectionPos.blockToSectionCoord(BlockPos.getZ(posKey)))
-                != null;
+                                SectionPos.blockToSectionCoord(BlockPos.getZ(posKey)));
+        return chunk != null && chunk.getFullStatus().isOrAfter(FullChunkStatus.FULL)
+                ? chunk
+                : null;
     }
 
     private static void mergeFloods(
@@ -299,7 +308,8 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
             }
         }
         long[] bits = new long[(cells.length * 6 + 63) / 64];
-        int unprobed = 0;
+        int dirtyLo = 0;
+        int dirtyHi = 0;
         for (int i = 0; i < cells.length; i++) {
             long prev = i == 0 ? c.endAPos : cells[i - 1];
             long next = i == cells.length - 1 ? c.endBPos : cells[i + 1];
@@ -313,26 +323,72 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
                     bits[b >> 6] |= 1L << (b & 63);
                 }
             }
-            unprobed += 4 - Integer.bitCount(g);
+            if (Integer.bitCount(g) < 4) {
+                if (dirtyLo >= dirtyHi) dirtyLo = i;
+                dirtyHi = i + 1;
+            }
         }
         c.bits = bits;
-        c.unprobed = unprobed;
+        c.dirtyLo = dirtyLo;
+        c.dirtyHi = dirtyHi;
         c.cells = cells;
     }
 
-    public static <D> SavedDataType<LevelNodeGraph<D>> type(
-            IGraphProvider<D> provider, String name) {
-        return new SavedDataType<>(
-                Library.id(name), () -> new LevelNodeGraph<>(provider), codec(provider), null);
+    public static <D> Kind<D> kind(IGraphProvider<D> provider, String name) {
+        Kind<D> kind =
+                new Kind<>(
+                        KINDS.size(),
+                        new SavedDataType<>(
+                                Library.id(name),
+                                () -> new LevelNodeGraph<>(provider),
+                                codec(provider),
+                                null));
+        KINDS.add(kind);
+        return kind;
     }
 
-    public static <D> LevelNodeGraph<D> getOrCreate(
-            ServerLevel level, SavedDataType<LevelNodeGraph<D>> type) {
-        LevelNodeGraph<D> graph = SavedDataType.computeIfAbsent(level.getDataStorage(), type);
-        List<LevelNodeGraph<?>> graphs = level.hbm$graphs();
-        for (int i = 0; i < graphs.size(); i++) if (graphs.get(i) == graph) return graph;
-        graphs.add(graph);
+    @SuppressWarnings("unchecked")
+    public static <D> LevelNodeGraph<D> getOrCreate(ServerLevel level, Kind<D> kind) {
+        LevelNodeGraph<?>[] slots = level.hbm$graphs();
+        if (kind.index < slots.length && slots[kind.index] != null)
+            return (LevelNodeGraph<D>) slots[kind.index];
+        LevelNodeGraph<D> graph = SavedDataType.computeIfAbsent(level.getDataStorage(), kind.type);
+        attach(level, kind, graph);
         return graph;
+    }
+
+    public static <D> void install(ServerLevel level, Kind<D> kind, LevelNodeGraph<D> graph) {
+        LevelNodeGraph<D> previous = kind.loaded(level);
+        if (previous == graph) return;
+        if (previous != null) previous.detachChunks();
+        SavedDataType.set(level.getDataStorage(), kind.type, graph);
+        attach(level, kind, graph);
+    }
+
+    private static <D> void attach(ServerLevel level, Kind<D> kind, LevelNodeGraph<D> graph) {
+        LevelNodeGraph<?>[] slots = level.hbm$graphs();
+        if (kind.index >= slots.length)
+            level.hbm$graphs(slots = Arrays.copyOf(slots, KINDS.size()));
+        slots[kind.index] = graph;
+        graph.ownerLevel = level;
+        graph.capabilityChunks = level.hbm$capGraphChunks();
+        for (LongIterator it = graph.nodesByChunk.keySet().iterator(); it.hasNext(); ) {
+            graph.capabilityChunks.addTo(it.nextLong(), 1);
+        }
+    }
+
+    private void detachChunks() {
+        Long2IntOpenHashMap chunks = capabilityChunks;
+        if (chunks == null) return;
+        for (LongIterator it = nodesByChunk.keySet().iterator(); it.hasNext(); ) {
+            long chunkKey = it.nextLong();
+            if (chunks.addTo(chunkKey, -1) == 1) chunks.remove(chunkKey);
+        }
+        capabilityChunks = null;
+    }
+
+    public static LevelNodeGraph<?>[] emptySlots() {
+        return NO_GRAPHS;
     }
 
     /**
@@ -342,24 +398,27 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
      * after reloading.
      */
     public static void invalidateNodeAt(ServerLevel level, BlockPos pos) {
-        List<LevelNodeGraph<?>> graphs = level.hbm$graphs();
-        for (int i = 0; i < graphs.size(); i++) graphs.get(i).invalidateNode(pos.asLong());
+        for (LevelNodeGraph<?> graph : level.hbm$graphs()) {
+            if (graph != null) graph.invalidateNode(pos.asLong());
+        }
     }
 
     public static void invalidateEndpointsAround(ServerLevel level, BlockPos pos) {
-        List<LevelNodeGraph<?>> graphs = level.hbm$graphs();
-        for (int i = 0; i < graphs.size(); i++) graphs.get(i).invalidateAround(pos.asLong());
+        invalidateTransportAround(level, pos);
+        PhysicalGraph.refreshAround(level, pos);
+    }
+
+    public static void invalidateTransportAround(ServerLevel level, BlockPos pos) {
+        for (LevelNodeGraph<?> graph : level.hbm$graphs()) {
+            if (graph != null) graph.invalidateAround(pos.asLong());
+        }
         FlushIndex.invalidateAt(level, pos.asLong());
     }
 
     public static void onChunkFull(ServerLevel level, LevelChunk chunk) {
-
-        List<LevelNodeGraph<?>> graphs = level.hbm$graphs();
-        if (graphs.isEmpty()) return;
         long chunkKey = chunk.getPos().toLong();
-        for (int i = 0; i < graphs.size(); i++) {
-            LevelNodeGraph<?> graph = graphs.get(i);
-            if (graph.nodeCount() == 0) continue;
+        for (LevelNodeGraph<?> graph : level.hbm$graphs()) {
+            if (graph == null || graph.nodeCount() == 0) continue;
             graph.queueNodesIn(chunkKey);
             // backport-fix: BF-087 nothing probed before the chunk went away is trusted after it is back:
             // every face of every cell in it (own self-endpoints included) is probed again
@@ -383,7 +442,7 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
                                         Codec.INT
                                                 .optionalFieldOf("v", 1)
                                                 .forGetter(GraphData::version),
-                                        nullableList(provider.dataCodec())
+                                        provider.dataTableCodec()
                                                 .fieldOf("data")
                                                 .forGetter(GraphData::data),
                                         NODE_CODEC
@@ -397,27 +456,6 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
                                 .apply(i, GraphData::new));
     }
 
-    /**
-     * backport-fix: BF-052 a list that may hold null entries (the foundry channel graph stores "no
-     * material" as null, saved as -1). DFU's own list codec builds its result with List.copyOf,
-     * which throws on null: the foundry channel graph failed to load every time and was rebuilt.
-     */
-    private static <D> Codec<List<D>> nullableList(Codec<D> element) {
-        return element.xmap(Optional::ofNullable, (Optional<D> o) -> o.orElse(null))
-                .listOf()
-                .xmap(
-                        list -> {
-                            List<D> out = new ArrayList<>(list.size());
-                            for (Optional<D> o : list) out.add(o.orElse(null));
-                            return out;
-                        },
-                        list -> {
-                            List<Optional<D>> out = new ArrayList<>(list.size());
-                            for (D d : list) out.add(Optional.ofNullable(d));
-                            return out;
-                        });
-    }
-
     private static <D> GraphData<D> toData(LevelNodeGraph<D> graph) {
         Object2IntOpenHashMap<D> index = new Object2IntOpenHashMap<>();
         index.defaultReturnValue(-1);
@@ -426,7 +464,14 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         for (GraphNode<D> node : graph.nodesByPos.values()) {
             int di = dataIndexOf(index, dataTable, node.data);
             long[] remote = node.hasRemoteLinks() ? node.remoteLinks.toLongArray() : EMPTY_INTERIOR;
-            entries.add(new NodeEntry(node.posKey, node.openConnections, di, node.device, remote));
+            entries.add(
+                    new NodeEntry(
+                            node.posKey,
+                            node.openConnections,
+                            di,
+                            node.device,
+                            node.machineOwned,
+                            remote));
         }
         List<SegmentEntry> segs = new ArrayList<>();
         for (GraphSegment<D> s : graph.allSegments()) {
@@ -441,7 +486,7 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
                             dataIndexOf(index, dataTable, s.data),
                             cells));
         }
-        return new GraphData<>(4, dataTable, entries, segs);
+        return new GraphData<>(5, dataTable, entries, segs);
     }
 
     private static <D> int dataIndexOf(Object2IntOpenHashMap<D> index, List<D> table, D data) {
@@ -459,11 +504,10 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         for (NodeEntry e : gd.nodes()) {
             GraphNode<D> node = new GraphNode<>(e.pos(), gd.data().get(e.dataIdx()), e.mask());
             node.device = e.dev();
+            node.machineOwned = e.owned();
             if (e.remote().length != 0) node.remoteLinks = new LongOpenHashSet(e.remote());
             graph.nodesByPos.put(e.pos(), node);
-            graph.nodesByChunk
-                    .computeIfAbsent(chunkOf(e.pos()), k -> new LongOpenHashSet())
-                    .add(e.pos());
+            graph.indexCell(e.pos());
         }
         for (SegmentEntry e : gd.segments()) {
             GraphNode<D> endA = graph.nodesByPos.get(e.endA());
@@ -482,7 +526,7 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
             endB.degree++;
             for (long c : interior) {
                 graph.interiorIndex.put(c, s);
-                graph.nodesByChunk.computeIfAbsent(chunkOf(c), k -> new LongOpenHashSet()).add(c);
+                graph.indexCell(c);
             }
         }
         graph.rebuildAllNetworks();
@@ -536,13 +580,6 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         return nodesByPos.containsKey(posKey) || interiorIndex.containsKey(posKey);
     }
 
-    public boolean isMember(NodeNetwork<D> net, long posKey) {
-        GraphNode<D> node = nodesByPos.get(posKey);
-        if (node != null) return node.net == net;
-        GraphSegment<D> s = segmentAtNoWrite(posKey);
-        return s != null && s.net == net;
-    }
-
     public boolean isQueued(NodeNetwork<D> net, long posKey) {
         GraphNode<D> node = nodesByPos.get(posKey);
         if (node != null) return net.pendingProbe != null && net.pendingProbe.contains(node);
@@ -567,9 +604,33 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
 
     public void addNode(long posKey, D data, int openConnections) {
         if (containsCell(posKey)) return;
-        GraphNode<D> node = new GraphNode<>(posKey, data, openConnections);
+        addNode(new GraphNode<>(posKey, data, openConnections));
+    }
+
+    public GraphNode<D> addMachineNode(
+            long posKey, D data, int openConnections, boolean selfEndpoint) {
+        GraphNode<D> node = firstClass(posKey);
+        if (node != null) {
+            assert node.data.equals(data);
+            if (!node.machineOwned) {
+                node.machineOwned = true;
+                setDirty();
+            }
+            updateConnections(node, node.openConnections | openConnections);
+            if (selfEndpoint) setSelfEndpoint(node, true);
+            return node;
+        }
+        node = new GraphNode<>(posKey, data, openConnections);
+        node.machineOwned = true;
+        node.selfEndpoint = selfEndpoint;
+        addNode(node);
+        return node;
+    }
+
+    private void addNode(GraphNode<D> node) {
+        long posKey = node.posKey;
         nodesByPos.put(posKey, node);
-        nodesByChunk.computeIfAbsent(chunkOf(posKey), k -> new LongOpenHashSet()).add(posKey);
+        indexCell(posKey);
 
         for (Direction dir : DIRS) {
             long nbKey = offset(posKey, dir);
@@ -607,10 +668,9 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
                 target.segments.add(s);
             }
         }
-        target.throughputCapDirty = true;
         topologyChanged(target);
 
-        int edgeMask = 0;
+        int edgeMask = node.selfEndpoint ? 1 << EdgeFaces.SELF : 0;
         for (Direction dir : DIRS) {
             GraphSegment<D> s = node.segments[dir.ordinal()];
             if (s == null) {
@@ -638,6 +698,7 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         for (GraphNode<D> candidate : foldCandidates) foldAt(candidate);
 
         invalidateAround(posKey);
+        if (ownerLevel != null) PhysicalGraph.conductorChanged(ownerLevel, posKey, provider);
     }
 
     private void link(GraphNode<D> a, int dirA, GraphNode<D> b) {
@@ -649,14 +710,16 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
     }
 
     private boolean connectableToRun(GraphNode<D> node, Direction dir, GraphSegment<D> run) {
-        return node.isOpen(dir)
-                && provider.dataCompatible(node.data, run.data)
-                && provider.dataCompatible(run.data, node.data);
+        return node.isOpen(dir) && provider.dataCompatible(node.data, run.data);
     }
 
     private void foldAt(GraphNode<D> v) {
         if (v.foldQueued) return;
-        if (v.degree != 2 || v.openConnections != OPEN_ALL || v.device || v.selfEndpoint) return;
+        if (v.degree != 2
+                || v.openConnections != OPEN_ALL
+                || v.device
+                || v.machineOwned
+                || v.selfEndpoint) return;
         if (v.ef != null && v.ef.activeMask != 0) return;
         int d1 = -1, d2 = -1;
         for (int d = 0; d < 6; d++) {
@@ -715,7 +778,7 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         farGive.segments[slotFarGive] = keep;
 
         net.nodes.remove(v);
-        retire(net, give, keep);
+        retire(net, give, null);
         topologyChanged(net);
         nodesByPos.remove(v.posKey);
         if (net.edgeFaces != null && v.ef != null) {
@@ -727,27 +790,28 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         setDirty();
     }
 
-    private GraphSegment<D> resolveChain(GraphSegment<D> s, long posKey) {
-        GraphSegment<D> found = resolveFrom(s, posKey, 0);
-        return found != null ? found : s;
-    }
-
-    private @Nullable GraphSegment<D> resolveFrom(GraphSegment<D> s, long posKey, int depth) {
-        if (depth > 64)
-            throw new IllegalStateException("peel/forward recursion did not terminate - corrupt");
-        if (s.offsetOf(posKey) >= 0) return s;
-        for (GraphSegment<D> peel = s.pendingPeel; peel != null; peel = peel.peelNext) {
-            GraphSegment<D> found = resolveFrom(peel, posKey, depth + 1);
-            if (found != null) return found;
+    private static <D> @Nullable GraphSegment<D> resolveFrom(
+            GraphSegment<D> root, long posKey, boolean indexed) {
+        ArrayDeque<GraphSegment<D>> stack = new ArrayDeque<>();
+        ReferenceOpenHashSet<GraphSegment<D>> seen = new ReferenceOpenHashSet<>();
+        stack.push(root);
+        while (!stack.isEmpty()) {
+            GraphSegment<D> s = stack.pop();
+            if (!seen.add(s)) continue;
+            if (indexed ? s.offsetOf(posKey) >= 0 : rangeContains(s, posKey)) return s;
+            if (s.forwardTo != null) stack.push(s.forwardTo);
+            for (GraphSegment<D> peel = s.pendingPeel; peel != null; peel = peel.peelNext)
+                stack.push(peel);
         }
-        return s.forwardTo == null ? null : resolveFrom(s.forwardTo, posKey, depth + 1);
+        return null;
     }
 
     private @Nullable GraphSegment<D> segmentAt(long posKey) {
         GraphSegment<D> s = interiorIndex.get(posKey);
         if (s == null) return null;
         if (s.pendingPeel == null && s.forwardTo == null) return s;
-        GraphSegment<D> resolved = resolveChain(s, posKey);
+        GraphSegment<D> resolved = resolveFrom(s, posKey, true);
+        if (resolved == null) return s;
         if (resolved != s) interiorIndex.put(posKey, resolved);
         return resolved;
     }
@@ -756,20 +820,8 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         GraphSegment<D> s = interiorIndex.get(posKey);
         if (s == null) return null;
         if (s.pendingPeel == null && s.forwardTo == null) return s;
-        GraphSegment<D> found = resolveFromNoWrite(s, posKey, 0);
+        GraphSegment<D> found = resolveFrom(s, posKey, false);
         return found != null ? found : s;
-    }
-
-    private @Nullable GraphSegment<D> resolveFromNoWrite(
-            GraphSegment<D> s, long posKey, int depth) {
-        if (depth > 64)
-            throw new IllegalStateException("peel/forward recursion did not terminate - corrupt");
-        if (rangeContains(s, posKey)) return s;
-        for (GraphSegment<D> peel = s.pendingPeel; peel != null; peel = peel.peelNext) {
-            GraphSegment<D> found = resolveFromNoWrite(peel, posKey, depth + 1);
-            if (found != null) return found;
-        }
-        return s.forwardTo == null ? null : resolveFromNoWrite(s.forwardTo, posKey, depth + 1);
     }
 
     private GraphNode<D> promote(GraphSegment<D> s, int offset) {
@@ -790,7 +842,7 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         if (offset == 0) {
             GraphNode<D> oldEnd = s.endA;
             int oldDir = s.dirA;
-            s.shrinkAtA(dirToA, dirToB);
+            s.shrinkAtA();
             s.endA = v;
             s.dirA = dirToB;
             v.segments[dirToB] = s;
@@ -800,7 +852,7 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         } else if (offset == len - 1) {
             GraphNode<D> oldEnd = s.endB;
             int oldDir = s.dirB;
-            s.shrinkAtB(dirToA, dirToB);
+            s.shrinkAtB();
             s.endB = v;
             s.dirB = dirToA;
             v.segments[dirToA] = s;
@@ -809,7 +861,6 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
             v.segments[dirToB] = minted;
         } else {
             int absSplit = s.from + offset;
-            int inherited = s.unprobedSideFaces;
             if (len - offset - 1 >= offset) {
                 GraphNode<D> oldEnd = s.endA;
                 int oldDir = s.dirA;
@@ -823,8 +874,7 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
                                 s.from,
                                 absSplit,
                                 s.ownedFrom,
-                                absSplit + 1,
-                                inherited);
+                                absSplit + 1);
                 s.narrowTo(absSplit + 1, s.to, absSplit + 1, s.ownedTo);
                 s.endA = v;
                 s.dirA = dirToB;
@@ -844,8 +894,7 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
                                 absSplit + 1,
                                 s.to,
                                 absSplit,
-                                s.ownedTo,
-                                inherited);
+                                s.ownedTo);
                 s.narrowTo(s.from, absSplit, s.ownedFrom, absSplit);
                 s.endB = v;
                 s.dirB = dirToA;
@@ -933,18 +982,14 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         for (Direction dir : DIRS) {
             GraphSegment<D> s = node.segments[dir.ordinal()];
             if (s == null) continue;
-            boolean live =
-                    node.isOpen(dir)
-                            && provider.dataCompatible(node.data, s.data)
-                            && provider.dataCompatible(s.data, node.data);
-            GraphNode<D> survivor = rehomeOnRemoval(s, node);
+            boolean live = node.isOpen(dir) && provider.dataCompatible(node.data, s.data);
+            GraphNode<D> survivor = rehomeOnRemoval(s, node, dir.ordinal());
             if (live && survivor.net == net) seeds.add(survivor);
             survivors.add(survivor);
         }
         if (net != null) {
             net.nodes.remove(node);
             net.cells--;
-            net.throughputCapDirty = true;
             topologyChanged(net);
             if (net.edgeFaces != null) net.edgeFaces.remove(node);
             if (net.activeFaces != null) net.activeFaces.remove(node);
@@ -967,21 +1012,22 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
             if (survivor.isOpen(holeFace)) setEdgeBit(survivor, holeFace);
         }
         invalidateAround(posKey);
+        if (ownerLevel != null) PhysicalGraph.conductorChanged(ownerLevel, posKey, provider);
     }
 
-    private GraphNode<D> rehomeOnRemoval(GraphSegment<D> s, GraphNode<D> removed) {
+    private GraphNode<D> rehomeOnRemoval(
+            GraphSegment<D> s, GraphNode<D> removed, int slotOnRemoved) {
         NodeNetwork<D> net = s.net;
         GraphNode<D> far = s.other(removed);
         if (s.cellCount() == 0) {
             retire(net, s, null);
             far.segments[s.slotAt(far)] = null;
             far.degree--;
-            removed.segments[s.slotAt(removed)] = null;
+            removed.segments[slotOnRemoved] = null;
             return far;
         }
-
-        int slotOnRemoved = s.slotAt(removed);
-        GraphNode<D> leaf = promote(s, s.endA == removed ? 0 : s.cellCount() - 1);
+        GraphNode<D> leaf =
+                promote(s, s.endA == removed && s.dirA == slotOnRemoved ? 0 : s.cellCount() - 1);
         GraphSegment<D> stub = removed.segments[slotOnRemoved];
         removed.segments[slotOnRemoved] = null;
         retire(net, stub, null);
@@ -990,10 +1036,26 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         return leaf;
     }
 
+    private void indexCell(long posKey) {
+        long chunkKey = chunkOf(posKey);
+        LongOpenHashSet inChunk = nodesByChunk.get(chunkKey);
+        if (inChunk == null) {
+            nodesByChunk.put(chunkKey, inChunk = new LongOpenHashSet());
+            if (capabilityChunks != null) capabilityChunks.addTo(chunkKey, 1);
+        }
+        inChunk.add(posKey);
+    }
+
     private void removeFromChunkIndex(long posKey) {
-        LongOpenHashSet inChunk = nodesByChunk.get(chunkOf(posKey));
-        if (inChunk != null && inChunk.remove(posKey) && inChunk.isEmpty())
-            nodesByChunk.remove(chunkOf(posKey));
+        long chunkKey = chunkOf(posKey);
+        LongOpenHashSet inChunk = nodesByChunk.get(chunkKey);
+        if (inChunk == null || !inChunk.remove(posKey) || !inChunk.isEmpty()) return;
+        nodesByChunk.remove(chunkKey);
+        if (capabilityChunks != null) {
+            int previous = capabilityChunks.addTo(chunkKey, -1);
+            assert previous > 0;
+            if (previous == 1) capabilityChunks.remove(chunkKey);
+        }
     }
 
     private void setEdgeBit(GraphNode<D> node, Direction face) {
@@ -1034,28 +1096,54 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         queue(net, node);
     }
 
-    public void invalidateAround(long posKey) {
-        if (nodesByPos.isEmpty() && interiorIndex.isEmpty()) return;
+    public int invalidateAround(long posKey) {
+        if (!hasCellsBeside(posKey)) return 0;
+        int neighbours = 0;
         for (Direction dir : DIRS) {
-            long nbKey = offset(posKey, dir);
-            GraphNode<D> node = nodesByPos.get(nbKey);
-            if (node == null) {
-                GraphSegment<D> s = segmentAt(nbKey);
-                if (s != null) {
-                    int idx = indexOf(s, nbKey);
-                    s.clearProbed(idx, dir.getOpposite().ordinal());
-                    if (s.net != null) queue(s.net, s);
-                }
-                continue;
-            }
-            Direction face = dir.getOpposite();
-            if (!node.isOpen(face)) continue;
-            NodeNetwork<D> net = node.net;
-            EdgeFaces ef = node.ef;
-            if (net == null || net.edgeFaces == null || ef == null) continue;
-            if ((ef.mask & (1 << face.ordinal())) == 0) continue;
-            markUnprobed(net, node, ef, face.ordinal());
+            if (invalidateFace(offset(posKey, dir), dir.getOpposite().ordinal()))
+                neighbours |= 1 << dir.ordinal();
         }
+        return neighbours;
+    }
+
+    public boolean invalidateFace(long cellKey, int faceIndex) {
+        GraphNode<D> node = nodesByPos.get(cellKey);
+        if (node == null) {
+            GraphSegment<D> segment = segmentAt(cellKey);
+            if (segment == null) return false;
+            int index = indexOf(segment, cellKey);
+            segment.clearProbed(index, faceIndex);
+            if (segment.net != null) queue(segment.net, segment);
+            return true;
+        }
+        Direction face = DIRS[faceIndex];
+        if (!node.isOpen(face)) return false;
+        NodeNetwork<D> net = node.net;
+        EdgeFaces ef = node.ef;
+        if (net != null
+                && net.edgeFaces != null
+                && ef != null
+                && (ef.mask & (1 << faceIndex)) != 0) {
+            markUnprobed(net, node, ef, faceIndex);
+        }
+        return true;
+    }
+
+    public boolean hasCellsBeside(long posKey) {
+        if (nodesByChunk.isEmpty()) return false;
+        int x = BlockPos.getX(posKey);
+        int z = BlockPos.getZ(posKey);
+        int chunkX = SectionPos.blockToSectionCoord(x);
+        int chunkZ = SectionPos.blockToSectionCoord(z);
+        return nodesByChunk.containsKey(ChunkPos.asLong(chunkX, chunkZ))
+                || (x & 15) == 0 && nodesByChunk.containsKey(ChunkPos.asLong(chunkX - 1, chunkZ))
+                || (x & 15) == 15 && nodesByChunk.containsKey(ChunkPos.asLong(chunkX + 1, chunkZ))
+                || (z & 15) == 0 && nodesByChunk.containsKey(ChunkPos.asLong(chunkX, chunkZ - 1))
+                || (z & 15) == 15 && nodesByChunk.containsKey(ChunkPos.asLong(chunkX, chunkZ + 1));
+    }
+
+    public @Nullable LongOpenHashSet cellsInChunk(long chunkKey) {
+        return nodesByChunk.get(chunkKey);
     }
 
     public void invalidateNode(long posKey) {
@@ -1075,23 +1163,11 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         queue(node.net, node);
     }
 
-    public boolean hasOpenFaceTowards(long posKey) {
-        if (nodesByPos.isEmpty() && interiorIndex.isEmpty()) return false;
-        for (Direction dir : DIRS) {
-            long nbKey = offset(posKey, dir);
-            GraphNode<D> node = nodesByPos.get(nbKey);
-            if (node == null) {
-                if (interiorIndex.containsKey(nbKey)) return true;
-                continue;
-            }
-            Direction face = dir.getOpposite();
-            if (!node.isOpen(face)) continue;
-            NodeNetwork<D> net = node.net;
-            EdgeFaces ef = node.ef;
-            if (net == null || net.edgeFaces == null || ef == null) continue;
-            if ((ef.mask & (1 << face.ordinal())) != 0) return true;
-        }
-        return false;
+    /** backport-fix: BF-087 forget every probe verdict of the cells in a chunk and queue them again. */
+    public void resetProbesIn(long chunkKey) {
+        LongOpenHashSet inChunk = nodesByChunk.get(chunkKey);
+        if (inChunk == null) return;
+        for (LongIterator it = inChunk.iterator(); it.hasNext(); ) invalidateNode(it.nextLong());
     }
 
     public void queueNodesIn(long chunkKey) {
@@ -1101,19 +1177,14 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
             long posKey = it.nextLong();
             GraphNode<D> node = nodesByPos.get(posKey);
             if (node != null) {
-                if (node.net != null) queue(node.net, node);
+                EdgeFaces ef = node.ef;
+                if (node.net != null && ef != null && (ef.mask & ~ef.probedMask) != 0)
+                    queue(node.net, node);
                 continue;
             }
             GraphSegment<D> s = segmentAt(posKey);
-            if (s != null && s.net != null) queue(s.net, s);
+            if (s != null && s.net != null && s.hasUnprobed()) queue(s.net, s);
         }
-    }
-
-    /** backport-fix: BF-087 forget every probe verdict of the cells in a chunk and queue them again. */
-    public void resetProbesIn(long chunkKey) {
-        LongOpenHashSet inChunk = nodesByChunk.get(chunkKey);
-        if (inChunk == null) return;
-        for (LongIterator it = inChunk.iterator(); it.hasNext(); ) invalidateNode(it.nextLong());
     }
 
     /**
@@ -1240,7 +1311,8 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         for (GraphNode<D> node : pending) {
             EdgeFaces ef = node.ef;
             if (ef == null || node.net != net) continue;
-            if (!resident(level, node.posKey)) continue;
+            LevelChunk cellChunk = residentChunk(level, node.posKey);
+            if (cellChunk == null) continue;
             int todo = ef.mask & ~ef.probedMask;
             int resolved = 0;
             boolean repoll = false;
@@ -1254,19 +1326,17 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
                     park(node, gate);
                     continue;
                 }
-                probeBlocker = NO_BLOCKER;
-                Probe verdict = probe.present(level, this, node.posKey, ef, f);
-                if (verdict == Probe.UNKNOWN) {
-                    long blocker = probeBlocker;
-                    if (blocker != NO_BLOCKER && blocker != BLOCKER_UNKNOWN) park(node, blocker);
+                long verdict = probe.present(level, this, node.posKey, cellChunk, ef, f);
+                if (verdict != PRESENT && verdict != ABSENT) {
+                    assert verdict != NO_BLOCKER;
+                    if (verdict != UNKNOWN) park(node, verdict);
                     else repoll = true;
                     continue;
                 }
                 resolved |= bit;
-                if (verdict == Probe.PRESENT) ef.activeMask |= bit;
+                if (verdict == PRESENT) ef.activeMask |= bit;
                 else ef.activeMask &= ~bit;
             }
-            probeBlocker = NO_BLOCKER;
             ef.probedMask |= resolved;
             if (repoll) queue(net, node);
             if (ef.activeMask != 0) active.add(node);
@@ -1280,48 +1350,67 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         net.pendingSegments = null;
         for (GraphSegment<D> seg : pending) {
             if (seg.net != net) continue;
+            int lo = seg.dirtyFrom();
+            int hi = seg.dirtyTo();
+            if (lo >= hi) continue;
+            int mod = seg.structMod;
             boolean repoll = false;
-            boolean walked = true;
-            int leftUnprobed = 0;
+            int leftLo = -1;
+            int leftHi = -1;
             int junctionizeAt = -1;
+            long lastChunkKey = NO_BLOCKER;
+            LevelChunk lastChunk = null;
             int n = seg.cellCount();
-            for (int i = 0; i < n && junctionizeAt < 0; i++) {
+            for (int i = lo; i < hi && junctionizeAt < 0; i++) {
                 long cell = seg.cellAt(i);
-                if (!resident(level, cell)) {
-                    walked = false;
-                    continue;
+                long cellChunkKey = chunkOf(cell);
+                LevelChunk cellChunk;
+                if (cellChunkKey == lastChunkKey
+                        && lastChunk != null
+                        && lastChunk.getFullStatus().isOrAfter(FullChunkStatus.FULL)) {
+                    cellChunk = lastChunk;
+                } else {
+                    cellChunk = residentChunk(level, cell);
+                    lastChunkKey = cellChunkKey;
+                    lastChunk = cellChunk;
                 }
-                int runDirA = directionBetween(cell, i == 0 ? seg.endA.posKey : seg.cellAt(i - 1));
-                int runDirB =
-                        directionBetween(cell, i == n - 1 ? seg.endB.posKey : seg.cellAt(i + 1));
-                for (int f = 0; f < 6; f++) {
-                    if (f == runDirA || f == runDirB) continue;
-                    if (seg.probed(i, f)) continue;
-                    // backport-fix: BF-087 as in drainNodeProbes
-                    long gate = notReady(level, offset(cell, DIRS[f]));
-                    if (gate != NO_BLOCKER) {
-                        parkSegment(seg, gate);
-                        leftUnprobed++;
-                        continue;
+                boolean left = cellChunk == null;
+                if (!left) {
+                    int runDirA =
+                            directionBetween(cell, i == 0 ? seg.endA.posKey : seg.cellAt(i - 1));
+                    int runDirB =
+                            directionBetween(
+                                    cell, i == n - 1 ? seg.endB.posKey : seg.cellAt(i + 1));
+                    for (int f = 0; f < 6; f++) {
+                        if (f == runDirA || f == runDirB) continue;
+                        if (seg.probed(i, f)) continue;
+                        // backport-fix: BF-087 as in drainNodeProbes
+                        long gate = notReady(level, offset(cell, DIRS[f]));
+                        if (gate != NO_BLOCKER) {
+                            parkSegment(seg, gate);
+                            left = true;
+                            continue;
+                        }
+                        long verdict = probe.present(level, this, cell, cellChunk, null, f);
+                        if (verdict != PRESENT && verdict != ABSENT) {
+                            assert verdict != NO_BLOCKER;
+                            if (verdict != UNKNOWN) parkSegment(seg, verdict);
+                            else repoll = true;
+                            left = true;
+                            continue;
+                        }
+                        if (verdict == PRESENT) {
+                            junctionizeAt = i;
+                            break;
+                        }
+                        seg.markProbed(i, f);
                     }
-                    probeBlocker = NO_BLOCKER;
-                    Probe verdict = probe.present(level, this, cell, null, f);
-                    if (verdict == Probe.UNKNOWN) {
-                        long blocker = probeBlocker;
-                        if (blocker != NO_BLOCKER && blocker != BLOCKER_UNKNOWN)
-                            parkSegment(seg, blocker);
-                        else repoll = true;
-                        leftUnprobed++;
-                        continue;
-                    }
-                    if (verdict == Probe.PRESENT) {
-                        junctionizeAt = i;
-                        break;
-                    }
-                    seg.markProbed(i, f);
+                }
+                if (left) {
+                    if (leftLo < 0) leftLo = i;
+                    leftHi = i + 1;
                 }
             }
-            probeBlocker = NO_BLOCKER;
             if (junctionizeAt >= 0) {
                 GraphNode<D> v = promote(seg, junctionizeAt);
                 if (v.net != null && v.net.edgeFaces != null) {
@@ -1329,8 +1418,8 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
                     queue(v.net, v);
                 }
             } else {
-                if (walked) seg.rebaseUnprobed(leftUnprobed);
-                if (repoll) {
+                if (seg.structMod == mod) seg.settleDirty(leftLo, leftHi);
+                if (repoll || seg.structMod != mod) {
                     queue(net, seg);
                 }
             }
@@ -1382,6 +1471,10 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
             if (s != null) node = promote(s, indexOf(s, posKey));
             if (node == null) return;
         }
+        setSelfEndpoint(node, on);
+    }
+
+    public void setSelfEndpoint(GraphNode<D> node, boolean on) {
         if (node.selfEndpoint == on) return;
         node.selfEndpoint = on;
         NodeNetwork<D> net = node.net;
@@ -1414,7 +1507,12 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
             if (s == null) return;
             node = promote(s, indexOf(s, posKey));
         }
+        updateConnections(node, newMask);
+    }
+
+    private void updateConnections(GraphNode<D> node, int newMask) {
         if (node.openConnections == newMask) return;
+        long posKey = node.posKey;
         node.device = true;
         int old = node.openConnections;
         int opened = newMask & ~old;
@@ -1456,14 +1554,11 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
             if ((opened & (1 << dir.ordinal())) == 0) continue;
             GraphSegment<D> s = node.segments[dir.ordinal()];
             if (s == null) continue;
-            if (s.net != net
-                    && provider.dataCompatible(node.data, s.data)
-                    && provider.dataCompatible(s.data, node.data)) net = unite(net, s.net);
+            if (s.net != net && provider.dataCompatible(node.data, s.data)) net = unite(net, s.net);
             GraphNode<D> far = s.other(node);
             if (far.net != net
                     && far.isOpen(s.slotAt(far))
-                    && provider.dataCompatible(s.data, far.data)
-                    && provider.dataCompatible(far.data, s.data)) net = unite(net, far.net);
+                    && provider.dataCompatible(s.data, far.data)) net = unite(net, far.net);
         }
 
         if (closed != 0) {
@@ -1487,55 +1582,51 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
     }
 
     private void replaceNode(long posKey, D data, int mask) {
-        GraphNode<D> node = nodesByPos.get(posKey);
-        long[] links = node.hasRemoteLinks() ? node.remoteLinks.toLongArray() : null;
-        boolean device = node.device;
-        removeNode(posKey);
-        addNode(posKey, data, mask);
-        if (device) firstClass(posKey).device = true;
-        if (links != null) for (long peer : links) addRemoteLink(posKey, peer);
-    }
-
-    public long throughputCap(NodeNetwork<D> net) {
-        if (!provider.hasTieredRates()) return Long.MAX_VALUE;
-        if (net.throughputCapDirty) {
-            long cap = Long.MAX_VALUE;
-            for (GraphNode<D> node : net.nodes) cap = Math.min(cap, provider.rateOf(node.data));
-            for (GraphSegment<D> s : net.segments) cap = Math.min(cap, provider.rateOf(s.data));
-            net.throughputCap = cap;
-            net.throughputCapDirty = false;
+        try (var batch = PhysicalGraph.begin(ownerLevel)) {
+            GraphNode<D> node = nodesByPos.get(posKey);
+            long[] links = node.hasRemoteLinks() ? node.remoteLinks.toLongArray() : null;
+            GraphNode<D> replacement = new GraphNode<>(posKey, data, mask);
+            replacement.device = node.device;
+            replacement.machineOwned = node.machineOwned;
+            replacement.selfEndpoint = node.selfEndpoint;
+            removeNode(posKey);
+            addNode(replacement);
+            if (links != null) for (long peer : links) addRemoteLink(posKey, peer);
         }
-        return net.throughputCap;
     }
 
     public void addRemoteLink(long a, long b) {
         GraphNode<D> na = firstClass(a);
         GraphNode<D> nb = firstClass(b);
         if (na == null || nb == null || a == b) return;
+        addRemoteLink(na, nb);
+    }
+
+    public void addRemoteLink(GraphNode<D> na, GraphNode<D> nb) {
+        assert na != nb;
         if (na.remoteLinks == null) na.remoteLinks = new LongOpenHashSet(2);
         if (nb.remoteLinks == null) nb.remoteLinks = new LongOpenHashSet(2);
-        na.remoteLinks.add(b);
-        nb.remoteLinks.add(a);
+        boolean changed = na.remoteLinks.add(nb.posKey);
+        changed |= nb.remoteLinks.add(na.posKey);
+        if (!changed) return;
         setDirty();
         if (!remoteCompatible(na, nb)) return;
         if (na.net != null && nb.net != null && na.net != nb.net) unite(na.net, nb.net);
     }
 
-    public void removeRemoteLink(long a, long b) {
-        GraphNode<D> na = nodesByPos.get(a);
-        GraphNode<D> nb = nodesByPos.get(b);
-        if (na != null && na.remoteLinks != null) na.remoteLinks.remove(b);
-        if (nb != null && nb.remoteLinks != null) nb.remoteLinks.remove(a);
-        setDirty();
-        if (na == null || nb == null || na.net == null || na.net != nb.net) return;
-        List<Object> seeds = new ArrayList<>(2);
-        seeds.add(na);
-        seeds.add(nb);
-        splitNet(na.net, seeds);
-    }
-
     public void compact() {
         for (GraphNode<D> node : new ArrayList<>(nodesByPos.values())) foldAt(node);
+    }
+
+    public void compactAround(long[] keys) {
+        for (long key : keys) {
+            GraphNode<D> node = nodesByPos.get(key);
+            if (node != null) foldAt(node);
+            for (Direction dir : DIRS) {
+                GraphNode<D> nb = nodesByPos.get(offset(key, dir));
+                if (nb != null) foldAt(nb);
+            }
+        }
     }
 
     public GraphNode<D> firstClass(long posKey) {
@@ -1577,19 +1668,16 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
                     if (!cur.isOpen(dir)) continue;
                     GraphSegment<D> s = cur.segments[dir.ordinal()];
                     if (s == null || s.net != null) continue;
-                    if (!provider.dataCompatible(cur.data, s.data)
-                            || !provider.dataCompatible(s.data, cur.data)) {
+                    if (!provider.dataCompatible(cur.data, s.data)) {
                         continue;
                     }
-
                     s.net = net;
                     net.segments.add(s);
                     net.cells += s.cellCount();
                     GraphNode<D> far = s.other(cur);
                     if (far.net != null
                             || !far.isOpen(s.slotAt(far))
-                            || !provider.dataCompatible(s.data, far.data)
-                            || !provider.dataCompatible(far.data, s.data)) continue;
+                            || !provider.dataCompatible(s.data, far.data)) continue;
                     far.net = net;
                     net.nodes.add(far);
                     net.cells++;
@@ -1638,7 +1726,6 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
                 a.nodes.size() + a.segments.size() >= b.nodes.size() + b.segments.size() ? a : b;
         NodeNetwork<D> drain = (keep == a) ? b : a;
         provider.onNetsMerged(keep, drain);
-        keep.throughputCapDirty = true;
         topologyChanged(keep);
         for (GraphNode<D> p : drain.nodes) {
             keep.nodes.add(p);
@@ -1687,7 +1774,6 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
     }
 
     private void splitNet(NodeNetwork<D> net, List<Object> seeds) {
-        net.throughputCapDirty = true;
         topologyChanged(net);
         int k = seeds.size();
         int[] parent = new int[k];
@@ -1746,8 +1832,7 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         int ri = findRoot(parent, i);
         for (GraphNode<D> end : new GraphNode[] {seg.endA, seg.endB}) {
             if (end.net != net || !end.isOpen(seg.slotAt(end))) continue;
-            if (!provider.dataCompatible(seg.data, end.data)
-                    || !provider.dataCompatible(end.data, seg.data)) {
+            if (!provider.dataCompatible(seg.data, end.data)) {
                 continue;
             }
             merges += claimNode(net, end, ri, parent, queues, comps, gen);
@@ -1768,8 +1853,7 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
             GraphSegment<D> s = cur.segments[dir.ordinal()];
             if (s == null || !cur.isOpen(dir)) continue;
             if (s.net != net) continue;
-            if (!provider.dataCompatible(cur.data, s.data)
-                    || !provider.dataCompatible(s.data, cur.data)) {
+            if (!provider.dataCompatible(cur.data, s.data)) {
                 continue;
             }
             if (s.floodStamp == gen) {
@@ -1787,9 +1871,7 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
             comps[ri].add(s);
             GraphNode<D> far = s.other(cur);
             if (far.net != net) continue;
-            if (far.isOpen(s.slotAt(far))
-                    && provider.dataCompatible(s.data, far.data)
-                    && provider.dataCompatible(far.data, s.data)) {
+            if (far.isOpen(s.slotAt(far)) && provider.dataCompatible(s.data, far.data)) {
                 merges += claimNode(net, far, ri, parent, queues, comps, gen);
             }
         }
@@ -1872,13 +1954,11 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         return from.isOpen(Direction.VALUES[dirOrdinal])
                 && far.isOpen(Direction.VALUES[s.slotAt(far)])
                 && provider.dataCompatible(from.data, s.data)
-                && provider.dataCompatible(s.data, from.data)
-                && provider.dataCompatible(s.data, far.data)
-                && provider.dataCompatible(far.data, s.data);
+                && provider.dataCompatible(s.data, far.data);
     }
 
     private boolean remoteCompatible(GraphNode<D> a, GraphNode<D> b) {
-        return provider.dataCompatible(a.data, b.data) && provider.dataCompatible(b.data, a.data);
+        return provider.dataCompatible(a.data, b.data);
     }
 
     private void submitCompile(GraphNode<D> v, int d1, int d2) {
@@ -1905,7 +1985,7 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
                         give.endA == v,
                         endAPos,
                         endBPos);
-        COMPILER.accept(
+        compiler.accept(
                 () -> {
                     try {
                         compileFold(job);
@@ -1922,8 +2002,11 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
             GraphNode<D> v = c.v;
             v.foldQueued = false;
             if (nodesByPos.get(v.posKey) != v || v.net == null) continue;
-            if (v.degree != 2 || v.openConnections != OPEN_ALL || v.device || v.selfEndpoint)
-                continue;
+            if (v.degree != 2
+                    || v.openConnections != OPEN_ALL
+                    || v.device
+                    || v.machineOwned
+                    || v.selfEndpoint) continue;
             if (v.ef != null && v.ef.activeMask != 0) continue;
             if (v.segments[c.d1] != c.s1 || v.segments[c.d2] != c.s2) {
                 foldAt(v);
@@ -1952,42 +2035,68 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         GraphNode<D> newEndB = c.atB ? farGive : keep.endB;
         int newDirA = c.atB ? keep.dirA : slotFarGive;
         int newDirB = c.atB ? slotFarGive : keep.dirB;
-        GraphSegment<D> merged =
-                GraphSegment.compiled(
-                        newEndA, newEndB, newDirA, newDirB, c.cells, c.bits, c.unprobed, keep.data);
-        merged.net = net;
-        net.segments.add(merged);
-        newEndA.segments[newDirA] = merged;
-        newEndB.segments[newDirB] = merged;
+        GraphSegment<D> host = keep.peelOrigin == give ? give : keep;
+        GraphSegment<D> absorbed = host == keep ? give : keep;
+        host.adoptCompiled(
+                newEndA, newEndB, newDirA, newDirB, c.cells, c.bits, c.dirtyLo, c.dirtyHi);
+        newEndA.segments[newDirA] = host;
+        newEndB.segments[newDirB] = host;
         net.nodes.remove(v);
         nodesByPos.remove(v.posKey);
-        interiorIndex.put(v.posKey, merged);
-        retire(net, keep, merged);
-        retire(net, give, merged);
+        interiorIndex.put(v.posKey, host);
+        unlinkPeel(host, absorbed);
+        retire(net, absorbed, host);
         topologyChanged(net);
         if (net.edgeFaces != null && v.ef != null) {
             net.edgeFaces.remove(v);
             if (net.activeFaces != null) net.activeFaces.remove(v);
             if (net.pendingProbe != null) net.pendingProbe.remove(v);
         }
-        if (net.activeFaces != null && merged.hasUnprobed()) queue(net, merged);
+        if (net.activeFaces != null && host.hasUnprobed()) queue(net, host);
         setDirty();
     }
 
-    public enum Probe {
-        PRESENT,
-        ABSENT,
-        UNKNOWN
+    private static <D> void unlinkPeel(GraphSegment<D> origin, GraphSegment<D> peel) {
+        if (peel.peelOrigin != origin) return;
+        if (origin.pendingPeel == peel) {
+            origin.pendingPeel = peel.peelNext;
+        } else {
+            for (GraphSegment<D> p = origin.pendingPeel; p != null; p = p.peelNext) {
+                if (p.peelNext == peel) {
+                    p.peelNext = peel.peelNext;
+                    break;
+                }
+            }
+        }
+        peel.peelOrigin = null;
+        peel.peelNext = null;
     }
 
     @FunctionalInterface
     public interface FaceProbe<D> {
-        Probe present(
+        long present(
                 ServerLevel level,
                 LevelNodeGraph<D> graph,
                 long cellPos,
+                LevelChunk cellChunk,
                 @Nullable EdgeFaces faces,
                 int faceOrdinal);
+    }
+
+    public static final class Kind<D> {
+        private final int index;
+        public final SavedDataType<LevelNodeGraph<D>> type;
+
+        private Kind(int index, SavedDataType<LevelNodeGraph<D>> type) {
+            this.index = index;
+            this.type = type;
+        }
+
+        @SuppressWarnings("unchecked")
+        public @Nullable LevelNodeGraph<D> loaded(ServerLevel level) {
+            LevelNodeGraph<?>[] slots = level.hbm$graphs();
+            return index < slots.length ? (LevelNodeGraph<D>) slots[index] : null;
+        }
     }
 
     private static final class CompiledFold<D> {
@@ -2006,7 +2115,8 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         final long endBPos;
         long @Nullable [] cells;
         long @Nullable [] bits;
-        int unprobed;
+        int dirtyLo;
+        int dirtyHi;
 
         CompiledFold(
                 GraphNode<D> v,
@@ -2025,8 +2135,8 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
             this.d2 = d2;
             this.s1 = s1;
             this.s2 = s2;
-            this.mod1 = s1.structMod;
-            this.mod2 = s2.structMod;
+            mod1 = s1.structMod;
+            mod2 = s2.structMod;
             this.vGroup = vGroup;
             this.keepIs1 = keepIs1;
             this.atB = atB;
@@ -2036,7 +2146,8 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         }
     }
 
-    private record NodeEntry(long pos, int mask, int dataIdx, boolean dev, long[] remote) {}
+    private record NodeEntry(
+            long pos, int mask, int dataIdx, boolean dev, boolean owned, long[] remote) {}
 
     private record SegmentEntry(
             long endA, long endB, int dirA, int dirB, int dataIdx, long[] interior) {}

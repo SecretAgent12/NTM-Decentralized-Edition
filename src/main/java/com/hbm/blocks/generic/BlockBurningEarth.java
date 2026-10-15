@@ -4,7 +4,6 @@
 package com.hbm.blocks.generic;
 
 import com.hbm.blocks.ModBlocks;
-import com.hbm.platform.Services;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -12,6 +11,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseFireBlock;
 import net.minecraft.world.level.block.Block;
@@ -23,7 +23,6 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.BlockCompat;
 
 public class BlockBurningEarth extends BlockCompat {
-
     private static final int SPREAD_CHANCE = 5;
     private static final int WALK_FIRE_SECONDS = 5;
 
@@ -76,7 +75,6 @@ public class BlockBurningEarth extends BlockCompat {
     protected void randomTick(
             BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
         if (random.nextInt(SPREAD_CHANCE) == 0) spread(level, pos, random);
-
         level.setBlockAndUpdate(pos, ModBlocks.IMPACT_DIRT.get().defaultBlockState());
     }
 
@@ -101,8 +99,7 @@ public class BlockBurningEarth extends BlockCompat {
                     if (here.is(ModBlocks.FROZEN_DIRT.get())) {
                         level.setBlockAndUpdate(at, Blocks.DIRT.defaultBlockState());
                     }
-
-                    if (Services.PLATFORM.isFlammable(level, at.above(), over, Direction.UP)
+                    if (over.isFlammable((BlockGetter) level, at.above(), Direction.UP)
                             && !over.is(BlockTags.LEAVES)
                             && !(over.getBlock() instanceof BushBlock)
                             && level.getBlockState(ownAbove).isAir()) {

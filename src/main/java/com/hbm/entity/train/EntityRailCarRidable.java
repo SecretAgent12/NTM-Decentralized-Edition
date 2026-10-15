@@ -250,7 +250,6 @@ public abstract class EntityRailCarRidable extends EntityRailCarCargo {
 
         @Override
         protected void readAdditionalSaveData(ValueInput input) {
-
             this.discard();
         }
 

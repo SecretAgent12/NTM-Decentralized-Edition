@@ -39,7 +39,6 @@ public class ItemBlowtorch extends ItemCompat implements IFluidContainerItem, IT
 
     private static final int[] GAS_CAPS = {CAPACITY};
     private static final int[] GAS_COSTS = {COST};
-
     private static final int[] ACETYLENE_CAPS = {8_000, 16_000};
     private static final int[] ACETYLENE_COSTS = {20, 10};
     private static final ChatFormatting[] GAUGE_COLORS = {
@@ -125,7 +124,6 @@ public class ItemBlowtorch extends ItemCompat implements IFluidContainerItem, IT
             setFill(stack, i, (int) content.amount());
             return;
         }
-
         setFill(stack, 0, 0);
     }
 
@@ -204,7 +202,6 @@ public class ItemBlowtorch extends ItemCompat implements IFluidContainerItem, IT
 
     @Override
     public boolean isBarVisible(ItemStack stack) {
-
         int tank = leanest(stack);
         return fillOf(stack, tank) < capacities()[tank];
     }

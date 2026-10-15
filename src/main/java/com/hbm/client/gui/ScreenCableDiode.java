@@ -4,9 +4,9 @@
 package com.hbm.client.gui;
 
 import com.hbm.api.energymk2.IEnergyHandlerMK2.ConnectionPriority;
+import com.hbm.blockentity.network.BlockEntityCableDiode;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toserver.NbtControlPayload;
-import com.hbm.platform.Services;
-import com.hbm.tileentity.network.BlockEntityCableDiode;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -88,7 +88,7 @@ public final class ScreenCableDiode extends ScreenCompat {
             data.putLong("limit", Long.parseLong(throughput.getValue()));
         } catch (NumberFormatException ignored) {
         }
-        Services.NETWORK.sendToServer(new NbtControlPayload(diode.getBlockPos(), data));
+        PacketWire.sendToServer(new NbtControlPayload(diode.getBlockPos(), data));
         super.onClose();
     }
 

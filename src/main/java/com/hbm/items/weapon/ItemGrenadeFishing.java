@@ -19,6 +19,8 @@ import net.minecraft.world.level.storage.loot.BuiltInLootTables;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.minecraft.world.phys.Vec3;
 
 public class ItemGrenadeFishing extends ItemGenericGrenade {
 
@@ -26,22 +28,23 @@ public class ItemGrenadeFishing extends ItemGenericGrenade {
         super(properties, fuse);
     }
 
-    public static ItemStack getRandomLoot(ServerLevel level) {
+    public static ItemStack getRandomLoot(ServerLevel level, BlockPos pos) {
         LootTable table =
                 level.getServer()
                         .reloadableRegistries()
                         .getLootTable(BuiltInLootTables.FISHING_FISH);
-
         List<ItemStack> loot =
                 table.getRandomItems(
-                        new LootParams.Builder(level).create(LootContextParamSets.EMPTY));
+                        new LootParams.Builder(level)
+                                .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(pos))
+                                .withParameter(LootContextParams.TOOL, ItemStack.EMPTY)
+                                .create(LootContextParamSets.FISHING));
         return loot.isEmpty() ? ItemStack.EMPTY : loot.getFirst();
     }
 
     @Override
     public void explode(
             Entity grenade, LivingEntity thrower, Level level, double x, double y, double z) {
-
         level.explode(null, x, y + 0.25D, z, 3F, Level.ExplosionInteraction.NONE);
 
         if (!(level instanceof ServerLevel server)) return;
@@ -60,7 +63,7 @@ public class ItemGrenadeFishing extends ItemGenericGrenade {
 
             if (state.getBlock() instanceof LiquidBlock
                     && state.getFluidState().is(FluidTags.WATER)) {
-                ItemStack loot = getRandomLoot(server);
+                ItemStack loot = getRandomLoot(server, pos);
                 if (!loot.isEmpty()) {
                     EntityItemBuoyant item =
                             new EntityItemBuoyant(level, rX + 0.5, rY + 0.5, rZ + 0.5, loot.copy());

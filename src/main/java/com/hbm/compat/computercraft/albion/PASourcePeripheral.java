@@ -3,7 +3,7 @@
 
 package com.hbm.compat.computercraft.albion;
 
-import com.hbm.tileentity.machine.albion.BlockEntityPASource;
+import com.hbm.blockentity.machine.albion.BlockEntityPASource;
 import dan200.computercraft.api.lua.LuaFunction;
 
 public final class PASourcePeripheral extends CooledPeripheral<BlockEntityPASource> {
@@ -43,6 +43,7 @@ public final class PASourcePeripheral extends CooledPeripheral<BlockEntityPASour
         BlockEntityPASource machine = machine();
         machine.particle = null;
         machine.state = BlockEntityPASource.PAState.IDLE;
+        machine.markChanged();
         return new Object[] {};
     }
 

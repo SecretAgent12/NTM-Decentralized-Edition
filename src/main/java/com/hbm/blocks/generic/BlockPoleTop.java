@@ -5,7 +5,6 @@ package com.hbm.blocks.generic;
 
 import com.mojang.serialization.MapCodec;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockState;
 import com.hbm.backport.compat.BlockCompat;
 
 public class BlockPoleTop extends BlockCompat {

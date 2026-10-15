@@ -4,8 +4,14 @@
 
 package com.hbm.blocks.generic;
 
+import com.hbm.blockentity.BlockEntityBobble;
+import com.hbm.blocks.ModBlocks;
 import com.hbm.items.special.ScrapType;
-import com.hbm.tileentity.BlockEntityBobble;
+import com.hbm.registration.NeoForgeRegistrar;
+import com.hbm.registration.OpenRegistry;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
 import com.hbm.backport.InteractionResult;
@@ -34,10 +40,15 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.BlockCompat;
 
 public class BlockBobble extends BlockCompat implements EntityBlock {
-
     public static final IntegerProperty ROTATION = BlockStateProperties.ROTATION_16;
-
     private static final VoxelShape SHAPE = Block.box(5.5, 0, 5.5, 10.5, 10, 10.5);
+    public static final OpenRegistry<Bobble> TYPES = new OpenRegistry<>("bobblehead", Bobble::id);
+
+    private static final Map<Bobble, String> CONTRIBUTIONS = new HashMap<>();
+
+    static {
+        for (BobbleType type : BobbleType.values()) TYPES.add(type);
+    }
 
     public static Consumer<BlockEntityBobble> OPEN_GUI = be -> {};
 
@@ -85,7 +96,6 @@ public class BlockBobble extends BlockCompat implements EntityBlock {
         if (level.getBlockEntity(pos) instanceof BlockEntityBobble bobble) {
             bobble.type = BlockEntityBobble.typeOf(stack);
             bobble.setChanged();
-
             level.sendBlockUpdated(pos, state, state, Block.UPDATE_CLIENTS);
         }
     }
@@ -122,7 +132,6 @@ public class BlockBobble extends BlockCompat implements EntityBlock {
                             pos.getY(),
                             pos.getZ() + 0.5,
                             BlockEntityBobble.stackOf(bobble.type));
-
             item.setDeltaMovement(0, 0, 0);
             level.addFreshEntity(item);
         }
@@ -138,7 +147,33 @@ public class BlockBobble extends BlockCompat implements EntityBlock {
         return InteractionResult.SUCCESS;
     }
 
-    public enum BobbleType {
+    public static synchronized void addonContribution(BobbleType type, String contribution) {
+        NeoForgeRegistrar.assertOpen("BlockBobble.addonContribution");
+        CONTRIBUTIONS.put(type, contribution);
+    }
+
+    public interface Bobble {
+
+        String name();
+
+        String fullName();
+
+        String label();
+
+        @Nullable String contribution();
+
+        @Nullable String inscription();
+
+        boolean skinLayers();
+
+        ItemStack stack();
+
+        default String id() {
+            return name().toLowerCase(Locale.ROOT);
+        }
+    }
+
+    public enum BobbleType implements Bobble {
         NONE("null", "null", null, null, false, ScrapType.BOARD_BLANK),
         STRENGTH(
                 "Strength",
@@ -297,7 +332,6 @@ public class BlockBobble extends BlockCompat implements EntityBlock {
                 true,
                 ScrapType.CPU_REGISTER);
 
-        private static final BobbleType[] VALUES = values();
         public final String name;
         public final String label;
         public final @Nullable String contribution;
@@ -320,12 +354,36 @@ public class BlockBobble extends BlockCompat implements EntityBlock {
             this.scrap = scrap;
         }
 
-        public static BobbleType byOrdinal(int raw) {
-            return VALUES[Math.abs(raw) % VALUES.length];
+        @Override
+        public String fullName() {
+            return name;
         }
 
-        public static int count() {
-            return VALUES.length;
+        @Override
+        public String label() {
+            return label;
+        }
+
+        @Override
+        public @Nullable String contribution() {
+            return CONTRIBUTIONS.getOrDefault(this, contribution);
+        }
+
+        @Override
+        public @Nullable String inscription() {
+            return inscription;
+        }
+
+        @Override
+        public boolean skinLayers() {
+            return skinLayers;
+        }
+
+        @Override
+        public ItemStack stack() {
+            return this == NONE
+                    ? new ItemStack(ModBlocks.BOBBLEHEAD)
+                    : ModBlocks.BOBBLEHEADS.stack(this);
         }
     }
 }

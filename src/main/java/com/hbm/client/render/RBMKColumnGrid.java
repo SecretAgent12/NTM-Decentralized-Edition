@@ -3,9 +3,9 @@
 
 package com.hbm.client.render;
 
+import com.hbm.blockentity.machine.rbmk.RBMKColumn;
 import com.hbm.interfaces.injected.IBufferBuilderExtension;
 import com.hbm.render.util.Vertices;
-import com.hbm.tileentity.machine.rbmk.RBMKColumn;
 import com.hbm.backport.client.rendertype.RenderPipeline;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;

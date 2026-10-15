@@ -16,7 +16,6 @@ import com.hbm.backport.storage.ValueOutput;
 import com.hbm.backport.compat.EntityCompat;
 
 public class EntityEMPBlast extends EntityCompat {
-
     private static final EntityDataAccessor<Integer> MAX_AGE =
             SynchedEntityData.defineId(EntityEMPBlast.class, EntityDataSerializers.INT);
 
@@ -25,7 +24,6 @@ public class EntityEMPBlast extends EntityCompat {
 
     public EntityEMPBlast(EntityType<? extends EntityEMPBlast> type, Level level) {
         super(type, level);
-
         this.age = 0;
         this.scale = 0;
     }

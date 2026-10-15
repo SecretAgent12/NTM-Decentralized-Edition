@@ -39,6 +39,15 @@ public final class SophisticatedLinkedStorage {
         return COMPONENT_PRESENT && Linked.hasEndpointComponent(stack);
     }
 
+    /**
+     * backport: the same check for any component holder (an ItemStack or an ItemStackTemplate), for
+     * the item interior adapter (SophisticatedItemInteriors), which sees both.
+     */
+    public static boolean hasEndpointComponent(
+            net.minecraft.core.component.DataComponentHolder holder) {
+        return COMPONENT_PRESENT && Linked.hasEndpointComponent(holder);
+    }
+
     private static boolean probeComponent() {
         try {
             net.p3pp3rf1y.sophisticatedcore.init.ModCoreDataComponents.class.getField(
@@ -62,7 +71,7 @@ public final class SophisticatedLinkedStorage {
     }
 
     private static final class Linked {
-        static boolean hasEndpointComponent(ItemStack stack) {
+        static boolean hasEndpointComponent(net.minecraft.core.component.DataComponentHolder stack) {
             return stack.has(
                     net.p3pp3rf1y.sophisticatedcore.init.ModCoreDataComponents
                             .LINKED_STORAGE_ENDPOINT

@@ -3,8 +3,8 @@
 
 package com.hbm.wiaj;
 
-import com.hbm.client.ModifierKeys;
-import com.hbm.client.qmaw.QMAWClient;
+import com.hbm.client.Keybinds;
+import com.hbm.platform.NeoForgeKeybindPlatform;
 import com.hbm.wiaj.cannery.CanneryBase;
 import com.hbm.wiaj.cannery.Jars;
 import java.util.List;
@@ -39,24 +39,30 @@ public final class CanneryClient {
         CanneryBase lesson = Jars.find(stack);
         if (lesson != null) {
             Component keys =
-                    Component.translatable("key.keyboard.left.shift")
+                    Keybinds.PRESENTATION
+                            .getTranslatedKeyMessage()
+                            .copy()
                             .append(Component.literal(" + "))
-                            .append(QMAWClient.OPEN_MANUAL.getTranslatedKeyMessage());
+                            .append(Keybinds.MANUAL.getTranslatedKeyMessage());
             tooltip.add(Component.translatable("cannery.f1", keys).withStyle(ChatFormatting.GREEN));
         }
         if (Thread.currentThread() == extracting && hoverScreen != null) hovered = lesson;
     }
 
     public static boolean key(Screen screen, KeyEvent event) {
-        return WidgetBridge.matches(QMAWClient.OPEN_MANUAL, event) && open(screen);
+        return WidgetBridge.matches(Keybinds.MANUAL, event)
+                && NeoForgeKeybindPlatform.modifierMatches(Keybinds.MANUAL, event.modifiers())
+                && open(screen);
     }
 
     public static boolean mouse(Screen screen, MouseButtonEvent event) {
-        return WidgetBridge.matchesMouse(QMAWClient.OPEN_MANUAL, event) && open(screen);
+        return WidgetBridge.matchesMouse(Keybinds.MANUAL, event)
+                && NeoForgeKeybindPlatform.modifierMatches(Keybinds.MANUAL, event.modifiers())
+                && open(screen);
     }
 
     private static boolean open(Screen screen) {
-        if (!ModifierKeys.leftShiftHeld()
+        if (!Keybinds.PRESENTATION.isDown()
                 || screen != hoverScreen
                 || hovered == null
                 || screen instanceof ScreenWorldInAJar) return false;

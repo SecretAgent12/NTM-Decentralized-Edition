@@ -379,7 +379,6 @@ public class EntityBulletBeamBase extends EntityCompat {
         }
 
         if (mop != null) {
-
             if (!(mop instanceof BlockHitResult blockHit
                     && this.level()
                             .getBlockState(blockHit.getBlockPos())

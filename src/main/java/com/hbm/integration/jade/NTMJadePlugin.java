@@ -4,8 +4,8 @@
 package com.hbm.integration.jade;
 
 import com.hbm.api.energymk2.IEnergyHandlerMK2;
-import com.hbm.api.fluidmk2.IFluidHandlerMK2;
 import com.hbm.blocks.multiblock.MultiblockSurface;
+import com.hbm.inventory.fluid.tank.FluidTankAccess;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
 import com.hbm.lib.Library;
 import java.util.ArrayList;
@@ -112,11 +112,11 @@ public final class NTMJadePlugin implements IWailaPlugin {
 
         @Override
         public @Nullable List<ViewGroup<CompoundTag>> getGroups(Accessor<?> accessor) {
-            if (!(accessor.getTarget() instanceof IFluidHandlerMK2 machine)) return null;
-            FluidTankNTM[] tanks = machine.getAllTanks();
-            if (tanks.length == 0) return null;
-            List<CompoundTag> views = new ArrayList<>(tanks.length);
-            for (FluidTankNTM tank : tanks) {
+            if (!(accessor.getTarget() instanceof FluidTankAccess tanks)) return null;
+            if (tanks.tankCount() == 0) return null;
+            List<CompoundTag> views = new ArrayList<>(tanks.tankCount());
+            for (int i = 0; i < tanks.tankCount(); i++) {
+                FluidTankNTM tank = tanks.tank(i);
                 Fluid fluid = tank.getFluid();
                 JadeFluidObject content =
                         fluid == null
@@ -129,7 +129,7 @@ public final class NTMJadePlugin implements IWailaPlugin {
 
         @Override
         public boolean shouldRequestData(Accessor<?> accessor) {
-            return accessor.getTarget() instanceof IFluidHandlerMK2;
+            return accessor.getTarget() instanceof FluidTankAccess;
         }
 
         @Override

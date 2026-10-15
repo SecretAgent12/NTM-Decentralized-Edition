@@ -221,15 +221,6 @@ SPDX-FileCopyrightText = ["JCTools contributors", "2026 movblock <admin@movblock
 SPDX-License-Identifier = "Apache-2.0 AND LGPL-3.0-only"
 
 [[annotations]]
-path = "**/src/main/java/com/hbm/platform/FabricTrustedLookupProvider.java"
-precedence = "closest"
-SPDX-FileCopyrightText = [
-    "2025 Burning_TNT <pangyl08@163.com>",
-    "2026 movblock <admin@movblock.mov>",
-]
-SPDX-License-Identifier = "MIT AND LGPL-3.0-only"
-
-[[annotations]]
 path = "**/src/main/java/com/hbm/client/render/ModelCrab.java"
 precedence = "closest"
 SPDX-FileCopyrightText = [
@@ -276,7 +267,9 @@ path = [
     "README.md",
     "docs/**",
 ]
-precedence = "override"
+# "closest": a file's own SPDX header wins (some backport files also carry movblock's line,
+# e.g. duck interfaces of his injected code); files without a header fall back to this
+precedence = "closest"
 SPDX-FileCopyrightText = "2026 SecretAgent12"
 SPDX-License-Identifier = "LGPL-3.0-only"
 

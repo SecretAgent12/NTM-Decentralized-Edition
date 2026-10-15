@@ -4,13 +4,13 @@
 package com.hbm.integration.recipeviewer;
 
 import com.hbm.blocks.ModBlocks;
+import com.hbm.blocks.network.FluidPipeBlock;
 import com.hbm.blocks.network.FluidPipeBlockItem;
 import com.hbm.inventory.fluid.NTMFluids;
 import com.hbm.items.ModDataComponents;
 import com.hbm.items.ModItems;
 import com.hbm.items.machine.FluidIdentifierData;
 import com.hbm.lib.Library;
-import com.hbm.platform.Services;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -24,76 +24,148 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.minecraft.world.level.material.Fluid;
+import net.minecraft.world.level.material.Fluids;
+import net.neoforged.neoforge.common.crafting.CompoundIngredient;
+import net.neoforged.neoforge.common.crafting.DataComponentIngredient;
 
 public final class CraftingRows {
 
     private static final ResourceLocation DUCT_RETYPE = Library.id("duct_retype");
+    private static final ResourceLocation DUCT_UNTYPE = Library.id("duct_untype");
 
-    private CraftingRows() {}
+    private record Variant(
+            FluidPipeBlockItem duct, String segment, Ingredient plain, Ingredient typed) {}
 
-    public static List<RecipeHolder<CraftingRecipe>> rows() {
-        List<RecipeHolder<CraftingRecipe>> rows = new ArrayList<>();
-        FluidPipeBlockItem duct = (FluidPipeBlockItem) ModBlocks.FLUID_PIPE.get().asItem();
-        Ingredient plain = Ingredient.of(duct);
+    private List<Variant> variants;
+    private List<Fluid> fluids;
 
-        Ingredient typed =
-                Services.PLATFORM.anyIngredient(
-                        NTMFluids.displayOrder().stream()
-                                .filter(fluid -> fluid != NTMFluids.NONE)
-                                .map(fluid -> Services.PLATFORM.exactIngredient(duct.of(fluid)))
-                                .toList());
+    public List<RecipeHolder<CraftingRecipe>> recipesFor(ItemStack stack) {
+        Variant variant = variant(stack);
+        if (variant == null) return List.of();
+        Fluid fluid = FluidPipeBlock.stampedFluid(stack);
+        if (fluid == Fluids.EMPTY) return List.of(untype(variant, variant.typed()));
+        if (!fluids().contains(fluid)) return List.of();
+        List<RecipeHolder<CraftingRecipe>> out = new ArrayList<>();
+        retype(out, variant, fluid, true, true);
+        return out;
+    }
 
-        for (int id = 1; id < NTMFluids.legacyIdCount(); id++) {
-            Fluid fluid = NTMFluids.byLegacyId(id);
-            ItemStack identifier = new ItemStack(ModItems.FLUID_IDENTIFIER);
-            identifier.set(
-                    ModDataComponents.FLUID_IDENTIFIER.get(),
-                    FluidIdentifierData.EMPTY.withPrimary(fluid));
-            Ingredient stamp = Services.PLATFORM.exactIngredient(identifier);
-            String key = PageIds.segment(BuiltInRegistries.FLUID.getKey(fluid));
-            rows.add(
-                    row(
-                            PageIds.derived(DUCT_RETYPE, key, "plain"),
-                            duct.of(fluid),
-                            1,
-                            plain,
-                            stamp));
-            rows.add(
-                    row(
-                            PageIds.derived(DUCT_RETYPE, key, "plain_bulk"),
-                            duct.of(fluid),
-                            8,
-                            plain,
-                            stamp));
-            rows.add(
-                    row(
-                            PageIds.derived(DUCT_RETYPE, key, "typed"),
-                            duct.of(fluid),
-                            1,
-                            typed,
-                            stamp));
-            rows.add(
-                    row(
-                            PageIds.derived(DUCT_RETYPE, key, "typed_bulk"),
-                            duct.of(fluid),
-                            8,
-                            typed,
-                            stamp));
+    public List<RecipeHolder<CraftingRecipe>> usesOf(ItemStack stack) {
+        List<RecipeHolder<CraftingRecipe>> out = new ArrayList<>();
+        Variant variant = variant(stack);
+        if (variant != null) {
+            boolean typed = FluidPipeBlock.stampedFluid(stack) != Fluids.EMPTY;
+            Variant looked =
+                    typed
+                            ? new Variant(
+                                    variant.duct(),
+                                    variant.segment(),
+                                    variant.plain(),
+                                    DataComponentIngredient.of(true, stack.copyWithCount(1)))
+                            : variant;
+            for (Fluid fluid : fluids()) retype(out, looked, fluid, !typed, typed);
+            if (typed) out.add(untype(looked, looked.typed()));
+            return out;
         }
+        if (!stack.is(ModItems.FLUID_IDENTIFIER.get())) return out;
+        Fluid fluid =
+                stack.getOrDefault(
+                                ModDataComponents.FLUID_IDENTIFIER.get(), FluidIdentifierData.EMPTY)
+                        .primary();
+        if (!fluids().contains(fluid)) return out;
+        for (Variant each : variants()) retype(out, each, fluid, true, true);
+        return out;
+    }
 
-        rows.add(
-                new RecipeHolder<>(
-                        // backport: 1.21.1 RecipeHolder ids are plain ResourceLocations (26.x ResourceKey<Recipe<?>>)
-                        PageIds.derived(Library.id("duct_untype"), "typed"),
-                        shapeless(new ItemStack(duct), List.of(typed))));
-        return rows;
+    private Variant variant(ItemStack stack) {
+        for (Variant variant : variants()) {
+            if (stack.is(variant.duct())) return variant;
+        }
+        return null;
+    }
+
+    private synchronized List<Variant> variants() {
+        if (variants == null) {
+            List<Variant> built = new ArrayList<>();
+            for (FluidPipeBlock block :
+                    List.of(
+                            ModBlocks.FLUID_PIPE.get(),
+                            ModBlocks.FLUID_PIPE_SILVER.get(),
+                            ModBlocks.FLUID_PIPE_COLORED.get())) {
+                FluidPipeBlockItem duct = (FluidPipeBlockItem) block.asItem();
+                Ingredient typed =
+                        CompoundIngredient.of(
+                                NTMFluids.displayOrder().stream()
+                                        .filter(fluid -> fluid != NTMFluids.NONE)
+                                        .map(
+                                                fluid ->
+                                                        DataComponentIngredient.of(
+                                                                true, duct.of(fluid)))
+                                        .toList()
+                                        .toArray(Ingredient[]::new));
+                built.add(
+                        new Variant(
+                                duct,
+                                PageIds.segment(BuiltInRegistries.ITEM.getKey(duct)),
+                                Ingredient.of(duct),
+                                typed));
+            }
+            variants = List.copyOf(built);
+        }
+        return variants;
+    }
+
+    private synchronized List<Fluid> fluids() {
+        if (fluids == null) {
+            List<Fluid> built = new ArrayList<>();
+            for (int id = 1; id < NTMFluids.legacyIdCount(); id++)
+                built.add(NTMFluids.byLegacyId(id));
+            fluids = List.copyOf(built);
+        }
+        return fluids;
+    }
+
+    private static void retype(
+            List<RecipeHolder<CraftingRecipe>> out,
+            Variant variant,
+            Fluid fluid,
+            boolean plain,
+            boolean typed) {
+        ItemStack identifier = new ItemStack(ModItems.FLUID_IDENTIFIER);
+        identifier.set(
+                ModDataComponents.FLUID_IDENTIFIER.get(),
+                FluidIdentifierData.EMPTY.withPrimary(fluid));
+        Ingredient stamp = DataComponentIngredient.of(true, identifier);
+        String key = PageIds.segment(BuiltInRegistries.FLUID.getKey(fluid));
+        if (plain) {
+            out.add(row(variant, fluid, key, "plain", 1, variant.plain(), stamp));
+            out.add(row(variant, fluid, key, "plain_bulk", 8, variant.plain(), stamp));
+        }
+        if (typed) {
+            out.add(row(variant, fluid, key, "typed", 1, variant.typed(), stamp));
+            out.add(row(variant, fluid, key, "typed_bulk", 8, variant.typed(), stamp));
+        }
+    }
+
+    private static RecipeHolder<CraftingRecipe> untype(Variant variant, Ingredient typed) {
+        ResourceLocation id = PageIds.derived(DUCT_UNTYPE, variant.segment());
+        // backport: 1.21.1 RecipeHolder ids are plain ResourceLocations (26.x ResourceKey<Recipe<?>>)
+        return new RecipeHolder<>(id, shapeless(new ItemStack(variant.duct()), List.of(typed)));
     }
 
     private static RecipeHolder<CraftingRecipe> row(
-            ResourceLocation id, ItemStack result, int ducts, Ingredient duct, Ingredient stamp) {
-        List<Ingredient> ingredients = new ArrayList<>(Collections.nCopies(ducts, duct));
+            Variant variant,
+            Fluid fluid,
+            String key,
+            String kind,
+            int ducts,
+            Ingredient input,
+            Ingredient stamp) {
+        List<Ingredient> ingredients = new ArrayList<>(Collections.nCopies(ducts, input));
         ingredients.add(stamp);
-        return new RecipeHolder<>(id, shapeless(result.copyWithCount(ducts), ingredients));
+        return new RecipeHolder<>(
+                PageIds.derived(DUCT_RETYPE, variant.segment(), key, kind),
+                shapeless(variant.duct().of(fluid).copyWithCount(ducts), ingredients));
     }
 
     private static CraftingRecipe shapeless(ItemStack result, List<Ingredient> ingredients) {

@@ -33,6 +33,15 @@ public final class Capabilities {
 
         public static final BlockCapability<ResourceHandler<ItemResource>, @Nullable Direction> BLOCK =
                 BlockCapability.createSided(id("transfer_item"), ResourceHandler.<ItemResource>asClass());
+
+        /**
+         * 26.x {@code Capabilities.Item.ITEM} (item storage inside an item stack). The mod registers no provider of
+         * its own; {@link TransferBridge#register} imports 1.21.1 {@code Capabilities.ItemHandler.ITEM} (backpacks,
+         * other mods' container items), which is what the mod's "can this nest in a container" checks look for.
+         */
+        public static final ItemCapability<ResourceHandler<ItemResource>, ItemAccess> ITEM =
+                ItemCapability.create(
+                        id("transfer_item_item"), ResourceHandler.<ItemResource>asClass(), ItemAccess.class);
     }
 
     public static final class Fluid {

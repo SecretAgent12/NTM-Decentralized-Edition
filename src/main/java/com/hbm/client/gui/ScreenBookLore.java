@@ -26,11 +26,9 @@ import com.hbm.backport.client.gui.WidgetBridge;
 public class ScreenBookLore extends ScreenCompat {
 
     private static final ResourceLocation TEXTURE = Library.id("textures/gui/book/book_lore.png");
-
     private static final int WIDTH = 272;
     private static final int HEIGHT = 182;
     private static final int SHEET = 512;
-
     private static final int WRAP = 100;
 
     private final ItemStack book;
@@ -48,7 +46,6 @@ public class ScreenBookLore extends ScreenCompat {
         this.key = ItemBookLore.keyOf(book);
         this.coverColor = ItemBookLore.coverColorOf(book);
         this.pages = ItemBookLore.pagesOf(book);
-
         this.maxPage = (int) Math.ceil(pages / 2D) - 1;
     }
 
@@ -66,7 +63,6 @@ public class ScreenBookLore extends ScreenCompat {
     public void extractBackground(
             GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractBackground(graphics, mouseX, mouseY, partialTick);
-
         graphics.blit(
                 RenderPipelines.GUI_TEXTURED,
                 TEXTURE,
@@ -124,7 +120,6 @@ public class ScreenBookLore extends ScreenCompat {
         for (int half = 0; half < 2; half++) {
             int index = page * 2 + half;
             if (index >= pages) continue;
-
             List<String> args = ItemBookLore.argsOf(book, index);
             String page =
                     args.isEmpty()

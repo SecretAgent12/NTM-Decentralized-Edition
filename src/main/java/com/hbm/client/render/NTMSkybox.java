@@ -8,7 +8,6 @@ import com.hbm.config.RenderConfig;
 import com.hbm.extprop.HbmLivingProps;
 import com.hbm.handler.ImpactWorldHandler;
 import com.hbm.lib.Library;
-import com.hbm.platform.Services;
 import com.hbm.util.GameTime;
 import com.hbm.backport.client.rendertype.PrimitiveTopology;
 import com.hbm.backport.client.rendertype.BlendFunction;
@@ -93,6 +92,10 @@ public final class NTMSkybox {
         }
         rainAlpha = state.rainBrightness;
         sunAngle = state.sunAngle;
+    }
+
+    public static void clear() {
+        mode = Mode.NONE;
     }
 
     public static boolean impact() {

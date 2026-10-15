@@ -6,11 +6,13 @@ package com.hbm.items.tool;
 import com.hbm.NuclearTech;
 import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.capability.NtmContracts;
+import com.hbm.config.NeoForgeHbmConfig;
 import com.hbm.interfaces.IBomb.BombReturnCode;
 import com.hbm.interfaces.IBomb;
 import com.hbm.items.ModDataComponents;
-import com.hbm.platform.Services;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
+import com.hbm.util.KeyHints;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -56,8 +58,8 @@ public class ItemDetonator extends ItemCompat {
             if (!level.isClientSide()) {
                 BlockPos pos = context.getClickedPos();
                 context.getItemInHand().set(ModDataComponents.DETONATOR_POS.get(), pos.asLong());
-                level.playSound(
-                        null,
+                EntitySounds.play(
+                        player,
                         player.getX(),
                         player.getY(),
                         player.getZ(),
@@ -72,7 +74,6 @@ public class ItemDetonator extends ItemCompat {
             }
             return InteractionResult.SUCCESS;
         }
-
         return detonate(level, player, context.getItemInHand());
     }
 
@@ -91,7 +92,6 @@ public class ItemDetonator extends ItemCompat {
                                 .withStyle(ChatFormatting.RED));
             return InteractionResult.FAIL;
         }
-
         BlockPos pos = bombTarget(level, BlockPos.of(packed));
         IBomb bomb = NtmContracts.BOMB.at(level, pos);
         if (bomb == null) {
@@ -103,8 +103,8 @@ public class ItemDetonator extends ItemCompat {
             return InteractionResult.FAIL;
         }
         if (!level.isClientSide()) {
-            level.playSound(
-                    null,
+            EntitySounds.play(
+                    player,
                     player.getX(),
                     player.getY(),
                     player.getZ(),
@@ -113,7 +113,7 @@ public class ItemDetonator extends ItemCompat {
                     1.0F,
                     1.0F);
             BombReturnCode ret = bomb.explode(level, pos, player);
-            if (Services.CONFIG.runtime().extendedLogging()) {
+            if (NeoForgeHbmConfig.runtime().extendedLogging()) {
                 NuclearTech.LOGGER.info(
                         "[DET] Tried to detonate block at {} / {} / {} by {}!",
                         pos.getX(),
@@ -139,8 +139,15 @@ public class ItemDetonator extends ItemCompat {
             TooltipDisplay display,
             Consumer<Component> adder,
             TooltipFlag flag) {
-        adder.accept(Component.translatable("item.hbm.detonator.desc1"));
-        adder.accept(Component.translatable("item.hbm.detonator.desc2"));
+        adder.accept(
+                Component.translatable(
+                        "tooltip.hbm.detonator.set_position",
+                        KeyHints.key("key.sneak", "key.keyboard.left.shift"),
+                        KeyHints.key("key.use", "key.mouse.right")));
+        adder.accept(
+                Component.translatable(
+                        "tooltip.hbm.detonator.detonate",
+                        KeyHints.key("key.use", "key.mouse.right")));
         Long packed = stack.get(ModDataComponents.DETONATOR_POS.get());
         if (packed == null) {
             adder.accept(

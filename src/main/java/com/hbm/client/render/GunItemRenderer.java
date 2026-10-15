@@ -49,7 +49,6 @@ import com.hbm.backport.client.itemmodel.PoseOps;
 public class GunItemRenderer
         implements SpecialModelRenderer<GunItemRenderer.Argument>,
                 ItemVisuals.Factory<GunItemRenderer.Argument> {
-
     public static final Matrix4fc MOD_TABLE_BASE =
             new Matrix4f().scale(-5F).rotate((float) Math.toRadians(90), 0F, 1F, 0F);
     private static final Matrix4f IDENTITY = new Matrix4f();
@@ -63,7 +62,6 @@ public class GunItemRenderer
     private final List<BakedMuzzle> equippedMuzzles;
     private final List<BakedMuzzle> akimboMuzzles;
     private final List<Map<ItemDisplayContext, Matrix4f>> poseVariants;
-
     private final List<Matrix4fc> modTableVariants;
     private final int equippedShotConfig;
     private final int akimboShotConfig;
@@ -132,7 +130,6 @@ public class GunItemRenderer
     private static boolean loaded(ItemStack stack) {
         if (!(stack.getItem() instanceof ItemGunBaseNT gun)) return false;
         IMagazine<?> magazine = gun.getConfig(stack, 0).getReceivers(stack)[0].getMagazine(stack);
-
         return magazine != null && magazine.getAmount(stack, null) > 0;
     }
 
@@ -142,7 +139,6 @@ public class GunItemRenderer
         IMagazine<?> magazine = gun.getConfig(stack, 0).getReceivers(stack)[0].getMagazine(stack);
         Object type = magazine.getType(stack, null);
         if (!(type instanceof BulletConfig bullet)) return null;
-
         if (bullet.ammoItem == null) return null;
         return new AmmoReference(BuiltInRegistries.ITEM.getKey(bullet.ammoItem.get()));
     }
@@ -165,7 +161,6 @@ public class GunItemRenderer
         FirstPerson firstPerson = null;
         if (context == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND
                 || context == ItemDisplayContext.FIRST_PERSON_LEFT_HAND) {
-
             boolean live = HandPass.local(context, owner);
             boolean otherArm = context == ItemDisplayContext.FIRST_PERSON_LEFT_HAND;
             boolean drawn =
@@ -349,7 +344,6 @@ public class GunItemRenderer
             FirstPerson firstPerson = arg.firstPerson();
             ItemRenderWeaponBase renderer = firstPerson.renderer();
             if (renderer == null) return;
-
             if (firstPerson.live()) {
                 renderer.submitFirstPerson(
                         firstPerson.stack(), ps, col, lightCoords, firstPerson.otherArm());
@@ -894,25 +888,6 @@ public class GunItemRenderer
             return out;
         }
 
-        private static Matrix4fc validatedModTable(Matrix4fc body) {
-            float determinant = new Matrix4f(body).determinant3x3();
-            if (determinant >= 0F) {
-                throw new IllegalStateException(
-                        "mod_table must carry a negative uniform scale, as every 1.7 "
-                                + "setupModTable does; this body's 3x3 determinant is "
-                                + determinant);
-            }
-            float scale = (float) Math.cbrt(-determinant);
-            Matrix3f rotation = new Matrix3f(new Matrix4f(body)).scale(-1F / scale);
-            if (!rotation.mul(new Matrix3f(rotation).transpose(), new Matrix3f())
-                    .equals(new Matrix3f(), 1.0E-4F)) {
-                throw new IllegalStateException(
-                        "mod_table must be a uniform scale times a rotation, since the "
-                                + "weapon table's picture-in-picture takes a scale and a quaternion; this body is not");
-            }
-            return body;
-        }
-
         private static List<BakedMuzzle> bakeMuzzles(Optional<List<Muzzle>> list) {
             return list.orElse(List.of()).stream()
                     .map(
@@ -1020,10 +995,7 @@ public class GunItemRenderer
             List<Map<ItemDisplayContext, Matrix4f>> variants = new ArrayList<>();
             List<Matrix4fc> modTables = new ArrayList<>();
             variants.add(Map.of());
-            modTables.add(
-                    modTable.<Matrix4fc>map(Matrix4f::new)
-                            .map(Unbaked::validatedModTable)
-                            .orElse(MOD_TABLE_BASE));
+            modTables.add(modTable.<Matrix4fc>map(Matrix4f::new).orElse(MOD_TABLE_BASE));
             List<PoseOverride> overrides = poseOverrides.orElse(List.of());
             for (PoseOverride override : overrides) {
                 variants.add(slotDeltas(override));
@@ -1047,7 +1019,6 @@ public class GunItemRenderer
                         new PosePredicate(
                                 List.copyOf(override.requiresMods()),
                                 List.copyOf(override.excludesMods())));
-
             ModelRenderProperties weapon = DynamicSpecialWrapper.properties(context, base);
             ModelRenderProperties secondGun =
                     akimboBase

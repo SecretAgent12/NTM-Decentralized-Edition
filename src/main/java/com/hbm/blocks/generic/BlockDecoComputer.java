@@ -44,7 +44,6 @@ public class BlockDecoComputer extends HorizontalDirectionalBlockCompat {
 
     @Override
     public @Nullable BlockState getStateForPlacement(BlockPlaceContext ctx) {
-
         return defaultBlockState().setValue(FACING, ctx.getHorizontalDirection().getOpposite());
     }
 

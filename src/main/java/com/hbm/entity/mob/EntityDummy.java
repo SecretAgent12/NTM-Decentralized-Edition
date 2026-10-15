@@ -3,6 +3,7 @@
 
 package com.hbm.entity.mob;
 
+import com.hbm.api.environment.ISuffocationImmune;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -17,7 +18,7 @@ import com.hbm.backport.item.armor.Equippable;
 import net.minecraft.world.level.Level;
 import com.hbm.backport.compat.MobCompat;
 
-public class EntityDummy extends MobCompat {
+public class EntityDummy extends MobCompat implements ISuffocationImmune {
 
     public EntityDummy(EntityType<? extends EntityDummy> type, Level level) {
         super(type, level);

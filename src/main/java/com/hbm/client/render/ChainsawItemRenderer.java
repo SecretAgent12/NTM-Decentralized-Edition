@@ -132,7 +132,6 @@ public final class ChainsawItemRenderer
             boolean foil,
             int outline) {
         if (argument == null) return;
-
         RenderType type = RenderTypes.entityCutoutCull(ResourceManager.chainsaw_tex);
 
         pose.pushPose();

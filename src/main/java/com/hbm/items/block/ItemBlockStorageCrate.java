@@ -3,6 +3,10 @@
 
 package com.hbm.items.block;
 
+import com.hbm.blockentity.machine.LockStateData;
+import com.hbm.blockentity.machine.storage.BlockEntityCrate;
+import com.hbm.blockentity.machine.storage.CrateType;
+import com.hbm.blockentity.machine.storage.LockedContents;
 import com.hbm.blocks.machine.storage.BlockCrate;
 import com.hbm.config.InteractionConfig;
 import com.hbm.extprop.HbmPlayerProps;
@@ -11,11 +15,6 @@ import com.hbm.inventory.container.MenuCrate;
 import com.hbm.items.ModDataComponents;
 import com.hbm.items.tool.ItemKey;
 import com.hbm.items.tool.ItemKeyPin;
-import com.hbm.platform.Services;
-import com.hbm.tileentity.machine.LockStateData;
-import com.hbm.tileentity.machine.storage.BlockEntityCrate;
-import com.hbm.tileentity.machine.storage.CrateType;
-import com.hbm.tileentity.machine.storage.LockedContents;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
@@ -87,13 +86,11 @@ public class ItemBlockStorageCrate extends BlockItemCompat {
         if (level instanceof ServerLevel server) {
             ItemStackContainer.Store store = store(server, stack);
             if (store == null) return InteractionResult.FAIL;
-
             if (stack.has(ModDataComponents.SPIDERS.get())) {
                 BlockEntityCrate.spawnSpiders(
                         server, player.getX(), player.getY(), player.getZ(), player);
                 stack.remove(ModDataComponents.SPIDERS.get());
             }
-
             stamp(stack, server);
             Component name = stack.get(DataComponents.CUSTOM_NAME);
             player.openMenu(
@@ -129,15 +126,14 @@ public class ItemBlockStorageCrate extends BlockItemCompat {
 
     private static ItemStackContainer.@Nullable Store store(ServerLevel level, ItemStack stack) {
         LockedContents locked = stack.get(ModDataComponents.LOCKED_CONTENTS.get());
-        ItemContainerContents opened =
-                locked == null
-                        ? stack.getOrDefault(DataComponents.CONTAINER, ItemContainerContents.EMPTY)
-                        : locked.open(level);
-        if (opened == null) return null;
+        if (locked != null && locked.open(level) == null) return null;
         return new ItemStackContainer.Store() {
             @Override
             public ItemContainerContents read(ItemStack target) {
-                return opened;
+                LockedContents current = target.get(ModDataComponents.LOCKED_CONTENTS.get());
+                return current == null
+                        ? target.getOrDefault(DataComponents.CONTAINER, ItemContainerContents.EMPTY)
+                        : current.open(level);
             }
 
             @Override

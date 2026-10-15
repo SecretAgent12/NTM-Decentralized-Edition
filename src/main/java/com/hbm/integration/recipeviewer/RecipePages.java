@@ -18,10 +18,8 @@ import com.hbm.inventory.recipes.loader.GenericRecipes;
 import com.hbm.items.ModItems;
 import com.hbm.items.machine.ItemBattery;
 import com.hbm.lib.Library;
-import com.hbm.platform.Services;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.UnaryOperator;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -29,7 +27,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
 
 public final class RecipePages {
-
     public static final ResourceLocation VANILLA_SMELTING = ResourceLocation.withDefaultNamespace("smelting");
 
     public static final AnvilConstructionPage ANVIL_CONSTRUCTION = new AnvilConstructionPage();
@@ -208,7 +205,6 @@ public final class RecipePages {
                             "block.hbm.machine_ammo_press",
                             ModBlocks.MACHINE_AMMO_PRESS.get())
                     .build();
-
     public static final GenericMachinePage<ArcFurnaceRecipe> ARC_FURNACE_SOLID =
             universal(
                             "arc_furnace_solid",
@@ -287,21 +283,7 @@ public final class RecipePages {
                     .fluidInputsFirst()
                     .fluidOutputsFirst()
                     .build();
-    public static final GenericMachinePage<ElectrolyserMetalRecipe> ELECTROLYSER_METAL =
-            GenericMachinePage.builder(
-                            "electrolyser_metal",
-                            ElectrolyserMetalRecipe.class,
-                            ElectrolyserMetalRecipes.INSTANCE,
-                            "block.hbm.machine_electrolyser",
-                            ModBlocks.MACHINE_ELECTROLYSER.get(),
-                            Layout.UNIVERSAL)
-                    .extras(Extras.NONE)
-                    .fluidView(
-                            new FluidView(
-                                    FluidView.append(
-                                            () -> new FluidStackNTM(NTMFluids.NITRIC_ACID, 100)),
-                                    UnaryOperator.identity()))
-                    .build();
+    public static final ElectrolyserMetalPage ELECTROLYSER_METAL = new ElectrolyserMetalPage();
     public static final GenericMachinePage<FluidBreederRecipe> FLUID_BREEDER =
             universal(
                             "fluid_breeder",
@@ -481,6 +463,9 @@ public final class RecipePages {
                     area(ScreenFusionTorus.class, 99, 39, 28, 10, FUSION),
                     area(ScreenMachinePlasmaForge.class, 62, 81, 70, 16, PLASMA_FORGE));
 
+    private static volatile List<RecipePage<?>> pages = FIXED;
+    private static volatile List<ClickArea> clickAreas = CLICK_AREAS;
+
     public static final int CUSTOM_MACHINE_X = 78,
             CUSTOM_MACHINE_Y = 119,
             CUSTOM_MACHINE_WIDTH = 90,
@@ -494,7 +479,6 @@ public final class RecipePages {
             GenericRecipes<T, ?> table,
             String title,
             ItemLike machine) {
-
         return GenericMachinePage.builder(path, rowType, table, title, machine, Layout.UNIVERSAL)
                 .extras(Extras.NONE);
     }
@@ -518,8 +502,26 @@ public final class RecipePages {
         return new ClickArea(screen, x, y, width, height, VANILLA_SMELTING);
     }
 
+    public static synchronized void addon(RecipePage<?> page) {
+        List<RecipePage<?>> next = new ArrayList<>(pages);
+        next.add(page);
+        pages = List.copyOf(next);
+    }
+
+    public static synchronized void addonClickArea(
+            Class<? extends AbstractContainerScreen<?>> screen,
+            int x,
+            int y,
+            int width,
+            int height,
+            RecipePage<?> page) {
+        List<ClickArea> next = new ArrayList<>(clickAreas);
+        next.add(area(screen, x, y, width, height, page));
+        clickAreas = List.copyOf(next);
+    }
+
     public static List<RecipePage<?>> fixed() {
-        return FIXED;
+        return pages;
     }
 
     public static List<CustomMachinePage> customMachines() {
@@ -530,20 +532,17 @@ public final class RecipePages {
     }
 
     public static List<ClickArea> clickAreas() {
-        return CLICK_AREAS;
+        return clickAreas;
     }
 
     public static List<ItemStack> hiddenStacks() {
         List<ItemStack> hidden = new ArrayList<>();
         hidden.add(new ItemStack(ModItems.BOBMAZON_HIDDEN));
-
         hidden.add(new ItemStack(ModItems.COAL_ETERNAL));
         hidden.add(new ItemStack(ModItems.BOOK_LEMEGETON));
         hidden.add(ModItems.GUIDE_BOOK.stack(com.hbm.items.tool.ItemGuideBook.BookType.TEST));
         hidden.add(ModItems.GUIDE_BOOK.stack(com.hbm.items.tool.ItemGuideBook.BookType.HADRON));
-
         hidden.add(new ItemStack(ModItems.AMS_CORE_THINGY));
-
         ItemBattery memory = ModItems.MEMORY.get();
         hidden.add(memory.empty());
         hidden.add(memory.full());
@@ -559,7 +558,6 @@ public final class RecipePages {
                         BuiltInRegistries.ITEM
                                 .getOptional(Library.id("coal_eternal"))
                                 .orElseThrow()));
-
         if (InteractionConfig.recipeViewerHidesSecrets) {
             for (var member : ModItems.ITEM_SECRET) hidden.add(new ItemStack(member.get()));
         }

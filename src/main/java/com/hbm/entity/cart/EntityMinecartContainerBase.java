@@ -30,7 +30,6 @@ public abstract class EntityMinecartContainerBase extends AbstractMinecartContai
         return net.minecraft.world.entity.vehicle.AbstractMinecart.Type.CHEST;
     }
 
-
     private static final EntityDataAccessor<Integer> BASE =
             SynchedEntityData.defineId(
                     EntityMinecartContainerBase.class, EntityDataSerializers.INT);
@@ -38,7 +37,6 @@ public abstract class EntityMinecartContainerBase extends AbstractMinecartContai
     protected EntityMinecartContainerBase(
             EntityType<? extends EntityMinecartContainerBase> type, Level level) {
         super(type, level);
-
         clearItemStacks();
     }
 

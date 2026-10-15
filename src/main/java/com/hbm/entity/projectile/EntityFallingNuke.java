@@ -20,7 +20,6 @@ import net.minecraft.world.phys.Vec3;
 import com.hbm.backport.compat.ThrowableProjectileCompat;
 
 public class EntityFallingNuke extends ThrowableProjectileCompat {
-
     private static final EntityDataAccessor<Byte> NUKE_META =
             SynchedEntityData.defineId(EntityFallingNuke.class, EntityDataSerializers.BYTE);
 
@@ -34,7 +33,6 @@ public class EntityFallingNuke extends ThrowableProjectileCompat {
 
     public EntityFallingNuke(EntityType<? extends EntityFallingNuke> type, Level level) {
         super(type, level);
-
         refreshDimensions();
     }
 
@@ -55,7 +53,6 @@ public class EntityFallingNuke extends ThrowableProjectileCompat {
         this.dirty = dirty;
         this.schrab = schrab;
         this.euph = euph;
-
         this.setYRot(90F);
         this.yRotO = 90F;
         this.setXRot(90F);
@@ -82,7 +79,6 @@ public class EntityFallingNuke extends ThrowableProjectileCompat {
 
     @Override
     public void tick() {
-
         this.xo = getX();
         this.yo = getY();
         this.zo = getZ();

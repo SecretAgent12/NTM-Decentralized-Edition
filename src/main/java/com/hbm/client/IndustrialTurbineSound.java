@@ -4,7 +4,7 @@
 package com.hbm.client;
 
 import com.hbm.backport.SubLevelSpace;
-import com.hbm.tileentity.machine.BlockEntityMachineIndustrialTurbine;
+import com.hbm.blockentity.machine.BlockEntityMachineIndustrialTurbine;
 import net.minecraft.client.Minecraft;
 
 public final class IndustrialTurbineSound {

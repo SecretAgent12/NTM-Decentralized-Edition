@@ -16,7 +16,8 @@ import org.spongepowered.asm.mixin.injection.At;
  * backport: 1.21.1 has no AvatarRenderState. Its 26.x appearance flags are read from the player
  * where they are used (MixinAvatarRenderer, MixinLivingEntityRenderer, ManlyPlayerLayer); the HBM
  * cape that 26.x wrote into {@code state.skin} is applied to the skin 1.21.1's CapeLayer and
- * ElytraLayer read, {@code AbstractClientPlayer#getSkin()}.
+ * ElytraLayer read, {@code AbstractClientPlayer#getSkin()}. The 26.x rider tilt field
+ * (RiderTiltRenderState) is computed from the vehicle at render time in MixinLivingEntityRenderer.
  */
 @Mixin(AbstractClientPlayer.class)
 public abstract class MixinAvatarRenderState {

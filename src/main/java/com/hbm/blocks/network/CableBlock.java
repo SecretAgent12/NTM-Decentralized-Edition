@@ -5,9 +5,10 @@ package com.hbm.blocks.network;
 
 import com.hbm.api.energymk2.CableData;
 import com.hbm.api.energymk2.PowerGraph;
-import com.hbm.api.energymk2.PowerGraphProvider;
-import com.hbm.lib.Library;
+import com.hbm.blocks.CapabilityDependentShape;
+import com.hbm.capability.PhysicalConnector;
 import com.hbm.uninos.graph.LevelNodeGraph;
+import com.hbm.uninos.graph.PhysicalGraph;
 import com.hbm.util.AutoRotate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -36,7 +37,8 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.BlockCompat;
 
 @AutoRotate
-public class CableBlock extends BlockCompat implements SimpleWaterloggedBlock {
+public class CableBlock extends BlockCompat
+        implements CapabilityDependentShape, SimpleWaterloggedBlock, PhysicalConnector {
 
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
 
@@ -52,7 +54,7 @@ public class CableBlock extends BlockCompat implements SimpleWaterloggedBlock {
     private static final VoxelShape[] SHAPES = buildShapes();
 
     public CableBlock(BlockBehaviour.Properties props) {
-        super(props);
+        super(CapabilityDependentShape.deferShapeToFullChunk(props));
         registerDefaultState(
                 stateDefinition
                         .any()
@@ -66,7 +68,6 @@ public class CableBlock extends BlockCompat implements SimpleWaterloggedBlock {
     }
 
     private static VoxelShape[] buildShapes() {
-
         VoxelShape core = Shapes.box(5 / 16D, 5 / 16D, 5 / 16D, 11 / 16D, 11 / 16D, 11 / 16D);
         VoxelShape[] arm = new VoxelShape[6];
         arm[Direction.DOWN.ordinal()] =
@@ -101,6 +102,11 @@ public class CableBlock extends BlockCompat implements SimpleWaterloggedBlock {
     }
 
     @Override
+    public boolean hasPowerContact(Level level, BlockPos pos, BlockState state, Direction side) {
+        return true;
+    }
+
+    @Override
     public @Nullable BlockState getStateForPlacement(BlockPlaceContext ctx) {
         BlockState state =
                 defaultBlockState()
@@ -112,7 +118,7 @@ public class CableBlock extends BlockCompat implements SimpleWaterloggedBlock {
             state =
                     state.setValue(
                             propertyFor(dir),
-                            Library.canConnect(ctx.getLevel(), npos, dir.getOpposite()));
+                            PhysicalGraph.powerContact(ctx.getLevel(), npos, dir.getOpposite()));
         }
         return state;
     }
@@ -129,9 +135,9 @@ public class CableBlock extends BlockCompat implements SimpleWaterloggedBlock {
             RandomSource random) {
         if (state.getValue(WATERLOGGED))
             ticks.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
-        boolean joins = Library.canConnect(level, pos.relative(dir), dir.getOpposite());
+        boolean joins = PhysicalGraph.powerContact(level, pos.relative(dir), dir.getOpposite());
         if (level.isClientSide())
-            return Library.predictArm(state, propertyFor(dir), neighbourState, joins);
+            return PhysicalGraph.predictArm(state, propertyFor(dir), neighbourState, joins);
         return state.setValue(propertyFor(dir), joins);
     }
 
@@ -155,7 +161,7 @@ public class CableBlock extends BlockCompat implements SimpleWaterloggedBlock {
         super.onPlace(state, level, pos, oldState, movedByPiston);
         if (level instanceof ServerLevel sl && !oldState.is(this)) {
             LevelNodeGraph<CableData> graph = PowerGraph.get(sl);
-            graph.addNode(pos.asLong(), PowerGraphProvider.INSTANCE.createData(state), OPEN_ALL);
+            graph.addNode(pos.asLong(), CableData.INSTANCE, OPEN_ALL);
         }
     }
 
@@ -177,7 +183,7 @@ public class CableBlock extends BlockCompat implements SimpleWaterloggedBlock {
         super.neighborChanged(state, level, pos, block, orientation, movedByPiston);
         if (level instanceof ServerLevel sl) {
             LevelNodeGraph.invalidateEndpointsAt(sl, pos);
-            Library.redrawArms(state, sl, pos);
+            PhysicalGraph.redraw(state, sl, pos);
         }
     }
 

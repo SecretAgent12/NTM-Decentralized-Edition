@@ -3,6 +3,7 @@
 
 package com.hbm.entity.mob;
 
+import com.hbm.api.environment.ISuffocationImmune;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -23,8 +24,7 @@ import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.MobCompat;
 
-public abstract class EntityUFOBase extends MobCompat implements Enemy {
-
+public abstract class EntityUFOBase extends MobCompat implements Enemy, ISuffocationImmune {
     private static final EntityDataAccessor<Integer> WAYPOINT_X =
             SynchedEntityData.defineId(EntityUFOBase.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> WAYPOINT_Y =
@@ -47,6 +47,12 @@ public abstract class EntityUFOBase extends MobCompat implements Enemy {
     @Override
     public boolean removeWhenFarAway(double distance) {
         return false;
+    }
+
+    // backport: 26.x EntityType.Builder.notInPeaceful() (ModEntities); 1.21.1 asks the entity
+    @Override
+    protected boolean shouldDespawnInPeaceful() {
+        return true;
     }
 
     @Override

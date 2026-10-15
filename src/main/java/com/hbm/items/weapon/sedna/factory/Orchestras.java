@@ -14,15 +14,17 @@ import com.hbm.items.weapon.sedna.impl.ItemGunStinger;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
 import com.hbm.items.weapon.sedna.mods.XWeaponModManager;
 import com.hbm.lib.ModDamageTypes;
+import com.hbm.packet.PacketWire;
+import com.hbm.packet.toclient.GunSoundPayload;
 import com.hbm.packet.toclient.MuzzleFlashPayload;
 import com.hbm.packet.toclient.PlasmaBlastPayload;
 import com.hbm.particle.SpentCasing;
 import com.hbm.particle.helper.CasingCreator;
-import com.hbm.platform.Services;
 import com.hbm.render.anim.AnimationEnums.GunAnimation;
 import com.hbm.render.anim.HbmAnimations;
 import com.hbm.sound.AudioSystem;
 import com.hbm.sound.AudioWrapper;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import com.hbm.util.EntityDamageUtil;
 import java.util.function.BiConsumer;
@@ -174,7 +176,6 @@ public class Orchestras {
                     if (timer == 34) play(entity, ModSounds.GUN_REVOLVER_CLOSE.get(), 1F, 1F);
                 }
             };
-
     public static BiConsumer<ItemStack, LambdaContext> ORCHESTRA_DANI =
             (stack, ctx) -> ORCHESTRA_ATLAS.accept(stack, ctx);
     public static BiConsumer<ItemStack, LambdaContext> ORCHESTRA_HENRY =
@@ -344,16 +345,15 @@ public class Orchestras {
                                                     .playerAttack(ctx.getPlayer()), damage);
                                 }
                                 hit.setDeltaMovement(hit.getDeltaMovement().multiply(2, 1, 2));
-                                hit.level()
-                                        .playSound(
-                                                null,
-                                                hit.getX(),
-                                                hit.getY(),
-                                                hit.getZ(),
-                                                ModSounds.GUN_SMACK.get(),
-                                                SoundSource.PLAYERS,
-                                                1F,
-                                                0.9F + entity.getRandom().nextFloat() * 0.2F);
+                                EntitySounds.play(
+                                        hit,
+                                        hit.getX(),
+                                        hit.getY(),
+                                        hit.getZ(),
+                                        ModSounds.GUN_SMACK.get(),
+                                        SoundSource.PLAYERS,
+                                        1F,
+                                        0.9F + entity.getRandom().nextFloat() * 0.2F);
                             }
                             if (mop instanceof BlockHitResult blockHit) {
                                 BlockState b = entity.level().getBlockState(blockHit.getBlockPos());
@@ -804,7 +804,6 @@ public class Orchestras {
                                         casing.getName());
                         }
                     }
-
                     if (timer == (XWeaponModManager.hasUpgrade(stack, 0, 207) ? 3 : 1))
                         play(entity, ModSounds.GUN_REVOLVER_SPIN.get(), 1F, 0.75F);
                 }
@@ -859,7 +858,6 @@ public class Orchestras {
                                         casing.getName());
                         }
                     }
-
                     if (timer == (XWeaponModManager.hasUpgrade(stack, 0, 207) ? 3 : 1))
                         play(entity, ModSounds.GUN_REVOLVER_SPIN.get(), 1F, 0.75F);
                 }
@@ -1006,7 +1004,6 @@ public class Orchestras {
                             mag.getAmountAfterReload(stack) - mag.getAmount(stack, ctx.inventory());
                     if (timer == 4 && toEject > 0) {
                         SpentCasing casing = mag.getCasing(stack, ctx.inventory());
-
                         if (casing != null)
                             for (int i = 0; i < toEject; i++)
                                 CasingCreator.composeEffect(
@@ -1282,8 +1279,14 @@ public class Orchestras {
     public static BiConsumer<ItemStack, LambdaContext> ORCHESTRA_TAU =
             (stack, ctx) -> {
                 LivingEntity entity = ctx.entity();
-                GunAnimation type = ItemGunBaseNT.getLastAnim(stack, ctx.configIndex());
-                int timer = ItemGunBaseNT.getAnimTimer(stack, ctx.configIndex());
+                GunAnimation type =
+                        entity.level().isClientSide()
+                                ? HbmAnimations.getGunAnimation(ctx.configIndex())
+                                : ItemGunBaseNT.getLastAnim(stack, ctx.configIndex());
+                int timer =
+                        entity.level().isClientSide()
+                                ? HbmAnimations.getGunAnimationTimer(ctx.configIndex())
+                                : ItemGunBaseNT.getAnimTimer(stack, ctx.configIndex());
 
                 if (type == GunAnimation.SPINUP && entity.level().isClientSide()) {
                     AudioWrapper runningAudio = ItemGunBaseNT.loopedSounds.get(entity);
@@ -1375,30 +1378,28 @@ public class Orchestras {
                                         ItemGunBaseNT.getWear(stack, ctx.configIndex()) + 10_000F,
                                         ctx.config().getDurability(stack)));
 
-                        entity.level()
-                                .playSound(
-                                        null,
-                                        entity.getX(),
-                                        entity.getY() + entity.getEyeHeight(),
-                                        entity.getZ(),
-                                        ModSounds.UFO_BLAST.get(),
-                                        SoundSource.PLAYERS,
-                                        5.0F,
-                                        0.9F);
-                        entity.level()
-                                .playSound(
-                                        null,
-                                        entity.getX(),
-                                        entity.getY() + entity.getEyeHeight(),
-                                        entity.getZ(),
-                                        SoundEvents.FIREWORK_ROCKET_BLAST,
-                                        SoundSource.PLAYERS,
-                                        5.0F,
-                                        0.5F);
+                        EntitySounds.play(
+                                entity,
+                                entity.getX(),
+                                entity.getY() + entity.getEyeHeight(),
+                                entity.getZ(),
+                                ModSounds.UFO_BLAST.get(),
+                                SoundSource.PLAYERS,
+                                5.0F,
+                                0.9F);
+                        EntitySounds.play(
+                                entity,
+                                entity.getX(),
+                                entity.getY() + entity.getEyeHeight(),
+                                entity.getZ(),
+                                SoundEvents.FIREWORK_ROCKET_BLAST,
+                                SoundSource.PLAYERS,
+                                5.0F,
+                                0.5F);
 
                         float yaw = entity.getRandom().nextFloat() * 180F;
                         for (int i = 0; i < 3; i++) {
-                            Services.NETWORK.sendToAllAround(
+                            PacketWire.sendToAllAround(
                                     new PlasmaBlastPayload(
                                             entity.getX(),
                                             entity.getY() + entity.getEyeHeight(),
@@ -2113,7 +2114,7 @@ public class Orchestras {
                 GunAnimation type = ItemGunBaseNT.getLastAnim(stack, ctx.configIndex());
                 int timer = ItemGunBaseNT.getAnimTimer(stack, ctx.configIndex());
 
-                handleFlamerLoop(entity, type, timer);
+                handleFlamerLoop(entity, ctx.configIndex());
                 if (entity.level().isClientSide()) return;
 
                 if (type == GunAnimation.RELOAD) {
@@ -2141,11 +2142,7 @@ public class Orchestras {
             };
     public static BiConsumer<ItemStack, LambdaContext> ORCHESTRA_CHEMTHROWER =
             (stack, ctx) -> {
-                LivingEntity entity = ctx.entity();
-                GunAnimation type = ItemGunBaseNT.getLastAnim(stack, ctx.configIndex());
-                int timer = ItemGunBaseNT.getAnimTimer(stack, ctx.configIndex());
-
-                handleFlamerLoop(entity, type, timer);
+                handleFlamerLoop(ctx.entity(), ctx.configIndex());
             };
     public static BiConsumer<ItemStack, LambdaContext> ORCHESTRA_TESLA =
             (stack, ctx) -> {
@@ -2297,7 +2294,6 @@ public class Orchestras {
                             runningAudio.updatePitch((float) speed);
                         }
                     } else {
-
                     }
                 }
                 if (type != GunAnimation.CYCLE
@@ -2381,25 +2377,24 @@ public class Orchestras {
 
     private static void play(
             LivingEntity entity, SoundEvent sound, float volume, float pitch, boolean legacy) {
-        Services.PLATFORM.playGunAnimationSound(entity, sound, volume, pitch, legacy);
+        GunSoundPayload.send(entity, legacy, sound, volume, pitch);
     }
 
     private static void play(LivingEntity entity, SoundEvent sound, float volume, float pitch) {
-        entity.level()
-                .playSound(
-                        null,
-                        entity.getX(),
-                        entity.getY(),
-                        entity.getZ(),
-                        sound,
-                        SoundSource.PLAYERS,
-                        volume,
-                        pitch);
+        EntitySounds.play(
+                entity,
+                entity.getX(),
+                entity.getY(),
+                entity.getZ(),
+                sound,
+                SoundSource.PLAYERS,
+                volume,
+                pitch);
     }
 
     private static void muzzleFlash(LambdaContext ctx) {
         LivingEntity entity = ctx.entity();
-        Services.NETWORK.sendToAllAround(
+        PacketWire.sendToAllAround(
                 new MuzzleFlashPayload(entity),
                 new TargetPoint(
                         (ServerLevel) entity.level(),
@@ -2409,8 +2404,10 @@ public class Orchestras {
                         100D));
     }
 
-    private static void handleFlamerLoop(LivingEntity entity, GunAnimation type, int timer) {
+    private static void handleFlamerLoop(LivingEntity entity, int index) {
         if (!entity.level().isClientSide()) return;
+        GunAnimation type = HbmAnimations.getGunAnimation(index);
+        int timer = HbmAnimations.getGunAnimationTimer(index);
 
         if (type == GunAnimation.CYCLE) {
             AudioWrapper runningAudio = ItemGunBaseNT.loopedSounds.get(entity);

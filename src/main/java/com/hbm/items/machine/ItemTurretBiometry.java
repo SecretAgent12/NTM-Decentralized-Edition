@@ -4,6 +4,7 @@
 package com.hbm.items.machine;
 
 import com.hbm.items.ModDataComponents;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +30,6 @@ public class ItemTurretBiometry extends ItemCompat {
 
     public static String @Nullable [] getNames(ItemStack stack) {
         List<String> names = stack.get(ModDataComponents.TURRET_WHITELIST.get());
-
         if (names == null || names.isEmpty()) return null;
         return names.toArray(new String[0]);
     }
@@ -57,8 +57,8 @@ public class ItemTurretBiometry extends ItemCompat {
             player.sendSystemMessage(
                     Component.translatable("desc.item.turretBiometry.addedPlayerData"));
 
-        level.playSound(
-                null,
+        EntitySounds.play(
+                player,
                 player.getX(),
                 player.getY(),
                 player.getZ(),

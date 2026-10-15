@@ -10,12 +10,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.jspecify.annotations.Nullable;
-import com.hbm.backport.StructureProcessorCompat;
 
-public final class MaybePlaceProcessor extends StructureProcessorCompat {
+public final class MaybePlaceProcessor extends MarkerProcessor {
     // backport: a record in 26.x; a record cannot extend the 1.21.1 base class
     private final BlockState marker;
     private final BlockState result;
@@ -27,6 +25,7 @@ public final class MaybePlaceProcessor extends StructureProcessorCompat {
         this.probability = probability;
     }
 
+    @Override
     public BlockState marker() {
         return marker;
     }
@@ -53,7 +52,6 @@ public final class MaybePlaceProcessor extends StructureProcessorCompat {
     public String toString() {
         return "MaybePlaceProcessor[" + "marker=" + marker + ", " + "result=" + result + ", " + "probability=" + probability + "]";
     }
-
 
     public static final MapCodec<MaybePlaceProcessor> MAP_CODEC =
             RecordCodecBuilder.mapCodec(

@@ -4,6 +4,7 @@
 package com.hbm.items.special;
 
 import com.hbm.main.Polaroid;
+import com.hbm.util.TooltipStyle;
 import java.util.function.Consumer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -20,8 +21,7 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.ItemCompat;
 
 public class ItemPolaroid extends ItemCompat {
-
-    private static final float THRESHOLD = 10F;
+    private static final float THRESHOLD = 10.0F;
     private static final int DURATION = 10;
     private static final int AMPLIFIER = 2;
 
@@ -46,7 +46,7 @@ public class ItemPolaroid extends ItemCompat {
             TooltipFlag flag) {
         adder.accept(Component.translatable("desc.item.polaroid"));
         adder.accept(Component.empty());
-        for (String line : Polaroid.loreLines("desc.item.polaroid."))
-            adder.accept(Component.literal(line));
+        for (Component line : TooltipStyle.lines(Polaroid.lore("desc.item.polaroid.")))
+            adder.accept(line);
     }
 }

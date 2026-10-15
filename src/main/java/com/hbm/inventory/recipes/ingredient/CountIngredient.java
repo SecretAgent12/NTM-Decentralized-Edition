@@ -32,7 +32,6 @@ import net.minecraft.world.level.material.Fluid;
 // backport: 26.x StackedContents.IngredientInfo does not exist in 1.21.1 (StackedContents is
 // not generic there); acceptsItem stays as a plain method.
 public record CountIngredient(Ingredient ingredient, int count) {
-
     public static final MapCodec<CountIngredient> MAP_CODEC =
             DataCodecs.strict(
                     RecordCodecBuilder.mapCodec(
@@ -106,8 +105,13 @@ public record CountIngredient(Ingredient ingredient, int count) {
         return new CountIngredient(new HbmMatchersIngredient(base, matchers).toVanilla(), count);
     }
 
-    public DataComponentMatchers components() {
+    public static List<ItemStack> displayStacks(Ingredient ingredient, int count) {
+        List<ItemStack> stacks = new ArrayList<>(Ingredients.displayStacks(ingredient));
+        stacks.replaceAll(stack -> stack.copyWithCount(count));
+        return stacks;
+    }
 
+    public DataComponentMatchers components() {
         var custom = ingredient.getCustomIngredient();
         return custom instanceof HbmMatchersIngredient matchers
                 ? matchers.matchers()
@@ -124,12 +128,7 @@ public record CountIngredient(Ingredient ingredient, int count) {
     }
 
     public boolean matchesItem(ItemStack stack) {
-
-        if (stack.isDamaged()) {
-            Ingredient base = baseIngredient();
-            if (base.getCustomIngredient() == null && !Ingredients.isTag(base)) return false;
-        }
-        return ingredient.test(stack);
+        return ingredient.test(stack) && RecipeInputState.accepts(ingredient, stack);
     }
 
     public boolean acceptsItem(ItemStack stack) {
@@ -149,7 +148,6 @@ public record CountIngredient(Ingredient ingredient, int count) {
 
     public ItemStack extractForCyclingDisplay(long millis, int cycle) {
         List<ItemStack> stacks = displayStacks();
-
         if (stacks.isEmpty()) return ItemStack.EMPTY;
         long span = cycle * 50L;
         return stacks.get((int) (millis % (span * stacks.size()) / span));
@@ -157,11 +155,5 @@ public record CountIngredient(Ingredient ingredient, int count) {
 
     public List<ItemStack> displayStacks() {
         return displayStacks(ingredient, count);
-    }
-
-    public static List<ItemStack> displayStacks(Ingredient ingredient, int count) {
-        List<ItemStack> stacks = new ArrayList<>(Ingredients.displayStacks(ingredient));
-        stacks.replaceAll(stack -> stack.copyWithCount(count));
-        return stacks;
     }
 }

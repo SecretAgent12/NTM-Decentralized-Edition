@@ -10,6 +10,7 @@ import com.hbm.blocks.network.FluidPipeBlock;
 import com.hbm.inventory.fluid.NTMFluidProperties;
 import com.hbm.items.ModDataComponents;
 import com.hbm.items.StackRemainderItem;
+import com.hbm.sound.EntitySounds;
 import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -32,7 +33,6 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
 
 public class FluidIdentifierItem extends StackRemainderItem {
-
     public static Consumer<Player> OPEN_SELECTOR = p -> {};
 
     public FluidIdentifierItem(Item.Properties props) {
@@ -72,7 +72,6 @@ public class FluidIdentifierItem extends StackRemainderItem {
         if (handFluid == Fluids.EMPTY) {
             if (pipeFluid == Fluids.EMPTY) return InteractionResult.SUCCESS;
             stack.set(ModDataComponents.FLUID_IDENTIFIER.get(), data.withPrimary(pipeFluid));
-
             level.playSound(
                     null,
                     pos,
@@ -108,9 +107,8 @@ public class FluidIdentifierItem extends StackRemainderItem {
                     stack.getOrDefault(
                             ModDataComponents.FLUID_IDENTIFIER.get(), FluidIdentifierData.EMPTY);
             stack.set(ModDataComponents.FLUID_IDENTIFIER.get(), data.swap());
-
-            level.playSound(
-                    null,
+            EntitySounds.play(
+                    player,
                     player.blockPosition(),
                     SoundEvents.EXPERIENCE_ORB_PICKUP,
                     SoundSource.PLAYERS,

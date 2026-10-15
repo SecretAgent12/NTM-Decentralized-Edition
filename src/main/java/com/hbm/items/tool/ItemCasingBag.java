@@ -21,7 +21,6 @@ import net.minecraft.world.level.Level;
 import com.hbm.backport.compat.ItemCompat;
 
 public class ItemCasingBag extends ItemCompat {
-
     public static final MenuItemBox.Layout LAYOUT =
             new MenuItemBox.Layout(
                     3,

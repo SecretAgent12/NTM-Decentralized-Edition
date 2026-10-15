@@ -33,9 +33,10 @@ public final class ClientCompatPlugin implements IMixinConfigPlugin {
                             .getClassLoader()
                             .getResource("net/caffeinemc/mods/sodium/client/SodiumClientMod.class")
                     != null;
-        return !mixin.contains(".iris.")
-                || getClass().getClassLoader().getResource("net/irisshaders/iris/Iris.class")
-                        != null;
+        // backport: 1.0.3 renamed this plugin to IrisCompatMixinPlugin (Iris mixins only) and moved the
+        // Sodium mixins into hbm-common; DE keeps it for hbm-compat's DE-only mixins (JEI, Create and
+        // the Sodium duck mixins). The Iris mixins are disabled on 1.21.1.
+        return true;
     }
 
     @Override

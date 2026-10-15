@@ -3,9 +3,9 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.machine.BlockEntityMachineReactorBreeding;
 import com.hbm.inventory.container.MenuMachineReactorBreeding;
 import com.hbm.lib.Library;
-import com.hbm.tileentity.machine.BlockEntityMachineReactorBreeding;
 import java.util.List;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.client.rendertype.RenderPipelines;

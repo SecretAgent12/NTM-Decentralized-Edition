@@ -3,18 +3,18 @@
 
 package com.hbm.entity.mob;
 
+import com.hbm.backport.entity.Entities26;
 import com.hbm.entity.mob.ai.EntityAIEatBread;
 import com.hbm.entity.mob.ai.EntityAIStartFlying;
 import com.hbm.entity.mob.ai.EntityAIStopFlying;
 import com.hbm.entity.mob.ai.EntityAISwimmingConditional;
 import com.hbm.entity.mob.ai.EntityAIWanderConditional;
 import com.hbm.util.FertilizerUtil;
+import com.hbm.util.MobUtil;
 import java.util.function.Predicate;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -24,7 +24,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
@@ -34,9 +33,6 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -47,6 +43,8 @@ import com.hbm.backport.compat.PathfinderMobCompat;
 import com.hbm.backport.ColorFamilies;
 
 public class EntityPigeon extends PathfinderMobCompat implements IFlyingCreature {
+
+    public static final String FAT_LOOT = "fat";
 
     private static final EntityDataAccessor<Byte> FLYING_STATE =
             SynchedEntityData.defineId(EntityPigeon.class, EntityDataSerializers.BYTE);
@@ -134,24 +132,18 @@ public class EntityPigeon extends PathfinderMobCompat implements IFlyingCreature
         return MovementEmission.NONE;
     }
 
+    // backport: 1.21.1 dropFromLootTable takes no level; the 26.x table overload is Entities26's
     @Override
-    protected void dropCustomDeathLoot(
-            ServerLevel level, DamageSource source, boolean killedByPlayer) {
-        super.dropCustomDeathLoot(level, source, killedByPlayer);
-
-        int looting = 0;
-        if (source.getEntity() instanceof LivingEntity attacker) {
-            Holder<Enchantment> lootingEnchant =
-                    level.registryAccess()
-                            .lookupOrThrow(Registries.ENCHANTMENT)
-                            .getOrThrow(Enchantments.LOOTING);
-            looting = EnchantmentHelper.getEnchantmentLevel(lootingEnchant, attacker);
-        }
-
-        int feathers = random.nextInt(3) + random.nextInt(1 + looting);
-        for (int i = 0; i < feathers; i++) spawnAtLocation(new ItemStack(Items.FEATHER));
-
-        spawnAtLocation(new ItemStack(isOnFire() ? Items.COOKED_CHICKEN : Items.CHICKEN, isFat() ? 3 : 1));
+    protected void dropFromLootTable(DamageSource source, boolean playerKilled) {
+        if (isFat() && level() instanceof ServerLevel level)
+            Entities26.dropFromLootTable(
+                    this,
+                    level,
+                    source,
+                    playerKilled,
+                    lastHurtByPlayer,
+                    MobUtil.lootVariant(getType(), FAT_LOOT));
+        else super.dropFromLootTable(source, playerKilled);
     }
 
     @Override

@@ -3,13 +3,14 @@
 
 package com.hbm.entity.item;
 
+import com.hbm.blockentity.GraphResident;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.entity.ModEntities;
 import com.hbm.interfaces.StoredItems;
 import com.hbm.items.special.CarriedBlockItems;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toclient.FallingMultiblockPayload;
-import com.hbm.platform.Services;
 import com.mojang.serialization.Codec;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import java.util.ArrayList;
@@ -44,10 +45,8 @@ public class EntityFallingMultiblock extends EntityCompat implements StoredItems
     private static final double GRAVITY = 0.04D;
     private static final double DRAG = 0.98D;
     private static final int RESEND_INTERVAL = 20;
-
     private final LongOpenHashSet memberPosSet = new LongOpenHashSet();
     private BlockPos originCore = BlockPos.ZERO;
-
     private long[] members = new long[0];
     private @Nullable CompoundTag carriedBe;
     private @Nullable BlockEntity carriedInventory;
@@ -93,7 +92,6 @@ public class EntityFallingMultiblock extends EntityCompat implements StoredItems
     public static @Nullable EntityFallingMultiblock tryFall(ServerLevel level, BlockPos core) {
         BlockState coreState = level.getBlockState(core);
         if (MultiblockSurface.foldedCore(coreState) == null) return null;
-
         if (!level.isPositionEntityTicking(core)) return null;
 
         List<BlockPos> blocks = MultiblockSurface.rigidStructureBlocks(level, core);
@@ -121,6 +119,7 @@ public class EntityFallingMultiblock extends EntityCompat implements StoredItems
 
         BlockEntity be = level.getBlockEntity(core);
         if (be != null) entity.carriedBe = be.saveCustomOnly(level.registryAccess());
+        if (be instanceof GraphResident resident) resident.onGraphDetach(level);
 
         BlockMultiblockCore.withoutTeardown(
                 () -> {
@@ -235,7 +234,7 @@ public class EntityFallingMultiblock extends EntityCompat implements StoredItems
 
     private void sendMembers() {
         if (level() instanceof ServerLevel) {
-            Services.NETWORK.sendToAllTracking(
+            PacketWire.sendToAllTracking(
                     new FallingMultiblockPayload(getId(), originCore.asLong(), members, carriedBe),
                     this);
         }

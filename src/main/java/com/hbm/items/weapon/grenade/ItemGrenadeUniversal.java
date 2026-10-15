@@ -10,8 +10,9 @@ import com.hbm.itempool.ItemPool;
 import com.hbm.items.ModDataComponents;
 import com.hbm.items.ModItems;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toclient.GrenadeAnimationPayload;
-import com.hbm.platform.Services;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
@@ -35,7 +36,6 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.ItemCompat;
 
 public class ItemGrenadeUniversal extends ItemCompat {
-
     private static int clientSlot = -1;
     private static @Nullable GrenadeData clientData;
 
@@ -49,8 +49,7 @@ public class ItemGrenadeUniversal extends ItemCompat {
 
     private static void onEquip(ServerPlayer player, ItemStack stack) {
         HbmPlayerProps.getData(player).grenadeDeployment = 0;
-        Services.NETWORK.sendTo(
-                new GrenadeAnimationPayload(getData(stack).shell().ordinal()), player);
+        PacketWire.sendTo(new GrenadeAnimationPayload(getData(stack).shell().ordinal()), player);
     }
 
     public static void clientHeldTick() {
@@ -156,8 +155,8 @@ public class ItemGrenadeUniversal extends ItemCompat {
         switch (getData(stack).shell()) {
             case FRAG -> {
                 if (deployed == 18)
-                    level.playSound(
-                            null,
+                    EntitySounds.play(
+                            player,
                             player.getX(),
                             player.getY(),
                             player.getZ(),
@@ -168,8 +167,8 @@ public class ItemGrenadeUniversal extends ItemCompat {
             }
             case STICK -> {
                 if (deployed == 16 || deployed == 25)
-                    level.playSound(
-                            null,
+                    EntitySounds.play(
+                            player,
                             player.getX(),
                             player.getY(),
                             player.getZ(),
@@ -180,8 +179,8 @@ public class ItemGrenadeUniversal extends ItemCompat {
             }
             case TECH -> {
                 if (deployed == 18)
-                    level.playSound(
-                            null,
+                    EntitySounds.play(
+                            player,
                             player.getX(),
                             player.getY(),
                             player.getZ(),
@@ -192,8 +191,8 @@ public class ItemGrenadeUniversal extends ItemCompat {
             }
             case NUKE -> {
                 if (deployed == 26)
-                    level.playSound(
-                            null,
+                    EntitySounds.play(
+                            player,
                             player.getX(),
                             player.getY(),
                             player.getZ(),

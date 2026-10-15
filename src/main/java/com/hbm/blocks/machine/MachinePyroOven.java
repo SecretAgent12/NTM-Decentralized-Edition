@@ -3,14 +3,13 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.oil.BlockEntityMachinePyroOven;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.capability.ICapabilityBlock;
 import com.hbm.capability.MachineCaps;
-import com.hbm.tileentity.machine.oil.BlockEntityMachinePyroOven;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import com.hbm.backport.InteractionResult;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Player;
@@ -22,54 +21,8 @@ import org.jspecify.annotations.Nullable;
 
 public class MachinePyroOven extends BlockMultiblockCore
         implements ITickingBlock, ICapabilityBlock {
-
-    private static final int[] DIMENSIONS = {2, 0, 3, 3, 2, 2};
-
     public MachinePyroOven(Properties props) {
         super(props);
-    }
-
-    @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 3;
-    }
-
-    @Override
-    protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
-        super.visitCells(core, facing, visitor);
-        Direction rot = facing.getCounterClockWise();
-
-        int dx = facing.getStepX(), dz = facing.getStepZ();
-        int rx = rot.getStepX(), rz = rot.getStepZ();
-
-        for (int i = -2; i <= 2; i++) {
-            visitor.cell(core.offset(dx * i + rx * 2, 0, dz * i + rz * 2), MASK_EAST);
-        }
-
-        visitor.cell(core.offset(-rx, 2, -rz), MASK_UP, ROLE_FLUID_OUT);
-    }
-
-    @Override
-    protected void visitPassiveCells(BlockPos core, Direction facing, PassiveCellVisitor visitor) {
-        Direction rot = facing.getCounterClockWise();
-        int dx = facing.getStepX(), dz = facing.getStepZ();
-        int rx = rot.getStepX(), rz = rot.getStepZ();
-
-        for (int i = -2; i <= 2; i++) {
-            visitor.passiveCell(
-                    core.offset(dx * i + rx * 2, 0, dz * i + rz * 2),
-                    MASK_ALL,
-                    PASSIVE_POWER_IN | PASSIVE_FLUID_IN | PASSIVE_ITEMS);
-        }
-        visitor.passiveCell(
-                core.offset(-rx, 2, -rz),
-                MASK_ALL,
-                PASSIVE_POWER_IN | PASSIVE_FLUID_IN | PASSIVE_ITEMS);
     }
 
     @Override

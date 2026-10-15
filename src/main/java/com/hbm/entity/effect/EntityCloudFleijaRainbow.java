@@ -18,7 +18,6 @@ import net.minecraft.world.entity.EntityType;
 import com.hbm.backport.compat.EntityCompat;
 
 public class EntityCloudFleijaRainbow extends EntityCompat {
-
     private static final EntityDataAccessor<Integer> MAX_AGE =
             SynchedEntityData.defineId(EntityCloudFleijaRainbow.class, EntityDataSerializers.INT);
 

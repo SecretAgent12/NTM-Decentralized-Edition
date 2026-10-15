@@ -47,7 +47,6 @@ public class RenderBulletMK4 extends EntityRenderer<EntityBulletBaseMK4, RenderB
     protected AABB getBoundingBoxForCulling(EntityBulletBaseMK4 bullet) {
         var mc = Minecraft.getInstance();
         var camera = com.hbm.backport.client.core.CameraRenderState.current();
-
         double trail = 2D * Math.max(bullet.prevVelocity, bullet.velocity);
         double dx = bullet.getX() - camera.pos.x;
         double dy = bullet.getY() - camera.pos.y;

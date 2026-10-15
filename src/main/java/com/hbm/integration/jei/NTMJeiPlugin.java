@@ -11,6 +11,7 @@ import com.hbm.integration.recipeviewer.CustomMachinePage;
 import com.hbm.integration.recipeviewer.RecipePage;
 import com.hbm.integration.recipeviewer.RecipePages;
 import com.hbm.inventory.machine.CustomMachineDefinition;
+import com.hbm.items.ModItems;
 import com.hbm.lib.Library;
 import com.hbm.registration.Reg;
 import java.util.ArrayList;
@@ -26,21 +27,24 @@ import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.handlers.IGuiClickableArea;
 import mezz.jei.api.gui.handlers.IGuiContainerHandler;
 import mezz.jei.api.helpers.IJeiHelpers;
+import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.ingredients.subtypes.ISubtypeInterpreter;
 import mezz.jei.api.ingredients.subtypes.UidContext;
 import mezz.jei.api.recipe.RecipeType;
+import mezz.jei.api.recipe.advanced.ISimpleRecipeManagerPlugin;
 import mezz.jei.api.registration.*;
 import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 @JeiPlugin
 public class NTMJeiPlugin implements IModPlugin {
-
     private final Map<ResourceKey<CustomMachineDefinition>, CustomMachinePage> customMachines =
             new LinkedHashMap<>();
     private final Map<ResourceLocation, JeiLookupPlugin<?>> lookupPlugins = new HashMap<>();
@@ -99,7 +103,6 @@ public class NTMJeiPlugin implements IModPlugin {
     @Override
     public void registerRecipes(IRecipeRegistration registration) {
         for (RecipePage<?> page : pages()) addRows(registration, page);
-        registration.addRecipes(RecipeTypes.CRAFTING, CraftingRows.rows());
     }
 
     private <T> void addRows(IRecipeRegistration registration, RecipePage<T> page) {
@@ -113,7 +116,20 @@ public class NTMJeiPlugin implements IModPlugin {
         for (JeiLookupPlugin<?> plugin : lookupPlugins.values())
             addLookupPlugin(registration, plugin);
         // backport-fix: BF-063 — R on any multi fluid identifier shows its crafting recipe
+        // backport: upstream 1.0.3 added its own IdentifierCraftingLookup (only the
+        // hbm:fluid_identifier_multi row, looked up in onRuntimeAvailable) for the same thing; BF-063
+        // already lists every crafting recipe that makes the identifier, so it is not registered on
+        // top of it (both would show the same recipe twice)
         registration.addTypedRecipeManagerPlugin(RecipeTypes.CRAFTING, new FluidIdentifierRecipes());
+        registration.addTypedRecipeManagerPlugin(
+                RecipeTypes.CRAFTING, new CraftingRowsLookup(new CraftingRows()));
+    }
+
+    @Override
+    public void registerExtraIngredients(IExtraIngredientRegistration registration) {
+        // backport: JEI 19.x addExtraIngredients(ITEM_STACK, ...) (26.x JEI addExtraItemStacks)
+        registration.addExtraIngredients(
+                VanillaTypes.ITEM_STACK, List.of(new ItemStack(ModItems.FLUID_IDENTIFIER)));
     }
 
     private static <T> void addLookupPlugin(
@@ -154,6 +170,34 @@ public class NTMJeiPlugin implements IModPlugin {
                 .getIngredientManager()
                 .removeIngredientsAtRuntime(VanillaTypes.ITEM_STACK, RecipePages.hiddenStacks());
         for (RecipePage<?> page : RecipePages.fixed()) hideRows(jeiRuntime, page);
+    }
+
+    private record CraftingRowsLookup(CraftingRows rows)
+            implements ISimpleRecipeManagerPlugin<RecipeHolder<CraftingRecipe>> {
+        @Override
+        public boolean isHandledInput(ITypedIngredient<?> input) {
+            return !getRecipesForInput(input).isEmpty();
+        }
+
+        @Override
+        public boolean isHandledOutput(ITypedIngredient<?> output) {
+            return !getRecipesForOutput(output).isEmpty();
+        }
+
+        @Override
+        public List<RecipeHolder<CraftingRecipe>> getRecipesForInput(ITypedIngredient<?> input) {
+            return input.getItemStack().map(rows::usesOf).orElse(List.of());
+        }
+
+        @Override
+        public List<RecipeHolder<CraftingRecipe>> getRecipesForOutput(ITypedIngredient<?> output) {
+            return output.getItemStack().map(rows::recipesFor).orElse(List.of());
+        }
+
+        @Override
+        public List<RecipeHolder<CraftingRecipe>> getAllRecipes() {
+            return List.of();
+        }
     }
 
     private <T> void hideRows(IJeiRuntime runtime, RecipePage<T> page) {

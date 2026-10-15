@@ -3,14 +3,13 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.BlockEntityZirnoxDestroyed;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.handler.threading.TargetPoint;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toclient.RbmkJetPayload;
-import com.hbm.platform.Services;
-import com.hbm.tileentity.machine.BlockEntityZirnoxDestroyed;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -24,9 +23,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import org.jspecify.annotations.Nullable;
 
 public class ZirnoxDestroyed extends BlockMultiblockCore implements ITickingBlock {
-
-    private static final int[] DIMENSIONS = {1, 0, 2, 2, 2, 2};
-
     private static final int FLAME_CHANCE = 4;
     private static final int FLAME_MAX_AGE = 90;
     private static final int FLAME_RANGE = 75;
@@ -65,30 +61,15 @@ public class ZirnoxDestroyed extends BlockMultiblockCore implements ITickingBloc
         double px = pos.getX() + 0.25D + rand.nextDouble() * 0.5D;
         double py = pos.getY() + 1.75D;
         double pz = pos.getZ() + 0.25D + rand.nextDouble() * 0.5D;
-        Services.NETWORK.sendToAllAround(
+        PacketWire.sendToAllAround(
                 RbmkJetPayload.flame(px, py, pz, FLAME_MAX_AGE),
                 new TargetPoint(level, pos.getX() + 0.5D, py, pos.getZ() + 0.5D, FLAME_RANGE));
-    }
-
-    @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 2;
     }
 
     @Override
     protected InteractionResult useAtCore(
             BlockState coreState, Level level, BlockPos core, Player player, BlockHitResult hit) {
         return InteractionResult.PASS;
-    }
-
-    @Override
-    public void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
-        super.visitCells(core, facing, visitor);
     }
 
     @Override

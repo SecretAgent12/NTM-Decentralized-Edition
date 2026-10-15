@@ -15,7 +15,6 @@ import com.hbm.backport.client.itemmodel.ItemModelResolver;
 import com.hbm.backport.client.itemmodel.ItemStackRenderState;
 import com.hbm.backport.client.core.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
 public class RenderMovingPackage

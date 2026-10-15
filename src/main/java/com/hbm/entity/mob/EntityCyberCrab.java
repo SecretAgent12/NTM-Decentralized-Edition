@@ -3,9 +3,9 @@
 
 package com.hbm.entity.mob;
 
+import com.hbm.api.environment.ISuffocationImmune;
 import com.hbm.entity.ModEntities;
 import com.hbm.entity.projectile.EntityBullet;
-import com.hbm.interfaces.IRadiationImmune;
 import com.hbm.lib.ModDamageTypes;
 import com.hbm.sound.ModSounds;
 import net.minecraft.server.level.ServerLevel;
@@ -32,7 +32,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.pathfinder.PathType;
 import com.hbm.backport.compat.MonsterCompat;
 
-public class EntityCyberCrab extends MonsterCompat implements RangedAttackMob, IRadiationImmune {
+public class EntityCyberCrab extends MonsterCompat implements RangedAttackMob, ISuffocationImmune {
 
     public EntityCyberCrab(EntityType<? extends EntityCyberCrab> type, Level level) {
         super(type, level);
@@ -57,7 +57,6 @@ public class EntityCyberCrab extends MonsterCompat implements RangedAttackMob, I
         goalSelector.addGoal(4, rangedGoal());
         targetSelector.addGoal(
                 1, new NearestAttackableTargetGoal<>(this, Player.class, 0, true, false, null));
-
         targetSelector.addGoal(
                 2,
                 new NearestAttackableTargetGoal<>(
@@ -92,7 +91,6 @@ public class EntityCyberCrab extends MonsterCompat implements RangedAttackMob, I
 
         if (getHealth() <= 0) {
             discard();
-
             server.explode(
                     this,
                     getX(),

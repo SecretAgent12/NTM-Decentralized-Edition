@@ -16,7 +16,6 @@ abstract class MpUnboundedXaddArrayLongQueue<R extends MpUnboundedXaddChunkLong<
         extends MpUnboundedXaddArrayLongQueuePad3<R> {
 
     static final int CACHE_LINE = 64;
-
     private static final long ROTATION = -2;
 
     static {
@@ -136,7 +135,6 @@ abstract class MpUnboundedXaddArrayLongQueue<R extends MpUnboundedXaddChunkLong<
             for (long i = 1; i <= chunksToAppend; i++) {
                 R newChunk = newOrPooledChunk(currentChunk, currentChunkIndex + i);
                 U.putReferenceRelease(this, P_CHUNK_OFFSET, newChunk);
-
                 U.putReferenceRelease(currentChunk, MpUnboundedXaddChunkLong.NEXT_OFFSET, newChunk);
                 currentChunk = newChunk;
             }

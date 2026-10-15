@@ -3,6 +3,7 @@
 
 package com.hbm.items.food;
 
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -46,8 +47,8 @@ public class ItemBDCL extends ItemCompat {
     }
 
     private static void play(Level level, LivingEntity entity, SoundEvent sound) {
-        level.playSound(
-                null,
+        EntitySounds.play(
+                entity,
                 entity.getX(),
                 entity.getY(),
                 entity.getZ(),

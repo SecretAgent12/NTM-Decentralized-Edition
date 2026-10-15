@@ -93,7 +93,6 @@ public class ItemAmmoHIMARS extends ItemCompat {
             @Override
             public void onImpact(EntityArtilleryRocket rocket, HitResult mop) {
                 standardExplosion(rocket, mop, 20F, 3F, false, SLAG_CRACKED);
-
                 ExplosionCreator.composeEffectStandard(
                         rocket.level(),
                         mop.getLocation().x,
@@ -208,11 +207,8 @@ public class ItemAmmoHIMARS extends ItemCompat {
         };
 
         public final String name;
-
         public final ResourceLocation texture;
-
         public final int amount;
-
         public final int modelType;
 
         HIMARSRocketType(String name, String texture, int type) {

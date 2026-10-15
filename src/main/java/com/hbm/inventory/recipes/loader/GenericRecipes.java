@@ -3,9 +3,8 @@
 
 package com.hbm.inventory.recipes.loader;
 
-import com.hbm.NuclearTech;
 import com.hbm.packet.SyncWire;
-import com.hbm.registration.IRegistrar;
+import com.hbm.registration.NeoForgeRegistrar;
 import java.util.*;
 import java.util.function.Predicate;
 import net.minecraft.resources.ResourceLocation;
@@ -31,7 +30,6 @@ public abstract class GenericRecipes<T extends GenericRecipe, I> extends Seriali
     public static final String POOL_PREFIX_SECRET = "secret.";
     public static final String POOL_PREFIX_528 = "528.";
     private static Pools pools = new Pools(RecipeSource.NEVER_FILLED, Map.of(), Map.of());
-
     private static volatile int tagEpoch;
     private Generation<T, I> generation = Generation.empty();
     private ResourceLocation typeId;
@@ -87,9 +85,9 @@ public abstract class GenericRecipes<T extends GenericRecipe, I> extends Seriali
     protected abstract RecipeSerializer<? extends T> serializer();
 
     @Override
-    public final void registerType(IRegistrar registrar) {
-        this.typeId = registrar.registerRecipeType(registryName(), this).id();
-        registrar.registerRecipeSerializer(registryName(), serializer());
+    public final void registerType() {
+        this.typeId = NeoForgeRegistrar.registerRecipeType(registryName(), this).id();
+        NeoForgeRegistrar.registerRecipeSerializer(registryName(), serializer());
     }
 
     public final RecipeType<T> type() {
@@ -114,7 +112,6 @@ public abstract class GenericRecipes<T extends GenericRecipe, I> extends Seriali
     @Override
     public void ensureFilled() {
         RecipeSource.Token token = RecipeSource.token();
-
         if (token == null) return;
         int epoch = tagEpoch;
         Generation<T, I> held = generation;
@@ -166,28 +163,14 @@ public abstract class GenericRecipes<T extends GenericRecipe, I> extends Seriali
                                 recipe.inputFluid != null && recipe.inputFluid.length > 0
                                         ? recipe.inputFluid[0].type()
                                         : null);
-
         RecipeIndex<Item, T> byItem =
                 RecipeIndex.of(
                         rows,
                         (recipe, file) -> {
                             if (recipe.inputItem == null || recipe.inputItem.length == 0) return;
-                            int[] filed = {0};
                             Ingredients.items(recipe.inputItem[0]
                                     .ingredient())
-                                    .forEach(
-                                            item -> {
-                                                file.accept(item.value());
-                                                filed[0]++;
-                                            });
-
-                            if (filed[0] == 0) {
-                                NuclearTech.LOGGER.warn(
-                                        "{}: recipe {} has an input ingredient matching no item, so nothing can "
-                                                + "reach it",
-                                        datapackTypeId(),
-                                        recipe.getInternalName());
-                            }
+                                    .forEach(item -> file.accept(item.value()));
                         });
 
         this.generation =

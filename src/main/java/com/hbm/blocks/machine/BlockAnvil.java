@@ -33,7 +33,6 @@ import com.hbm.backport.compat.FallingBlockCompat;
 
 @AutoRotate
 public class BlockAnvil extends FallingBlockCompat {
-
     public static final int TIER_IRON = 1;
     public static final int TIER_STEEL = 2;
     public static final int TIER_OIL = 3;
@@ -42,7 +41,6 @@ public class BlockAnvil extends FallingBlockCompat {
     public static final int TIER_FUSION = 6;
     public static final int TIER_PARTICLE = 7;
     public static final int TIER_GERALD = 8;
-
     public static final int TIER_MURKY = 1916169;
 
     public static final MapCodec<BlockAnvil> CODEC =
@@ -95,7 +93,6 @@ public class BlockAnvil extends FallingBlockCompat {
     @Override
     protected InteractionResult backport$useWithoutItem(
             BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-
         if (player.isShiftKeyDown()) return InteractionResult.PASS;
         if (!level.isClientSide()) {
             player.openMenu(state.getMenuProvider(level, pos));
@@ -106,7 +103,6 @@ public class BlockAnvil extends FallingBlockCompat {
     @Nullable
     @Override
     protected MenuProvider getMenuProvider(BlockState state, Level level, BlockPos pos) {
-
         return new SimpleMenuProvider(
                 (id, inv, player) -> new MenuAnvil(id, inv, tier),
                 Component.translatable("container.anvil", tier));

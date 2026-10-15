@@ -25,7 +25,6 @@ public class ItemExpensive extends ItemCompat {
             TooltipDisplay display,
             Consumer<Component> adder,
             TooltipFlag flag) {
-
         adder.accept(
                 Component.translatable("item.hbm.item_expensive.desc")
                         .withStyle(ChatFormatting.RED));

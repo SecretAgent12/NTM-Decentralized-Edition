@@ -3,11 +3,11 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.BlockEntityMachineRadar;
+import com.hbm.blockentity.machine.BlockEntityMachineRadarScreen;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.inventory.IGUIProvider;
-import com.hbm.tileentity.machine.BlockEntityMachineRadar;
-import com.hbm.tileentity.machine.BlockEntityMachineRadarScreen;
 import com.hbm.util.ChunkUtil;
 import net.minecraft.core.BlockPos;
 import com.hbm.backport.InteractionResult;
@@ -19,21 +19,8 @@ import net.minecraft.world.phys.BlockHitResult;
 import org.jspecify.annotations.Nullable;
 
 public class MachineRadarScreen extends BlockMultiblockCore implements ITickingBlock {
-
-    private static final int[] DIMENSIONS = {1, 0, 0, 0, 1, 0};
-
     public MachineRadarScreen(Properties props) {
         super(props);
-    }
-
-    @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 0;
     }
 
     @Override

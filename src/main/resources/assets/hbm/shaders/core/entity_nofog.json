@@ -131,6 +131,14 @@
             "values": [
                 -1.0
             ]
+        },
+        {
+            "name": "HbmDiscardZeroAlpha",
+            "type": "float",
+            "count": 1,
+            "values": [
+                0.0
+            ]
         }
     ]
 }

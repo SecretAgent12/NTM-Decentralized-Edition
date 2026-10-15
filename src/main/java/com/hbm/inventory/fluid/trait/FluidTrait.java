@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.Fluid;
 
@@ -53,9 +54,20 @@ public abstract class FluidTrait {
         traitList.add(clazz);
     }
 
-    public void addInfo(List<String> info) {}
+    public static void registerTrait(String name, Class<? extends FluidTrait> clazz, String after) {
+        Class<? extends FluidTrait> anchor = traitNameMap.get(after);
+        if (anchor == null)
+            throw new IllegalStateException(
+                    name + " is anchored after unregistered trait " + after);
+        if (traitNameMap.putIfAbsent(name, clazz) != null) {
+            throw new IllegalStateException("trait name " + name + " is already registered");
+        }
+        traitList.add(traitList.indexOf(anchor) + 1, clazz);
+    }
 
-    public void addInfoHidden(List<String> info) {}
+    public void addInfo(List<Component> info) {}
+
+    public void addInfoHidden(List<Component> info) {}
 
     public void onFluidRelease(
             Level level,

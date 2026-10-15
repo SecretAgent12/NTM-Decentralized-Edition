@@ -86,7 +86,6 @@ public class PedestalRecipe extends GenericRecipe {
     public int[] cells = EMPTY_CELLS;
     public ExtraCondition extra = ExtraCondition.NONE;
     public int recipeSet;
-
     private volatile CountIngredient[] grid;
 
     public PedestalRecipe(String name) {
@@ -141,7 +140,6 @@ public class PedestalRecipe extends GenericRecipe {
                 if (!empty) return false;
                 continue;
             }
-
             if (empty || stack.getCount() != ingredient.count() || !ingredient.matchesItem(stack))
                 return false;
         }

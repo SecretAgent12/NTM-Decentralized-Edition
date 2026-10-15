@@ -3,7 +3,7 @@
 
 package com.hbm.world.gen.nbt;
 
-import com.hbm.registration.IRegistrar;
+import com.hbm.registration.NeoForgeRegistrar;
 import com.hbm.registration.RegistryHandle;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.world.level.levelgen.structure.templatesystem.GravityProcessor;
@@ -19,28 +19,48 @@ public final class HbmStructureProcessors {
     public static RegistryHandle<MapCodec<LockPinProcessor>> LOCK_PINS;
     public static RegistryHandle<MapCodec<GravityProcessor>> GROUND_HEIGHT;
     public static RegistryHandle<MapCodec<ImpactVillageProcessor>> IMPACT_VILLAGE;
+    public static RegistryHandle<MapCodec<SpawnerEntityProcessor>> SPAWNER_ENTITY;
+    public static RegistryHandle<MapCodec<DuctFluidProcessor>> DUCT_FLUID;
+    public static RegistryHandle<MapCodec<MarkerTableProcessor>> MARKER_TABLE;
 
     private HbmStructureProcessors() {}
 
-    public static void register(IRegistrar r) {
-        PICK_ONE = r.registerStructureProcessorType("pick_one", PickOneProcessor.MAP_CODEC);
+    public static void register() {
+        PICK_ONE =
+                NeoForgeRegistrar.registerStructureProcessorType(
+                        "pick_one", PickOneProcessor.MAP_CODEC);
         BOBBLE_RANDOMIZER =
-                r.registerStructureProcessorType(
+                NeoForgeRegistrar.registerStructureProcessorType(
                         "bobble_randomizer", BobbleRandomizerProcessor.MAP_CODEC);
         MULTIBLOCK_ASSEMBLY =
-                r.registerStructureProcessorType(
+                NeoForgeRegistrar.registerStructureProcessorType(
                         "multiblock_assembly", MultiblockAssemblyProcessor.MAP_CODEC);
         MAYBE_PLACE =
-                r.registerStructureProcessorType("maybe_place", MaybePlaceProcessor.MAP_CODEC);
-        LOOT_PILE = r.registerStructureProcessorType("loot_pile", LootPileProcessor.MAP_CODEC);
+                NeoForgeRegistrar.registerStructureProcessorType(
+                        "maybe_place", MaybePlaceProcessor.MAP_CODEC);
+        LOOT_PILE =
+                NeoForgeRegistrar.registerStructureProcessorType(
+                        "loot_pile", LootPileProcessor.MAP_CODEC);
         WEIGHTED_PLACE =
-                r.registerStructureProcessorType(
+                NeoForgeRegistrar.registerStructureProcessorType(
                         "weighted_place", WeightedPlaceProcessor.MAP_CODEC);
-        LOCK_PINS = r.registerStructureProcessorType("lock_pins", LockPinProcessor.MAP_CODEC);
+        LOCK_PINS =
+                NeoForgeRegistrar.registerStructureProcessorType(
+                        "lock_pins", LockPinProcessor.MAP_CODEC);
         GROUND_HEIGHT =
-                r.registerStructureProcessorType("ground_height", GroundHeightProcessor.MAP_CODEC);
+                NeoForgeRegistrar.registerStructureProcessorType(
+                        "ground_height", GroundHeightProcessor.MAP_CODEC);
         IMPACT_VILLAGE =
-                r.registerStructureProcessorType(
+                NeoForgeRegistrar.registerStructureProcessorType(
                         "impact_village", ImpactVillageProcessor.MAP_CODEC);
+        SPAWNER_ENTITY =
+                NeoForgeRegistrar.registerStructureProcessorType(
+                        "spawner_entity", SpawnerEntityProcessor.MAP_CODEC);
+        DUCT_FLUID =
+                NeoForgeRegistrar.registerStructureProcessorType(
+                        "duct_fluid", DuctFluidProcessor.MAP_CODEC);
+        MARKER_TABLE =
+                NeoForgeRegistrar.registerStructureProcessorType(
+                        "marker_table", MarkerTableProcessor.MAP_CODEC);
     }
 }

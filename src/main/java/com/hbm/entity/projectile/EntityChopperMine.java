@@ -28,7 +28,6 @@ import com.hbm.backport.compat.EntityCompat;
 public class EntityChopperMine extends EntityCompat {
 
     public int timer = 0;
-
     public Entity shooter;
 
     public EntityChopperMine(EntityType<? extends EntityChopperMine> type, Level level) {

@@ -177,7 +177,6 @@ public class LegoClient {
             };
     private static final int WIRE_SEGMENTS = 10;
     private static final double WIRE_GIRTH = 0.03125D;
-
     public static RenderBulletMK4.Tracer RENDER_CT_HOOK =
             new RenderBulletMK4.Tracer() {
 
@@ -768,7 +767,6 @@ public class LegoClient {
             double widthF,
             double widthB,
             int lc) {
-
         if (RibbonPass.isShadow()) return;
         if (IrisCompat.isShaderPackInUse()) {
             submitTracerBox(pose, collector, dark, light, length, widthF, widthB, lc);

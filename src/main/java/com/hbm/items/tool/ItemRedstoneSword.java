@@ -17,7 +17,6 @@ import net.minecraft.world.level.block.Blocks;
 import com.hbm.backport.compat.ItemCompat;
 
 public class ItemRedstoneSword extends ItemCompat {
-
     private static final int DAMAGE_PER_PLACEMENT = 14;
 
     public ItemRedstoneSword(Properties properties) {

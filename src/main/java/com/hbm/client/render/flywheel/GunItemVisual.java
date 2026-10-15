@@ -50,7 +50,6 @@ public final class GunItemVisual extends HbmItemVisual {
         this.stack = stack;
         set = argument.set();
         signature = signature(renderer, argument);
-
         if (argument.firstPerson() != null) return;
         renderer.visitDraws(
                 argument,
@@ -113,7 +112,6 @@ public final class GunItemVisual extends HbmItemVisual {
             int drawLight = draw.fullBright() ? LightTexture.FULL_BRIGHT : light;
             for (Tinted tinted : draw.instances()) {
                 if (tinted.instance() instanceof AffineUvTransformedInstance glint) {
-
                     Matrix4f uv =
                             WeaponRenderTypes.balefireGlintMatrix(
                                     tinted.layer(), WeaponRenderTypes.FATMAN_GLINT_SPEED);

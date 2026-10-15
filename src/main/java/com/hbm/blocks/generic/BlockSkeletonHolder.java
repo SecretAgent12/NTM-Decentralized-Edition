@@ -3,7 +3,7 @@
 
 package com.hbm.blocks.generic;
 
-import com.hbm.tileentity.BlockEntitySkeletonHolder;
+import com.hbm.blockentity.BlockEntitySkeletonHolder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
@@ -22,7 +22,6 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.BlockCompat;
 
 public class BlockSkeletonHolder extends BlockCompat implements EntityBlock {
-
     public static final IntegerProperty FACING = IntegerProperty.create("facing", 2, 5);
 
     public BlockSkeletonHolder(Properties props) {
@@ -64,7 +63,6 @@ public class BlockSkeletonHolder extends BlockCompat implements EntityBlock {
 
     @Override
     protected RenderShape getRenderShape(BlockState state) {
-
         return RenderShape.MODEL;
     }
 

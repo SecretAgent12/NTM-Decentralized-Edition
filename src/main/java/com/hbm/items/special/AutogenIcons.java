@@ -10,7 +10,6 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 public final class AutogenIcons {
-
     private static final Map<MaterialShapes, Map<NTMMaterial, String>> AUTHORED =
             Map.of(
                     MaterialShapes.FRAGMENT,
@@ -47,8 +46,8 @@ public final class AutogenIcons {
         return authoredScraps(mat) == null && remappable(mat);
     }
 
-    public static boolean ownsSprite(MaterialShapes shape, NTMMaterial mat) {
-        return authored(shape, mat) != null || remapped(shape, mat);
+    public static boolean tinted(MaterialShapes shape, NTMMaterial mat) {
+        return authored(shape, mat) == null && !remappable(mat);
     }
 
     public static String sprite(MaterialShapes shape, NTMMaterial mat) {

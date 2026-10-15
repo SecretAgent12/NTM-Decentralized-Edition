@@ -3,11 +3,11 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.BlockEntityFan;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.interfaces.IToolable;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toclient.PlayerInformPayload;
-import com.hbm.platform.Services;
-import com.hbm.tileentity.machine.BlockEntityFan;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -40,9 +40,7 @@ import com.hbm.backport.compat.BlockCompat;
 public class MachineFan extends BlockCompat implements ITickingBlock, IToolable {
 
     public static final EnumProperty<Direction> FACING = BlockStateProperties.FACING;
-
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
-
     private static final int ID_FAN_MODE = 10;
 
     public MachineFan(BlockBehaviour.Properties props) {
@@ -99,7 +97,6 @@ public class MachineFan extends BlockCompat implements ITickingBlock, IToolable 
             ToolType tool) {
 
         if (tool == ToolType.SCREWDRIVER) {
-
             BlockState state = level.getBlockState(pos);
             level.setBlock(pos, state.setValue(FACING, state.getValue(FACING).getOpposite()), 3);
             return true;
@@ -121,7 +118,7 @@ public class MachineFan extends BlockCompat implements ITickingBlock, IToolable 
         if (!level.isClientSide()) {
             fan.networkPackNT(150);
             if (player instanceof ServerPlayer serverPlayer) {
-                Services.NETWORK.sendTo(
+                PacketWire.sendTo(
                         new PlayerInformPayload(
                                 Component.translatable(getDescriptionId() + suffix)
                                         .withStyle(ChatFormatting.GOLD),
@@ -129,7 +126,6 @@ public class MachineFan extends BlockCompat implements ITickingBlock, IToolable 
                                 PlayerInformPayload.DEFAULT_MILLIS),
                         serverPlayer);
             }
-
             level.playSound(
                     null,
                     pos.getX() + 0.5,

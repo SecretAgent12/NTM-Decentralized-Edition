@@ -9,15 +9,10 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 // an interface method on a concrete class read from bytecode if the method is not
 // abstract, which is the same rule Loom and ModDevGradle interface injection state.
 public interface MovedBlockEntityData {
-
     default void hbm$captureFrom(BlockEntity source) {
-
         throw new AssertionError("backport: implemented by mixin");
-
     }
     default void hbm$restoreCarried() {
-
         throw new AssertionError("backport: implemented by mixin");
-
     }
 }

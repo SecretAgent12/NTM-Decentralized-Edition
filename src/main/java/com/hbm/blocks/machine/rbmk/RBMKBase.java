@@ -4,9 +4,16 @@
 package com.hbm.blocks.machine.rbmk;
 
 import com.hbm.api.fluidmk2.FluidCaps;
+import com.hbm.api.fluidmk2.FluidFace;
 import com.hbm.api.fluidmk2.IFluidHandlerMK2;
+import com.hbm.blockentity.machine.rbmk.BlockEntityRBMKBase;
+import com.hbm.blockentity.machine.rbmk.RBMKConfig;
+import com.hbm.blockentity.machine.rbmk.RBMKDiagnostics;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
+import com.hbm.blocks.multiblock.MultiblockCellShapes;
+import com.hbm.blocks.multiblock.MultiblockLayout;
+import com.hbm.blocks.multiblock.MultiblockMaskTable;
 import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.capability.NtmCapabilities;
 import com.hbm.config.HudConfig;
@@ -16,11 +23,10 @@ import com.hbm.interfaces.ILookOverlay;
 import com.hbm.interfaces.IToolable;
 import com.hbm.items.ModItems;
 import com.hbm.items.machine.ItemRBMKLid;
-import com.hbm.platform.Services;
+import com.hbm.platform.NeoForgeCaps;
+import com.hbm.registration.NeoForgeRegistrar;
 import com.hbm.registration.RegistryHandle;
-import com.hbm.tileentity.machine.rbmk.BlockEntityRBMKBase;
-import com.hbm.tileentity.machine.rbmk.RBMKConfig;
-import com.hbm.tileentity.machine.rbmk.RBMKDiagnostics;
+import java.util.function.Supplier;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -33,12 +39,14 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -52,54 +60,51 @@ public abstract class RBMKBase extends BlockMultiblockCore
     private static final VoxelShape LIDDED = Shapes.box(0D, 0D, 0D, 1D, 1.25D, 1D);
 
     protected static void declareColumnEnds(RegistryHandle<? extends Block> column) {
-        Services.CAPS.registerBlockProvider(
-                FluidCaps.RECEIVER,
-                column,
-                (level, pos, state, be, face) ->
-                        columnCap(
-                                level,
-                                pos,
-                                state,
-                                face.side(),
-                                NtmCapabilities.CapRole.FLUID_IN,
-                                false));
-        Services.CAPS.registerBlockProvider(
-                FluidCaps.PROVIDER,
-                column,
-                (level, pos, state, be, face) ->
-                        columnCap(
-                                level,
-                                pos,
-                                state,
-                                face.side(),
-                                NtmCapabilities.CapRole.FLUID_OUT,
-                                true));
+        NeoForgeCaps.pendingBlocks.add(
+                new NeoForgeCaps.BlockRegistration<>(
+                        FluidCaps.RECEIVER,
+                        (Supplier<? extends Block>) column,
+                        (level, pos, state, be, face) ->
+                                columnCap(
+                                        level,
+                                        pos,
+                                        state,
+                                        face,
+                                        NtmCapabilities.CapRole.FLUID_IN,
+                                        false)));
+        NeoForgeCaps.pendingBlocks.add(
+                new NeoForgeCaps.BlockRegistration<>(
+                        FluidCaps.PROVIDER,
+                        (Supplier<? extends Block>) column,
+                        (level, pos, state, be, face) ->
+                                columnCap(
+                                        level,
+                                        pos,
+                                        state,
+                                        face,
+                                        NtmCapabilities.CapRole.FLUID_OUT,
+                                        true)));
     }
 
     private static @Nullable IFluidHandlerMK2 columnCap(
             Level level,
             BlockPos pos,
             BlockState state,
-            @Nullable Direction side,
+            FluidFace face,
             NtmCapabilities.CapRole role,
             boolean columnTop) {
         if (!state.hasProperty(PART)) return null;
         boolean isCore = state.getValue(PART) == Part.CORE;
         return isCore == columnTop
                 ? null
-                : NtmCapabilities.fullSurfaceCap(
-                        level, pos, state, side, IFluidHandlerMK2.class, role);
+                : NtmCapabilities.surfaceCap(level, pos, state, face, IFluidHandlerMK2.class, role);
     }
 
     public static final EnumProperty<Lid> LID = EnumProperty.create("lid", Lid.class);
     public static final EnumProperty<Part> PART = EnumProperty.create("part", Part.class);
-
     public static final Direction DIR_NO_LID = Direction.NORTH;
-
     private static final int MAX_ABOVE = 15;
-
     public static boolean digamma = false;
-
     public static boolean dropLids = true;
 
     protected RBMKBase(Properties properties) {
@@ -131,24 +136,59 @@ public abstract class RBMKBase extends BlockMultiblockCore
         builder.add(LID, PART);
     }
 
-    @Override
-    public int[] getDimensions() {
+    private static int[] columnDimensions() {
         return new int[] {above(), 0, 0, 0, 0, 0};
     }
 
     @Override
-    protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
+    protected MultiblockLayout runtimeLayout(int declaredCaps) {
         int above = above();
+        MultiblockMaskTable.Builder table =
+                MultiblockMaskTable.builder().cell(0, 0, 0, coreMask(), ROLE_ALL);
+        long[] offsets = new long[above];
         for (int y = 1; y <= above; y++) {
-            visitor.cell(core.above(y), y == above ? topMask() : MASK_NONE);
+            table.cell(0, y, 0, y == above ? topMask() : MASK_NONE, ROLE_ALL);
+            table.passive(
+                    0,
+                    y,
+                    0,
+                    MASK_ALL,
+                    y == above ? columnPassive() | topPassive() : columnPassive());
+            offsets[y - 1] = BlockPos.asLong(0, y, 0);
         }
+        table.passive(0, 0, 0, passiveCoreMask(), passiveCoreDomains(declaredCaps));
+        if (proxiesTop()) table.flag(0, above, 0, MultiblockMaskTable.FLAG_PROXY);
+        int[] dimensions = columnDimensions();
+        return MultiblockLayout.uniform(
+                declaredCaps,
+                table.build(),
+                offsets,
+                new MultiblockLayout.Placement(
+                        dimensions,
+                        0,
+                        0,
+                        new int[] {dimensions[0], 0, 0, 0, 0, 0, 0, 0, 0},
+                        new double[0]));
+    }
+
+    protected boolean proxiesTop() {
+        return false;
+    }
+
+    protected int columnPassive() {
+        return PASSIVE_NONE;
+    }
+
+    protected int topPassive() {
+        return PASSIVE_NONE;
     }
 
     public static void rebakeColumns() {
-        for (RegistryHandle<? extends Block> handle : Services.REGISTRAR.blocks()) {
+        for (RegistryHandle<? extends Block> handle : NeoForgeRegistrar.registeredBlocks) {
             if (handle.get() instanceof RBMKBase column)
-                column.bakeMaskTable(column.maskTable().declaredCaps);
+                column.installBakedLayout(column.declaredCaps());
         }
+        MultiblockCellShapes.publish();
     }
 
     protected int topMask() {
@@ -156,9 +196,8 @@ public abstract class RBMKBase extends BlockMultiblockCore
     }
 
     @Override
-    protected void visitTeardownCells(BlockPos core, Direction facing, CellVisitor visitor) {
-
-        for (int y = 1; y <= MAX_ABOVE; y++) visitor.cell(core.above(y), MASK_NONE);
+    protected void visitTeardownCells(BlockPos core, Direction facing, FootprintVisitor visitor) {
+        for (int y = 1; y <= MAX_ABOVE; y++) visitor.cell(core.above(y));
     }
 
     @Override
@@ -177,16 +216,10 @@ public abstract class RBMKBase extends BlockMultiblockCore
     }
 
     @Override
-    public int getOffset() {
-        return 0;
-    }
-
-    @Override
     public Direction getDirModified(Direction dir) {
         return DIR_NO_LID;
     }
 
-    @Override
     public int coreMask() {
         return MASK_NONE;
     }
@@ -246,7 +279,6 @@ public abstract class RBMKBase extends BlockMultiblockCore
     protected InteractionResult backport$useWithoutItem(
             BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (level.isClientSide()) return InteractionResult.SUCCESS;
-
         if (player.isShiftKeyDown()) return InteractionResult.SUCCESS;
         BlockPos core = coreOf(level, pos, state);
         if (core == null) return InteractionResult.PASS;
@@ -294,11 +326,10 @@ public abstract class RBMKBase extends BlockMultiblockCore
     public void writeLid(ServerLevel level, BlockPos core, BlockState coreState, Lid lid) {
         setLid(level, core, coreState, lid);
         long corePacked = core.asLong();
-
         visitTeardownCells(
                 core,
                 coreState.getValue(FACING),
-                (pos, mask) -> {
+                pos -> {
                     BlockState cell = level.getBlockState(pos);
                     if (cell.getBlock() != this || !isCellState(cell)) return;
                     if (MultiblockSurface.recordedCorePacked(
@@ -307,6 +338,23 @@ public abstract class RBMKBase extends BlockMultiblockCore
                         return;
                     }
                     setLid(level, pos.immutable(), cell, lid);
+                });
+    }
+
+    @Override
+    public void assembled(
+            LevelAccessor level, BlockPos core, BlockState coreState, @Nullable BoundingBox clip) {
+        Lid lid = lidOf(coreState);
+        if (!lid.present()) return;
+        visitPlacedCells(
+                level,
+                core,
+                coreState.getValue(FACING),
+                pos -> {
+                    if (clip != null && !clip.isInside(pos)) return;
+                    BlockState cell = level.getBlockState(pos);
+                    if (cell.getBlock() == this && isCellState(cell))
+                        level.setBlock(pos, cell.setValue(LID, lid), 3);
                 });
     }
 

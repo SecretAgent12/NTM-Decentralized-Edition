@@ -4,6 +4,10 @@
 package com.hbm.handler;
 
 import com.hbm.advancement.AwardRegions;
+import com.hbm.api.environment.Environment;
+import com.hbm.blockentity.BlockEntityPedestal.PedestalEntry;
+import com.hbm.blockentity.BlockEntityPedestal.PedestalEntryType;
+import com.hbm.blockentity.BlockEntityPedestal;
 import com.hbm.blocks.ModBlocks;
 import com.hbm.data.MobData;
 import com.hbm.data.WorldData;
@@ -13,10 +17,8 @@ import com.hbm.entity.projectile.EntityMeteor;
 import com.hbm.extprop.HbmLivingProps;
 import com.hbm.extprop.HbmPlayerProps;
 import com.hbm.items.ModItems;
-import com.hbm.platform.Services;
-import com.hbm.tileentity.BlockEntityPedestal.PedestalEntry;
-import com.hbm.tileentity.BlockEntityPedestal.PedestalEntryType;
-import com.hbm.tileentity.BlockEntityPedestal;
+import com.hbm.platform.NeoForgePlatform;
+import com.hbm.platform.NeoForgeServerEvents;
 import com.hbm.util.ContaminationUtil;
 import com.hbm.util.DropHeight;
 import com.hbm.world.gen.WorldgenHeight;
@@ -32,7 +34,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.MobSpawnType;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
@@ -41,9 +42,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.Vec3;
+import org.jspecify.annotations.Nullable;
 
 public final class BossSpawnHandler {
-
     private static final RandomSource meteorRand = RandomSource.create();
 
     public static int meteorShower = 0;
@@ -51,8 +52,9 @@ public final class BossSpawnHandler {
     private BossSpawnHandler() {}
 
     public static void init() {
-        Services.SERVER.onServerTickPre(BossSpawnHandler::onServerTick);
-        Services.SERVER.onPlayerRespawn(player -> HbmPlayerProps.getData(player).maskManTimer = 0);
+        NeoForgeServerEvents.onServerTickPre(BossSpawnHandler::onServerTick);
+        NeoForgeServerEvents.onPlayerRespawn(
+                player -> HbmPlayerProps.getData(player).maskManTimer = 0);
     }
 
     private static void onServerTick(MinecraftServer server) {
@@ -98,7 +100,6 @@ public final class BossSpawnHandler {
     public static void maskManUpdate(ServerLevel level, ServerPlayer player) {
         Item acidizer = ModBlocks.MACHINE_CRYSTALLIZER.get().asItem();
         ServerStatsCounter stats = player.getStats();
-
         boolean acidizerStat =
                 stats.getValue(Stats.ITEM_CRAFTED.get(acidizer)) > 0
                         || stats.getValue(Stats.ITEM_USED.get(acidizer)) > 0;
@@ -132,7 +133,7 @@ public final class BossSpawnHandler {
                     spawnZ,
                     Mth.floor(spawnX),
                     Mth.floor(spawnZ),
-                    create(level, ModEntities.MASK_MAN.get()))) {
+                    ModEntities.MASK_MAN.get().create(level))) {
                 player.sendSystemMessage(
                         Component.translatable("chat.bossSpawnHandler.theMaskManIs")
                                 .withStyle(ChatFormatting.RED));
@@ -166,7 +167,7 @@ public final class BossSpawnHandler {
                     spawnZ,
                     (int) spawnX,
                     (int) spawnZ,
-                    create(level, ModEntities.FBI.get()));
+                    ModEntities.FBI.get().create(level));
         }
 
         for (int i = 0; i < MobData.RAID_DRONES.get(); i++) {
@@ -179,7 +180,7 @@ public final class BossSpawnHandler {
                     spawnZ,
                     (int) spawnX,
                     (int) spawnZ,
-                    create(level, ModEntities.FBI_DRONE.get()));
+                    ModEntities.FBI_DRONE.get().create(level));
         }
     }
 
@@ -201,7 +202,8 @@ public final class BossSpawnHandler {
             double spawnX = player.getX() + vec.x + random.nextGaussian();
             double spawnZ = player.getZ() + vec.z + random.nextGaussian();
 
-            EntityRADBeast rad = create(level, ModEntities.RAD_BEAST.get());
+            EntityRADBeast rad = ModEntities.RAD_BEAST.get().create(level);
+            if (rad == null) continue;
             if (i == 0) rad.makeLeader();
 
             trySpawn(level, spawnX, 0D, spawnZ, (int) spawnX, (int) spawnZ, rad);
@@ -222,11 +224,10 @@ public final class BossSpawnHandler {
                 spawnZ,
                 (int) spawnX,
                 (int) spawnZ,
-                create(level, ModEntities.GHOST.get()));
+                ModEntities.GHOST.get().create(level));
     }
 
     public static void markFBI(Player player) {
-
         if (!player.level().isClientSide()) {
             HbmPlayerProps.getData(player).fbiMark = player.level().getGameTime() + 20 * 60 * 20;
         }
@@ -234,7 +235,6 @@ public final class BossSpawnHandler {
 
     public static void markRad(ServerLevel level, double x, double y, double z) {
         if (!MobData.ENABLE_ELEMENTALS.get()) return;
-
         AwardRegions.within(
                 level, x, y, z, 100, player -> HbmPlayerProps.getData(player).radMark = true);
     }
@@ -246,12 +246,6 @@ public final class BossSpawnHandler {
         return chunk != null && WorldgenHeight.lightBlocking(chunk, x, z) > player.getY() + 3;
     }
 
-    private static <T extends Mob> T create(ServerLevel level, EntityType<T> type) {
-        T mob = type.create(level);
-        if (mob == null) throw new IllegalStateException("Could not construct " + type);
-        return mob;
-    }
-
     private static boolean trySpawn(
             ServerLevel level,
             double x,
@@ -259,9 +253,9 @@ public final class BossSpawnHandler {
             double z,
             int columnX,
             int columnZ,
-            Mob mob) {
+            @Nullable Mob mob) {
+        if (mob == null) return false;
         LevelChunk chunk = level.getChunkSource().getChunkNow(columnX >> 4, columnZ >> 4);
-
         if (chunk == null) return false;
         mob.moveTo(
                 x,
@@ -269,7 +263,7 @@ public final class BossSpawnHandler {
                 z,
                 level.getRandom().nextFloat() * 360.0F,
                 0.0F);
-        Services.PLATFORM.finalizeSpawn(
+        NeoForgePlatform.finalizeSpawn(
                 mob,
                 level,
                 level.getCurrentDifficultyAt(mob.blockPosition()),
@@ -292,7 +286,7 @@ public final class BossSpawnHandler {
 
                 Player p = players.get(meteorRand.nextInt(players.size()));
 
-                if (p != null && level.dimension() == Level.OVERWORLD) {
+                if (p != null && Environment.meteorStrikes(level)) {
 
                     boolean repell = false;
                     boolean strike = true;
@@ -300,7 +294,6 @@ public final class BossSpawnHandler {
                     for (EquipmentSlot slot : ArmorUtil.ARMOR_SLOTS) {
                         ItemStack armor = p.getItemBySlot(slot);
                         if (!armor.isEmpty() && ArmorModHandler.hasMods(armor)) {
-
                             for (ItemStack mod : ArmorModHandler.pryMods(armor)) {
                                 if (mod.isEmpty()) continue;
                                 if (mod.is(ModItems.PROTECTION_CHARM.get())) repell = true;

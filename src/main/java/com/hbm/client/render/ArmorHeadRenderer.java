@@ -3,7 +3,6 @@
 
 package com.hbm.client.render;
 
-import com.hbm.handler.ArmorModHandler;
 import com.hbm.handler.ArmorUtil;
 import com.hbm.items.ModDataComponents;
 import com.hbm.items.ModItems;
@@ -38,7 +37,6 @@ public final class ArmorHeadRenderer {
     private static final int NO9_HELMET = ResourceManager.armor_no9.partId("Helmet");
     private static final int NO9_INSIGNIA = ResourceManager.armor_no9.partId("Insignia");
     private static final int NO9_FLAME = ResourceManager.armor_no9.partId("Flame");
-
     private static final int LAMP_COLOR = ARGB.colorFromFloat(1F, 1F, 1F, .8F);
 
     private static final ResourceLocation M65_TEXTURE = Library.id("textures/models/model_m65.png");
@@ -46,7 +44,6 @@ public final class ArmorHeadRenderer {
             Library.id("textures/models/model_m65_mono.png");
     private static final ResourceLocation OLDE_TEXTURE = Library.id("textures/armor/mask_olde.png");
     private static final ResourceLocation GOGGLES_TEXTURE = Library.id("textures/models/goggles.png");
-
     private static final ResourceLocation LIQUIDATOR_TEXTURE =
             Library.id("textures/armor/liquidator_helmet.png");
 
@@ -54,11 +51,9 @@ public final class ArmorHeadRenderer {
 
     private static final ModelPart M65_MASK = createM65Mask();
     private static final ModelPart GAS_MASK = createGasMask();
-
     private static final float GAS_MASK_SCALE = 1.15F;
     private static final ModelPart M65_FILTER = createM65Filter();
     private static final ModelPart GOGGLES = createGoggles();
-
     private static final float M65_SCALE = 18F / 16F * 1.01F;
 
     private static final Mask GOGGLES_MASK = new PartMask(GOGGLES, GOGGLES_TEXTURE);
@@ -88,7 +83,11 @@ public final class ArmorHeadRenderer {
         if (slot != EquipmentSlot.HEAD) return false;
         Mask mask = resolve(stack);
         if (mask == null) return false;
+        if (!ArmorWorldRenderer.visible(model.head, state)) return true;
+        pose.pushPose();
+        // backport: 26.x model.root().translateAndRotate(pose): 1.21.1 HumanoidModel has no root part
         mask.submit(pose, collector, light, model.head, state, stack, outlineColor);
+        pose.popPose();
         return true;
     }
 
@@ -101,6 +100,7 @@ public final class ArmorHeadRenderer {
             ItemModGasmask attachment,
             ItemStack mod,
             int outlineColor) {
+        if (!ArmorWorldRenderer.visible(head, state)) return;
         ResourceLocation texture =
                 attachment.variant() == ItemModGasmask.Variant.MONO
                         ? M65_MONO_TEXTURE
@@ -110,13 +110,11 @@ public final class ArmorHeadRenderer {
 
     private static @Nullable Mask resolve(ItemStack stack) {
         if (!(stack.getItem() instanceof ModArmorItem armor)) return null;
-
         if (armor instanceof ItemHazmatMask hazmatMask) {
             ResourceLocation texture = hazmatMask.variant().modelTexture();
             return texture == null ? null : new M65Mask(texture, true);
         }
         if (armor instanceof ItemGasMask gasMask) {
-
             if (gasMask.type() == ItemGasMask.Type.GAS_MASK) return GAS_MASK_MASK;
             return new M65Mask(
                     switch (gasMask.type()) {
@@ -127,7 +125,6 @@ public final class ArmorHeadRenderer {
                     },
                     true);
         }
-
         if (armor == ModItems.GOGGLES.get()) return GOGGLES_MASK;
         if (armor == ModItems.ASHGLASSES.get()) return ASHGLASSES_MASK;
         if (armor.suit() == ModArmorItem.Suit.LIQUIDATOR)
@@ -237,7 +234,6 @@ public final class ArmorHeadRenderer {
             RenderType base = WorldRenderPipeline.oneSidedCutout(texture);
             pose.pushPose();
             ArmorWorldRenderer.enterFrame(pose, head, ArmorWorldRenderer.Bone.HEAD, state);
-
             pose.scale(1F / 16F, 1F / 16F, 1F / 16F);
             collector.submitCustomGeometry(
                     pose, base, (p, buffer) -> mesh.render(p, buffer, light, -1));
@@ -290,7 +286,6 @@ public final class ArmorHeadRenderer {
         HFRWavefrontObject mesh = ResourceManager.armor_no9;
         pose.pushPose();
         ArmorWorldRenderer.enterFrame(pose, head, ArmorWorldRenderer.Bone.HEAD, state);
-
         pose.scale(1F / 16F, 1F / 16F, 1F / 16F);
         submitGroup(
                 pose, collector, light, mesh, NO9_HELMET, ResourceManager.no9_tex, outlineColor);
@@ -311,7 +306,6 @@ public final class ArmorHeadRenderer {
                                     p, buffer, LightTexture.FULL_BRIGHT, LAMP_COLOR, NO9_FLAME));
         }
         if (stack.hasFoil()) {
-
             collector.submitCustomGeometry(
                     pose,
                     RenderTypes.armorEntityGlint(),

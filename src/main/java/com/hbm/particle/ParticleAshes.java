@@ -3,13 +3,17 @@
 
 package com.hbm.particle;
 
+import com.hbm.client.particle.AshesVisual;
+import com.hbm.client.particle.VisualParticle;
+import dev.engine_room.flywheel.api.visual.EffectVisual;
+import dev.engine_room.flywheel.api.visualization.VisualizationContext;
+import dev.engine_room.flywheel.api.visualization.VisualizationManager;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.particle.Particle;
 import com.hbm.backport.client.particle.ParticleRenderType;
 import net.minecraft.core.particles.ParticleTypes;
-import com.hbm.backport.client.particle.ParticleCompat;
+import org.jspecify.annotations.Nullable;
 
-public class ParticleAshes extends ParticleCompat {
+public class ParticleAshes extends LegacyMoveParticle implements VisualParticle {
 
     public static final ParticleRenderType ASHES_GROUP = new ParticleRenderType("hbm:ashes", "HAS");
 
@@ -19,6 +23,7 @@ public class ParticleAshes extends ParticleCompat {
     private final float shade;
     private final float scale;
     private float rotationPitch, prevRotationPitch;
+    private @Nullable VisualizationManager visualManager;
 
     public ParticleAshes(ClientLevel level, double x, double y, double z, float scale) {
         super(level, x, y, z);
@@ -51,11 +56,7 @@ public class ParticleAshes extends ParticleCompat {
         this.zd *= 0.95D;
 
         boolean wasOnGround = this.onGround;
-        // backport-fix: BF-005 clear vanilla's stoppedByCollision latch (ashes on ground a nuke removes
-        // later hung in mid-air); zero the resting fall speed like 1.7.10 moveEntity did
-        this.stoppedByCollision = false;
         this.move(this.xd, this.yd, this.zd);
-        if (this.onGround) this.yd = 0D;
         if (!wasOnGround && this.onGround) this.rotationPitch = this.random.nextFloat() * 360F;
 
         if (this.id % 5 == 0 && this.onGround && this.random.nextInt(15) == 0) {
@@ -99,6 +100,26 @@ public class ParticleAshes extends ParticleCompat {
 
     public double interpZ(float pt) {
         return this.zo + (this.z - this.zo) * pt;
+    }
+
+    @Override
+    public ClientLevel level() {
+        return level;
+    }
+
+    @Override
+    public @Nullable VisualizationManager visualManager() {
+        return visualManager;
+    }
+
+    @Override
+    public void visualManager(@Nullable VisualizationManager manager) {
+        visualManager = manager;
+    }
+
+    @Override
+    public EffectVisual<?> visualize(VisualizationContext context, float partialTick) {
+        return new AshesVisual(context, this, partialTick);
     }
 
     @Override

@@ -82,6 +82,11 @@ public final class SavedDataType<T extends SavedData> {
         return storage.computeIfAbsent(type.factory, type.fileName);
     }
 
+    /** 26.x DimensionDataStorage.set(SavedDataType, data): binds the codec like the factory does. */
+    public static <T extends SavedData> void set(DimensionDataStorage storage, SavedDataType<T> type, T data) {
+        storage.set(type.fileName, type.bind(data));
+    }
+
     /** 26.x DimensionDataStorage.get(SavedDataType). */
     public static <T extends SavedData> @Nullable T get(DimensionDataStorage storage, SavedDataType<T> type) {
         return storage.get(type.factory, type.fileName);

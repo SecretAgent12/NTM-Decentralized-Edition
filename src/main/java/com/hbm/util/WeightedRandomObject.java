@@ -9,7 +9,6 @@ import com.hbm.backport.random.WeightedList;
 import net.minecraft.world.item.ItemStack;
 
 public class WeightedRandomObject {
-
     public static final int PRIME = 137;
 
     private WeightedRandomObject() {}

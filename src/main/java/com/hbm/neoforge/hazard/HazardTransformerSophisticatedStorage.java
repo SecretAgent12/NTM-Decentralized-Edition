@@ -32,6 +32,8 @@ public final class HazardTransformerSophisticatedStorage implements IHazardTrans
         // SophisticatedStoredStacks decodes it
         float radiation =
                 StorageHazardSum.sum(
+                        id,
+                        false,
                         SophisticatedStoredStacks.stacks(
                                 id, ItemContentsStorage.get().getOrCreateStorageContents(id)));
         if (radiation > 0F) entries.add(new HazardEntry(HazardRegistry.RADIATION, radiation));

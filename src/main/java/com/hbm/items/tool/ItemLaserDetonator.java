@@ -5,9 +5,10 @@ package com.hbm.items.tool;
 
 import com.hbm.NuclearTech;
 import com.hbm.capability.NtmContracts;
+import com.hbm.config.NeoForgeHbmConfig;
 import com.hbm.interfaces.IBomb.BombReturnCode;
 import com.hbm.interfaces.IBomb;
-import com.hbm.platform.Services;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
@@ -37,7 +38,6 @@ public class ItemLaserDetonator extends ItemCompat {
     @Override
     public InteractionResult backport$use(Level level, Player player, InteractionHand hand) {
         HitResult hit = player.pick(500.0D, 1.0F, false);
-
         if (level.isClientSide()) {
             Vec3 eye = player.getEyePosition();
             Vec3 aim = Vec3.atCenterOf(((BlockHitResult) hit).getBlockPos()).subtract(eye);
@@ -55,7 +55,6 @@ public class ItemLaserDetonator extends ItemCompat {
                         0);
             }
         }
-
         BlockPos aimed =
                 hit instanceof BlockHitResult b && b.getType() == HitResult.Type.BLOCK
                         ? ItemDetonator.bombTarget(level, b.getBlockPos())
@@ -63,8 +62,8 @@ public class ItemLaserDetonator extends ItemCompat {
         IBomb bomb = aimed == null ? null : NtmContracts.BOMB.at(level, aimed);
         if (bomb != null) {
             if (!level.isClientSide()) {
-                level.playSound(
-                        null,
+                EntitySounds.play(
+                        player,
                         player.getX(),
                         player.getY(),
                         player.getZ(),
@@ -73,7 +72,7 @@ public class ItemLaserDetonator extends ItemCompat {
                         1.0F,
                         1.0F);
                 BombReturnCode ret = bomb.explode(level, aimed, player);
-                if (Services.CONFIG.runtime().extendedLogging()) {
+                if (NeoForgeHbmConfig.runtime().extendedLogging()) {
                     NuclearTech.LOGGER.info(
                             "[DET] Tried to detonate block at {} / {} / {} by {}!",
                             aimed.getX(),
@@ -91,8 +90,8 @@ public class ItemLaserDetonator extends ItemCompat {
             return InteractionResult.SUCCESS;
         }
         if (!level.isClientSide()) {
-            level.playSound(
-                    null,
+            EntitySounds.play(
+                    player,
                     player.getX(),
                     player.getY(),
                     player.getZ(),

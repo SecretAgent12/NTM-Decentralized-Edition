@@ -3,31 +3,18 @@
 
 package com.hbm.blocks.generic;
 
+import com.hbm.blockentity.BlockEntityLantern;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.multiblock.BlockMultiblockCell;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
-import com.hbm.tileentity.TileEntityLantern;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
 
 public class BlockLantern extends BlockMultiblockCore implements ITickingBlock {
-
-    private static final int[] DIMENSIONS = {4, 0, 0, 0, 0, 0};
-
     public BlockLantern(Properties props) {
         super(props);
-    }
-
-    @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 0;
     }
 
     @Override
@@ -37,6 +24,6 @@ public class BlockLantern extends BlockMultiblockCore implements ITickingBlock {
 
     @Override
     public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new TileEntityLantern(pos, state);
+        return new BlockEntityLantern(pos, state);
     }
 }

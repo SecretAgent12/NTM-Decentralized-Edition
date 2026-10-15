@@ -3,11 +3,14 @@
 
 package com.hbm.blocks.multiblock;
 
+import com.hbm.blocks.ModBlocks;
 import com.hbm.interfaces.ICopiable;
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.interfaces.IToolable;
+import com.hbm.interfaces.PlantSoil;
 import com.hbm.interfaces.RigidPistonStructure;
-import com.hbm.platform.Services;
+import com.hbm.platform.NeoForgePlatform;
+import com.hbm.registration.RegistryHandle;
 import java.util.List;
 import java.util.function.BiConsumer;
 import net.minecraft.core.BlockPos;
@@ -15,6 +18,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.neoforged.neoforge.common.util.TriState;
 import net.minecraft.world.InteractionHand;
 import com.hbm.backport.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -37,7 +41,7 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.BlockCompat;
 
 public class BlockMultiblockCell extends BlockCompat
-        implements ICopiable, ILookOverlay, IToolable, RigidPistonStructure {
+        implements ICopiable, ILookOverlay, IToolable, RigidPistonStructure, PlantSoil {
 
     public static final int SOUND_STONE = 0;
     public static final int SOUND_METAL = 1;
@@ -47,6 +51,8 @@ public class BlockMultiblockCell extends BlockCompat
 
     public static final BooleanProperty SEALED = BooleanProperty.create("sealed");
     public static final BooleanProperty COMPARATOR = BooleanProperty.create("comparator");
+
+    private boolean forwardsNeighbors;
 
     public static BlockMultiblockCell create(CellBuckets.Plain key, Properties properties) {
         return CellBuckets.supportsComparator(key)
@@ -87,8 +93,11 @@ public class BlockMultiblockCell extends BlockCompat
     }
 
     public BlockMultiblockCell(Properties properties) {
-        super(properties);
-
+        super(
+                properties
+                        .isValidSpawn((state, level, pos, type) -> false)
+                        .isSuffocating((state, level, pos) -> false)
+                        .isViewBlocking((state, level, pos) -> false));
         BlockState any = stateDefinition.any();
         if (any.hasProperty(SOUND)) any = any.setValue(SOUND, SOUND_STONE);
         if (any.hasProperty(SEALED)) any = any.setValue(SEALED, Boolean.FALSE);
@@ -110,7 +119,6 @@ public class BlockMultiblockCell extends BlockCompat
             BlockState state, Player player, BlockGetter level, BlockPos pos) {
         BlockPos core = level instanceof Level l ? MultiblockSurface.coreOfAny(l, pos) : null;
         if (core != null) {
-
             return level.getBlockState(core).getDestroyProgress(player, level, core);
         }
         return super.getDestroyProgress(state, player, level, pos);
@@ -118,7 +126,6 @@ public class BlockMultiblockCell extends BlockCompat
 
     @Override
     protected RenderShape getRenderShape(BlockState state) {
-
         return RenderShape.INVISIBLE;
     }
 
@@ -226,11 +233,11 @@ public class BlockMultiblockCell extends BlockCompat
     @Override
     public BlockState playerWillDestroy(
             Level level, BlockPos pos, BlockState state, Player player) {
-        if (level instanceof ServerLevel server
-                && !player.getAbilities().instabuild
-                && Services.PLATFORM.canHarvestBlock(level, pos, state, player)) {
+        if (level instanceof ServerLevel server && !player.getAbilities().instabuild) {
             BlockMultiblockCore.FoldedOwner owner = BlockMultiblockCore.ownerOf(server, pos);
-            if (owner != null) {
+            if (owner != null
+                    && NeoForgePlatform.canHarvestBlock(
+                            server, owner.pos(), owner.state(), player)) {
                 Block.dropResources(
                         owner.state(),
                         server,
@@ -267,6 +274,21 @@ public class BlockMultiblockCell extends BlockCompat
     }
 
     @Override
+    public boolean sustainsPlant(BlockGetter level, BlockPos soil, BlockState soilState) {
+        return MultiblockSurface.sustainsPlant(level, soil, soilState);
+    }
+
+    @Override
+    public TriState canSustainPlant(
+            BlockState state,
+            BlockGetter level,
+            BlockPos soilPosition,
+            Direction facing,
+            BlockState plant) {
+        return sustainsPlant(level, soilPosition, state) ? TriState.TRUE : TriState.DEFAULT;
+    }
+
+    @Override
     protected void onPlace(
             BlockState state,
             Level level,
@@ -274,8 +296,7 @@ public class BlockMultiblockCell extends BlockCompat
             BlockState oldState,
             boolean movedByPiston) {
         super.onPlace(state, level, pos, oldState, movedByPiston);
-
-        Services.CAPS.invalidateCaps(level, pos);
+        level.invalidateCapabilities(pos);
     }
 
     @Override
@@ -287,12 +308,26 @@ public class BlockMultiblockCell extends BlockCompat
             @Nullable Orientation orientation,
             boolean movedByPiston) {
         super.neighborChanged(state, level, pos, block, orientation, movedByPiston);
-        if (!(level instanceof ServerLevel server)) return;
+        if (!forwardsNeighbors || !(level instanceof ServerLevel server)) return;
         BlockPos core = MultiblockSurface.indexedCore(server, pos);
         if (core == null) return;
         BlockMultiblockCore owner = MultiblockSurface.foldedCore(server.getBlockState(core));
         if (owner != null && owner.wantsNeighborUpdates()) {
             owner.cellNeighborChanged(server, core, pos.immutable());
+        }
+    }
+
+    public boolean forwardsNeighbors() {
+        return forwardsNeighbors;
+    }
+
+    void forwardNeighborUpdates() {
+        forwardsNeighbors = true;
+    }
+
+    public static void resetNeighborForwarding() {
+        for (RegistryHandle<? extends Block> handle : ModBlocks.cellHandles()) {
+            if (handle.get() instanceof BlockMultiblockCell cell) cell.forwardsNeighbors = false;
         }
     }
 

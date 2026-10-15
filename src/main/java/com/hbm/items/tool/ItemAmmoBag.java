@@ -18,7 +18,6 @@ import net.minecraft.world.level.Level;
 import com.hbm.backport.compat.ItemCompat;
 
 public class ItemAmmoBag extends ItemCompat {
-
     public static final MenuItemBox.Layout LAYOUT =
             new MenuItemBox.Layout(
                     2,
@@ -34,7 +33,6 @@ public class ItemAmmoBag extends ItemCompat {
                     0xFFFFFF,
                     70,
                     Library.id("textures/gui/gui_ammo_bag.png"));
-
     private static final int EMPTY_SLOT_ROOM = 64;
     private static final int BAR_WIDTH = 13;
 

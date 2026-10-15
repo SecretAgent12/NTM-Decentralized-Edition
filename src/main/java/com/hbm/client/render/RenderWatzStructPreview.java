@@ -3,7 +3,7 @@
 
 package com.hbm.client.render;
 
-import com.hbm.tileentity.machine.BlockEntityWatzStruct;
+import com.hbm.blockentity.machine.BlockEntityWatzStruct;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.hbm.lib.crankshaft.ConcurrentRenderStateExtraction;
 import java.util.ArrayList;
@@ -83,7 +83,6 @@ public class RenderWatzStructPreview
             ModelFeatureRenderer.@Nullable CrumblingOverlay breakProgress) {
         BlockEntityRenderer.super.extractRenderState(
                 be, state, partialTicks, cameraPosition, breakProgress);
-
         state.ghosts = ghosts();
     }
 

@@ -3,10 +3,10 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.bomb.BlockEntityNukeMan;
 import com.hbm.inventory.container.MenuNukeMan;
 import com.hbm.items.ModItems;
 import com.hbm.lib.Library;
-import com.hbm.tileentity.bomb.BlockEntityNukeMan;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.client.rendertype.RenderPipelines;
 import net.minecraft.network.chat.Component;

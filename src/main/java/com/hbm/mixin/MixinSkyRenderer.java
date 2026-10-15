@@ -3,6 +3,8 @@
 
 package com.hbm.mixin;
 
+import com.hbm.api.client.CustomSkies;
+import com.hbm.api.client.ShaderPacks;
 import com.hbm.backport.ARGB;
 import com.hbm.backport.client.core.SkyRenderState;
 import com.hbm.client.render.NTMSkybox;
@@ -42,7 +44,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *       by {@link NTMSkybox#starAlpha}) -> the star VertexBuffer draw;
  *   <li>the 26.x sky pass extras (MixinLevelRenderer) -> renderSky's end, when the normal sky was
  *       drawn, with renderSky's view rotation;
- *   <li>SkyRenderer.close -> nothing (NTMSkybox.close is a no-op on 1.21.1).
+ *   <li>SkyRenderer.close -> LevelRenderer.close (CustomSkies.close; NTMSkybox.close is a no-op on
+ *       1.21.1);
+ *   <li>the CustomSkies replacement of renderSkyDisc (draws the addon sky) and of
+ *       renderSunriseAndSunset / renderSunMoonAndStars / renderDarkDisc (skipped) -> renderSky is
+ *       cancelled where the normal sky starts drawing (its getSkyColor call), after the addon sky
+ *       was drawn; {@code CustomSkies.Renderer#render} gets the LevelRenderer as "vanilla";
+ *   <li>the impact star blend is skipped while a shader pack is in use (26.x keeps the STARS
+ *       pipeline then); pose and alpha still apply.
  * </ul>
  */
 @Mixin(LevelRenderer.class)
@@ -55,6 +64,12 @@ public abstract class MixinSkyRenderer {
     @Unique private float hbm$sunMoonAlphaScale = 1.0F;
     @Unique private boolean hbm$hideSunrise;
     @Unique private boolean hbm$normalSky;
+
+    @Inject(method = "close", at = @At("HEAD"))
+    private void hbm$closeSkyGeometry(CallbackInfo ci) {
+        NTMSkybox.close();
+        CustomSkies.close();
+    }
 
     @Inject(method = RENDER_SKY, at = @At("HEAD"))
     private void hbm$ntmSkybox(
@@ -81,7 +96,8 @@ public abstract class MixinSkyRenderer {
         state.starBrightness = level.getStarBrightness(partialTicks) * state.rainBrightness;
         float rain = state.rainBrightness;
         int sunriseAlpha = ARGB.alpha(state.sunriseAndSunsetColor);
-        NTMSkybox.extract(level, state);
+        if (CustomSkies.extract(level, partialTicks, camera, state)) NTMSkybox.clear();
+        else NTMSkybox.extract(level, state);
         hbm$sunMoonAlphaScale = rain > 0.0F ? state.rainBrightness / rain : 1.0F;
         hbm$hideSunrise = sunriseAlpha != 0 && ARGB.alpha(state.sunriseAndSunsetColor) == 0;
     }
@@ -92,8 +108,13 @@ public abstract class MixinSkyRenderer {
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/client/multiplayer/ClientLevel;getSkyColor(Lnet/minecraft/world/phys/Vec3;F)Lnet/minecraft/world/phys/Vec3;"))
+                                    "Lnet/minecraft/client/multiplayer/ClientLevel;getSkyColor(Lnet/minecraft/world/phys/Vec3;F)Lnet/minecraft/world/phys/Vec3;"),
+            cancellable = true)
     private void hbm$normalSkyDrawn(CallbackInfo ci) {
+        if (CustomSkies.replace((LevelRenderer) (Object) this, true)) {
+            ci.cancel();
+            return;
+        }
         hbm$normalSky = true;
     }
 
@@ -149,19 +170,22 @@ public abstract class MixinSkyRenderer {
         NTMSkybox.poseImpactStars(impact, level.getSunAngle(partialTicks));
         float[] c = RenderSystem.getShaderColor();
         float r = c[0], g = c[1], b = c[2], a = c[3];
-        RenderSystem.blendFuncSeparate(
-                GlStateManager.SourceFactor.SRC_ALPHA,
-                GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
-                GlStateManager.SourceFactor.ONE,
-                GlStateManager.DestFactor.ZERO);
+        boolean blend = !ShaderPacks.inUse();
+        if (blend)
+            RenderSystem.blendFuncSeparate(
+                    GlStateManager.SourceFactor.SRC_ALPHA,
+                    GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
+                    GlStateManager.SourceFactor.ONE,
+                    GlStateManager.DestFactor.ZERO);
         RenderSystem.setShaderColor(r, g, b, a * NTMSkybox.starAlpha());
         original.call(stars, impact.last().pose(), projection, shader);
         RenderSystem.setShaderColor(r, g, b, a);
-        RenderSystem.blendFuncSeparate(
-                GlStateManager.SourceFactor.SRC_ALPHA,
-                GlStateManager.DestFactor.ONE,
-                GlStateManager.SourceFactor.ONE,
-                GlStateManager.DestFactor.ZERO);
+        if (blend)
+            RenderSystem.blendFuncSeparate(
+                    GlStateManager.SourceFactor.SRC_ALPHA,
+                    GlStateManager.DestFactor.ONE,
+                    GlStateManager.SourceFactor.ONE,
+                    GlStateManager.DestFactor.ZERO);
     }
 
     @Inject(method = RENDER_SKY, at = @At("TAIL"))

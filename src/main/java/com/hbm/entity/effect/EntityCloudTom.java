@@ -3,7 +3,10 @@
 
 package com.hbm.entity.effect;
 
+import com.hbm.entity.FarVisible;
 import com.hbm.entity.ModEntities;
+import com.hbm.handler.FarTracking;
+import com.hbm.util.ChunkUtil;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -18,8 +21,7 @@ import com.hbm.backport.storage.ValueInput;
 import com.hbm.backport.storage.ValueOutput;
 import com.hbm.backport.compat.EntityCompat;
 
-public class EntityCloudTom extends EntityCompat {
-
+public class EntityCloudTom extends EntityCompat implements FarVisible {
     private static final EntityDataAccessor<Integer> MAX_AGE =
             SynchedEntityData.defineId(EntityCloudTom.class, EntityDataSerializers.INT);
 
@@ -56,11 +58,11 @@ public class EntityCloudTom extends EntityCompat {
     @Override
     public void tick() {
         this.age++;
-
         level().setSkyFlashTime(2);
 
-        if (!level().isClientSide() && this.age >= this.getMaxAge()) {
-            this.discard();
+        if (!level().isClientSide()) {
+            if (FarTracking.anyFarViewer(this)) ChunkUtil.holdOwnChunk(this);
+            if (this.age >= this.getMaxAge()) this.discard();
         }
     }
 

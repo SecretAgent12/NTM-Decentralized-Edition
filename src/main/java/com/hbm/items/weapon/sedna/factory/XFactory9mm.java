@@ -18,11 +18,12 @@ import com.hbm.items.weapon.sedna.mods.XWeaponModManager;
 import com.hbm.main.ResourceManager;
 import com.hbm.particle.SpentCasing.CasingType;
 import com.hbm.particle.SpentCasing;
-import com.hbm.registration.IRegistrar;
+import com.hbm.registration.NeoForgeRegistrar;
 import com.hbm.render.anim.AnimationEnums.GunAnimation;
 import com.hbm.render.anim.BusAnimation;
 import com.hbm.render.anim.BusAnimationKeyframe.IType;
 import com.hbm.render.anim.BusAnimationSequence;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import com.hbm.stats.ModStats;
 import com.hbm.util.DamageClass;
@@ -68,7 +69,6 @@ public class XFactory9mm {
                 ItemGunBaseNT.setupRecoil(
                         5, (float) (ctx.getPlayer().getRandom().nextGaussian() * 1.5));
             };
-
     public static BiConsumer<ItemStack, LambdaContext> LAMBDA_FIRE_LAG =
             (stack, ctx) -> {
                 GunAnimation type = ItemGunBaseNT.getLastAnim(stack, ctx.configIndex());
@@ -79,7 +79,6 @@ public class XFactory9mm {
                     Receiver primary = ctx.config().getReceivers(stack)[0];
                     IMagazine mag = primary.getMagazine(stack);
                     BulletConfig config = (BulletConfig) mag.getType(stack, ctx.inventory());
-
                     player.awardStat(ModStats.BULLETS.get());
                     mag.useUpAmmo(stack, ctx.inventory(), 1);
                     ItemGunBaseNT.setWear(
@@ -89,16 +88,15 @@ public class XFactory9mm {
                                     ItemGunBaseNT.getWear(stack, index) + config.wear,
                                     ctx.config().getDurability(stack)));
                     if (primary.getFireSound(stack) != null)
-                        player.level()
-                                .playSound(
-                                        null,
-                                        player.getX(),
-                                        player.getY(),
-                                        player.getZ(),
-                                        primary.getFireSound(stack).get(),
-                                        SoundSource.PLAYERS,
-                                        primary.getFireVolume(stack),
-                                        primary.getFirePitch(stack));
+                        EntitySounds.play(
+                                player,
+                                player.getX(),
+                                player.getY(),
+                                player.getZ(),
+                                primary.getFireSound(stack).get(),
+                                SoundSource.PLAYERS,
+                                primary.getFireVolume(stack),
+                                primary.getFirePitch(stack));
                     ItemGunBaseNT.setState(stack, index, GunState.COOLDOWN);
                     ItemGunBaseNT.setTimer(stack, index, primary.getDelayAfterFire(stack));
                     EntityDamageUtil.attackEntityFromNT(
@@ -456,7 +454,7 @@ public class XFactory9mm {
                 return null;
             };
 
-    public static void init(IRegistrar r) {
+    public static void init() {
         SpentCasing casing9 =
                 new SpentCasing(CasingType.STRAIGHT)
                         .setColor(SpentCasing.COLOR_CASE_BRASS)
@@ -497,7 +495,7 @@ public class XFactory9mm {
                                         .register("p9ap"));
 
         ModItems.GUN_GREASEGUN =
-                r.registerItem(
+                NeoForgeRegistrar.registerItem(
                         "gun_greasegun",
                         props ->
                                 new ItemGunBaseNT(
@@ -549,7 +547,7 @@ public class XFactory9mm {
                         Item.Properties::new);
 
         ModItems.GUN_LAG =
-                r.registerItem(
+                NeoForgeRegistrar.registerItem(
                         "gun_lag",
                         props ->
                                 new ItemGunBaseNT(
@@ -599,7 +597,7 @@ public class XFactory9mm {
                         Item.Properties::new);
 
         ModItems.GUN_UZI =
-                r.registerItem(
+                NeoForgeRegistrar.registerItem(
                         "gun_uzi",
                         props ->
                                 new ItemGunBaseNT(
@@ -650,7 +648,7 @@ public class XFactory9mm {
                         Item.Properties::new);
 
         ModItems.GUN_UZI_AKIMBO =
-                r.registerItem(
+                NeoForgeRegistrar.registerItem(
                         "gun_uzi_akimbo",
                         props ->
                                 new ItemGunBaseNT(

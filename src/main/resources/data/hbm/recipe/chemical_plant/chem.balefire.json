@@ -21,7 +21,7 @@
       "ingredient": "hbm:egg_balefire_shard"
     }
   ],
-  "order": 84,
+  "order": 21504,
   "output_fluids": [
     {
       "type": "hbm:balefire_fuel",

@@ -21,7 +21,6 @@ import com.hbm.backport.storage.ValueInput;
 import com.hbm.backport.storage.ValueOutput;
 
 public class EntityDisperserCanister extends EntityGrenadeBase {
-
     private static final EntityDataAccessor<Integer> FLUID =
             SynchedEntityData.defineId(EntityDisperserCanister.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<ItemStack> TYPE =

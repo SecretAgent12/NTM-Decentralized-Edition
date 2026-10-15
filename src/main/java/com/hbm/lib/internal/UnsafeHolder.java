@@ -3,12 +3,14 @@
 
 package com.hbm.lib.internal;
 
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import jdk.internal.misc.Unsafe;
 
 public final class UnsafeHolder {
     public static final Unsafe U = UnsafeBootstrap.U;
+    public static final MethodHandles.Lookup IMPL_LOOKUP = UnsafeBootstrap.IMPL_LOOKUP;
 
     /*
      * backport-fix: BF-056 jdk.internal.misc.Unsafe.arrayBaseOffset returns int on Java 21 and long

@@ -3,10 +3,10 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.machine.BlockEntityMachineHydrotreater;
 import com.hbm.inventory.container.MenuMachineHydrotreater;
 import com.hbm.items.ModItems;
 import com.hbm.lib.Library;
-import com.hbm.tileentity.machine.BlockEntityMachineHydrotreater;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.client.rendertype.RenderPipelines;
 import net.minecraft.network.chat.Component;

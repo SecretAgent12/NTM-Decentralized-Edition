@@ -3,12 +3,12 @@
 
 package com.hbm.handler.ability;
 
+import com.hbm.config.NeoForgeHbmConfig;
 import com.hbm.data.ItemData;
 import com.hbm.explosion.vanillant.ExplosionVNT;
 import com.hbm.explosion.vanillant.standard.BlockAllocatorStandard;
 import com.hbm.explosion.vanillant.standard.BlockProcessorStandard;
 import com.hbm.items.tool.ItemToolAbility;
-import com.hbm.platform.Services;
 import com.mojang.serialization.Codec;
 import io.netty.buffer.ByteBuf;
 import java.util.ArrayDeque;
@@ -63,7 +63,6 @@ public enum ToolAreaAbility implements BaseAbility, StringRepresentable {
         public boolean onDig(ToolDig dig, int abilityLevel) {
             ServerLevel level = dig.level();
             BlockState reference = level.getBlockState(dig.reference());
-
             if (reference.is(BlockTags.BASE_STONE_OVERWORLD)
                     && !ItemData.TOOL_RECURSION_STONE.get()) {
                 return false;
@@ -77,7 +76,7 @@ public enum ToolAreaAbility implements BaseAbility, StringRepresentable {
             // item tag) are one vein; the original only matched the exact block (1.7.10 had no deepslate)
             List<TagKey<Item>> veinTags = oreTags(reference);
             int radius = RADIUS[abilityLevel];
-            int maxDepth = Services.CONFIG.runtime().toolRecursionDepth();
+            int maxDepth = NeoForgeHbmConfig.runtime().toolRecursionDepth();
             Set<BlockPos> visited = new HashSet<>();
             visited.add(dig.reference());
 

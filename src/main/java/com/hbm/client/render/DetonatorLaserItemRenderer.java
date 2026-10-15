@@ -75,7 +75,6 @@ public final class DetonatorLaserItemRenderer
     }
 
     public static void beamQuads(long time, Matrix4f scratch, UnitQuad.Visitor visitor) {
-
         double phase = time / -100.0D;
         double length = (double) (PX * 8F) / SUB;
         for (int i = 0; i < SUB; i++) {
@@ -106,7 +105,6 @@ public final class DetonatorLaserItemRenderer
         pose.pushPose();
         readoutPose(pose.last());
         for (String line : readoutLines(time)) {
-
             collector.submitText(
                     pose,
                     0F,
@@ -128,7 +126,6 @@ public final class DetonatorLaserItemRenderer
         PoseOps.translate(pose, 0.5625F, 1.3125F, 0.875F);
         PoseOps.scale(pose, f3, -f3, f3);
         PoseOps.rotate(pose, Axis.YP.rotationDegrees(90F));
-
         PoseOps.translate(pose, 3F, -2F, 0.2F);
     }
 
@@ -154,7 +151,6 @@ public final class DetonatorLaserItemRenderer
             int overlay,
             boolean foil,
             int outline) {
-
         collector.submitCustomGeometry(
                 pose,
                 RenderTypes.entityCutoutCull(ResourceManager.detonator_laser_tex),

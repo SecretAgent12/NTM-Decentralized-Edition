@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 SecretAgent12
+// SPDX-License-Identifier: LGPL-3.0-only
+
 // backport: new file (no 26.x counterpart), see com.hbm.backport.client.sodium.SodiumDucks
 package com.hbm.mixin.compat.sodium;
 

@@ -61,7 +61,6 @@ import com.hbm.backport.compat.EntityCompat;
 
 @Deprecated
 public class EntityBullet extends EntityCompat {
-
     private static final EntityDataAccessor<Byte> CRITICAL =
             SynchedEntityData.defineId(EntityBullet.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> TAU =
@@ -76,16 +75,12 @@ public class EntityBullet extends EntityCompat {
     private BlockState stuckBlock;
     private int inData;
     private boolean inGround;
-
     public int canBePickedUp;
-
     public int arrowShake;
-
     public Entity shootingEntity;
     private int ticksInGround;
     private int ticksInAir;
     public double damage;
-
     private int knockbackStrength;
     private boolean instakill = false;
     private boolean rad = false;
@@ -342,7 +337,6 @@ public class EntityBullet extends EntityCompat {
                         : Blocks.AIR.defaultBlockState();
 
         if (!state.isAir()) {
-
             VoxelShape shape = state.getCollisionShape(level(), stuckPos);
             if (!shape.isEmpty()) {
                 Vec3 pos = this.position();
@@ -387,7 +381,6 @@ public class EntityBullet extends EntityCompat {
             Vec3 vel = this.getDeltaMovement();
             Vec3 vec31 = this.position();
             Vec3 vec3 = vec31.add(vel);
-
             BlockHitResult blockHit =
                     level().clip(
                                     new ClipContext(
@@ -503,7 +496,6 @@ public class EntityBullet extends EntityCompat {
                                 if (this.rad) {
                                     if (entitylivingbase instanceof Player
                                             && ArmorUtil.checkForHazmat(entitylivingbase)) {
-
                                     } else if (entitylivingbase instanceof Creeper) {
                                         EntityCreeperNuclear creep =
                                                 new EntityCreeperNuclear(
@@ -561,7 +553,6 @@ public class EntityBullet extends EntityCompat {
                                 }
 
                                 if (this.shootingEntity instanceof LivingEntity) {
-
                                     EnchantmentHelper.doPostAttackEffectsWithItemSource(
                                             server, entitylivingbase, damagesource, null);
                                 }
@@ -579,7 +570,6 @@ public class EntityBullet extends EntityCompat {
                             if (!(hit instanceof EnderMan)) {
                                 if (!level().isClientSide()) {
                                     if (!this.instakill || hit instanceof Player) {
-
                                     } else if (hit instanceof LivingEntity living) {
                                         living.setHealth(0.0F);
                                     }
@@ -588,7 +578,6 @@ public class EntityBullet extends EntityCompat {
                         } else {
 
                             if (server != null && hit instanceof LivingEntity living) {
-
                                 float dmg = (float) this.damage + living.lastHurt;
 
                                 living.hurt(damagesource, dmg);

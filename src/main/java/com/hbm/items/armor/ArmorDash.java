@@ -7,6 +7,7 @@ import com.hbm.extprop.HbmPlayerProps;
 import com.hbm.handler.ArmorModHandler;
 import com.hbm.handler.ArmorUtil;
 import com.hbm.handler.HbmKeybinds.EnumKeybind;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -32,7 +33,6 @@ public final class ArmorDash {
 
         if (props.dashCooldown > 0) {
             props.dashCooldown--;
-
             props.setKeyPressed(EnumKeybind.DASH, false);
         } else if (props.getKeyPressed(EnumKeybind.DASH) && stamina >= PER_DASH) {
             dash(player, forward, strafe);
@@ -43,18 +43,16 @@ public final class ArmorDash {
         if (stamina < dashes * PER_DASH) {
             stamina++;
             if (stamina % PER_DASH == PER_DASH - 1) {
-
                 if (!player.level().isClientSide()) {
-                    player.level()
-                            .playSound(
-                                    null,
-                                    player.getX(),
-                                    player.getY(),
-                                    player.getZ(),
-                                    ModSounds.TECH_BOOP.get(),
-                                    SoundSource.PLAYERS,
-                                    1.0F,
-                                    1.0F + (1F / 12F) * (stamina / PER_DASH));
+                    EntitySounds.play(
+                            player,
+                            player.getX(),
+                            player.getY(),
+                            player.getZ(),
+                            ModSounds.TECH_BOOP.get(),
+                            SoundSource.PLAYERS,
+                            1.0F,
+                            1.0F + (1F / 12F) * (stamina / PER_DASH));
                 }
                 stamina++;
             }
@@ -64,32 +62,28 @@ public final class ArmorDash {
     }
 
     private static void dash(Player player, float forward, float strafe) {
-
         if (player.level().isClientSide()) {
             int f = (int) Math.signum(forward);
             int s = (int) Math.signum(strafe);
-
             if (f == 0 && s == 0) f = 1;
 
             Vec3 look = player.getLookAngle();
-
-            Vec3 right = new Vec3(-look.z, 0D, look.x);
+            Vec3 left = new Vec3(look.z, 0D, -look.x);
             Vec3 motion = player.getDeltaMovement();
             player.setDeltaMovement(
-                    motion.x + look.x * f + right.x * s, 0D, motion.z + look.z * f + right.z * s);
+                    motion.x + look.x * f + left.x * s, 0D, motion.z + look.z * f + left.z * s);
             player.fallDistance = 0F;
             return;
         }
-        player.level()
-                .playSound(
-                        null,
-                        player.getX(),
-                        player.getY(),
-                        player.getZ(),
-                        ModSounds.WEAPON_ROCKET_FLAME.get(),
-                        SoundSource.PLAYERS,
-                        1.0F,
-                        1.0F);
+        EntitySounds.play(
+                player,
+                player.getX(),
+                player.getY(),
+                player.getZ(),
+                ModSounds.WEAPON_ROCKET_FLAME.get(),
+                SoundSource.PLAYERS,
+                1.0F,
+                1.0F);
     }
 
     private static int dashCount(Player player) {
@@ -104,8 +98,9 @@ public final class ArmorDash {
         for (EquipmentSlot slot : ArmorUtil.ARMOR_SLOTS) {
             ItemStack armor = player.getItemBySlot(slot);
             if (!ArmorModHandler.isArmor(armor)) continue;
-            for (ItemStack mod : ArmorModHandler.pryMods(armor)) {
-                if (mod.getItem() instanceof ItemModCloud cloud) count += cloud.dashes();
+            var mods = ArmorModHandler.mods(armor);
+            for (int socket = 0; socket < ArmorModHandler.MOD_SLOTS; socket++) {
+                if (mods.item(socket) instanceof ItemModCloud cloud) count += cloud.dashes();
             }
         }
         return count;

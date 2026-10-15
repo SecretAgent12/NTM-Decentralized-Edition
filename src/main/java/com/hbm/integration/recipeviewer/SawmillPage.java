@@ -6,7 +6,7 @@ package com.hbm.integration.recipeviewer;
 import com.hbm.blocks.ModBlocks;
 import com.hbm.inventory.OreDictManager;
 import com.hbm.items.ModItems;
-import com.hbm.tileentity.machine.BlockEntitySawmill;
+import com.hbm.blockentity.machine.BlockEntitySawmill;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.ChatFormatting;

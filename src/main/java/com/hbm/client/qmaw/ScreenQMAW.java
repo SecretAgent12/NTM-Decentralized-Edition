@@ -381,7 +381,6 @@ public final class ScreenQMAW extends ScreenCompat {
 
     private static final class SingerSound extends SimpleSoundInstance {
         private SingerSound() {
-
             super(
                     ModSounds.QMAW_SINGER.get().getLocation(),
                     SoundSource.PLAYERS,

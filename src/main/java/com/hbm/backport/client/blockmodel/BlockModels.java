@@ -4,7 +4,7 @@
 package com.hbm.backport.client.blockmodel;
 
 import com.hbm.client.model.HbmModelJson;
-import com.hbm.client.model.OccluderMasks;
+import com.hbm.client.model.SectionGeometry;
 import com.hbm.client.model.SectionedModel;
 import com.hbm.lib.Library;
 import com.hbm.registration.Reg;
@@ -57,6 +57,7 @@ public final class BlockModels {
     private static final Logger LOGGER = LoggerFactory.getLogger("hbm/blockmodel");
 
     private static volatile Map<Block, Map<BlockState, BlockStateModel.UnbakedRoot>> pendingRoots = Map.of();
+    private static volatile boolean prepared;
 
     private BlockModels() {}
 
@@ -150,17 +151,16 @@ public final class BlockModels {
                 }
             }
         }
-        try {
-            OccluderMasks.derive(all);
-        } catch (RuntimeException e) {
-            LOGGER.error("Failed to derive occluder masks", e);
-        }
+        // 1.0.3: masks and sectioned models are prepared together (26.x: ModelManager's
+        // createBlockStateToModelDispatch) and published when the models are applied
         Map<BlockState, BlockStateModel> published;
         try {
-            published = SectionedModel.wrap(all);
+            published = SectionedModel.prepare(all);
+            prepared = true;
         } catch (RuntimeException e) {
-            LOGGER.error("Failed to build sectioned models", e);
+            LOGGER.error("Failed to build occluder masks and sectioned models", e);
             published = all;
+            prepared = false;
         }
 
         Map<BlockStateModel, BlockModelAdapter> adapters = new IdentityHashMap<>();
@@ -214,6 +214,11 @@ public final class BlockModels {
 
     private static void bakingCompleted(ModelEvent.BakingCompleted event) {
         BlockStateModels.invalidate();
-        SectionedModel.publish();
+        // 26.x: published at the head of ModelManager.apply, section geometry reloaded at its return
+        if (prepared) {
+            prepared = false;
+            SectionedModel.publish();
+        }
+        SectionGeometry.reload();
     }
 }

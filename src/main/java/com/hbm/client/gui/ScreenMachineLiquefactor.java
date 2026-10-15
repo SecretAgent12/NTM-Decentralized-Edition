@@ -3,9 +3,9 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.machine.oil.BlockEntityMachineLiquefactor;
 import com.hbm.inventory.container.MenuMachineLiquefactor;
 import com.hbm.lib.Library;
-import com.hbm.tileentity.machine.oil.BlockEntityMachineLiquefactor;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.client.rendertype.RenderPipelines;
 import net.minecraft.network.chat.Component;

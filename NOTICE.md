@@ -1,7 +1,7 @@
 # NTM: Decentralized Edition — backport of ntm-next to Minecraft 1.21.1
 
 This is a **modified version** of [ntm-next](https://github.com/Warfactory-Official/ntm-next)
-(commit `3f9a261`, NeoForge module, Minecraft 26.2) by movblock, itself a port of
+(NTM 1.0.3, commit `1b8c6c2`, NeoForge module, Minecraft 26.2; earlier DE releases up to 1.0.0-beta.10 were based on commit `3f9a261`, NTM 1.0.0) by movblock, itself a port of
 [Hbm's Nuclear Tech Mod](https://github.com/HbmMods/Hbm-s-Nuclear-Tech-GIT) by HbmMods (The Bobcat)
 and contributors.
 
@@ -19,8 +19,6 @@ and deliberate deviations from ntm-next are marked with `// backport:` comments 
 - `src/main/java/com/hbm/lib/crankshaft/`: derived from CrankShaft / Flywheel, **MIT** (`LICENSES/MIT.txt`).
 - Other third-party code and assets: see `THIRD_PARTY_NOTICES` and `REUSE.toml`.
 
-ntm-next's `native/` module (All Rights Reserved) is **not** part of this backport; the mod uses
-ntm-next's Java fallback instead.
 
 Whoever receives a built jar of this mod is entitled to its corresponding source code under the
 terms of the LGPL.

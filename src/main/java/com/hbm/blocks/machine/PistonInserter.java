@@ -3,11 +3,11 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.BlockEntityPistonInserter;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.capability.ICapabilityBlock;
 import com.hbm.capability.MachineCaps;
-import com.hbm.tileentity.machine.BlockEntityPistonInserter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -97,6 +97,7 @@ public class PistonInserter extends BlockCompat implements ITickingBlock, ICapab
 
         if (flag && !piston.lastState && piston.extend <= 0) piston.isRetracting = false;
 
+        if (piston.lastState != flag) piston.markChanged();
         piston.lastState = flag;
     }
 

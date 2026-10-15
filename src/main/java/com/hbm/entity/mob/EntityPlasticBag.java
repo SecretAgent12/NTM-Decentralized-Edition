@@ -3,9 +3,11 @@
 
 package com.hbm.entity.mob;
 
+import com.hbm.backport.entity.Entities26;
+import com.hbm.api.environment.ISuffocationImmune;
 import com.hbm.entity.ModEntities;
 import com.hbm.entity.item.EntityItemBuoyant;
-import com.hbm.items.ModItems;
+import com.hbm.util.MobUtil;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.AgeableMob;
@@ -13,7 +15,6 @@ import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Pose;
-import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.animal.Squid;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -23,7 +24,9 @@ import net.minecraft.world.level.LevelAccessor;
 import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.SquidCompat;
 
-public class EntityPlasticBag extends SquidCompat {
+public class EntityPlasticBag extends SquidCompat implements ISuffocationImmune {
+
+    public static final String POP_LOOT = "pop";
 
     public EntityPlasticBag(EntityType<? extends EntityPlasticBag> type, Level level) {
         super(type, level);
@@ -41,7 +44,12 @@ public class EntityPlasticBag extends SquidCompat {
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
         discard();
-        spawnAtLocation(new ItemStack(ModItems.PLASTIC_BAG), 0F);
+        // backport: 26.x LivingEntity.dropFromGiftLootTable -> Entities26
+        Entities26.dropFromGiftLootTable(
+                this,
+                level,
+                MobUtil.lootVariant(getType(), POP_LOOT),
+                (l, stack) -> spawnAtLocation(stack));
         return true;
     }
 

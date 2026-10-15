@@ -23,6 +23,7 @@ public record RecipeSyncPayload(List<RecipeHolder<?>> recipes) implements Custom
 
     public static final Type<RecipeSyncPayload> TYPE = new Type<>(Library.id("recipe_sync"));
     public static final StreamCodec<RegistryFriendlyByteBuf, RecipeSyncPayload> STREAM_CODEC =
+            // backport: 1.21.1 still has RecipeHolder.STREAM_CODEC (26.x removed it; upstream spells it out)
             RecipeHolder.STREAM_CODEC
                     .apply(ByteBufCodecs.list())
                     .map(RecipeSyncPayload::new, RecipeSyncPayload::recipes);

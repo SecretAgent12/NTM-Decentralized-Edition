@@ -21,9 +21,9 @@ import com.hbm.wiaj.actions.ActionSetBlock;
 import com.hbm.wiaj.actions.ActionSetPipeFluid;
 import com.hbm.wiaj.actions.ActionSetZoom;
 import com.hbm.wiaj.actions.ActionWait;
+import com.hbm.wiaj.actors.ActorBlockEntity;
 import com.hbm.wiaj.actors.ActorFancyPanel.Orientation;
 import com.hbm.wiaj.actors.ActorFancyPanel;
-import com.hbm.wiaj.actors.ActorTileEntity;
 import com.hbm.wiaj.actors.ITileActorRenderer;
 import com.mojang.math.Axis;
 import net.minecraft.client.renderer.RenderType;
@@ -75,7 +75,8 @@ public class CanneryCentrifuge extends CanneryBase {
 
             if (x == 5) {
                 CompoundTag cent = position(5, 1, 2);
-                scene0.add(new ActionCreateActor(0, new ActorTileEntity(new ActorGasCent(), cent)));
+                scene0.add(
+                        new ActionCreateActor(0, new ActorBlockEntity(new ActorGasCent(), cent)));
             }
 
             scene0.add(new ActionWait(2));
@@ -133,7 +134,7 @@ public class CanneryCentrifuge extends CanneryBase {
 
         scene1.add(
                 new ActionCreateActor(
-                        1, new ActorTileEntity(new ActorGasCent(), position(4, 1, 2))));
+                        1, new ActorBlockEntity(new ActorGasCent(), position(4, 1, 2))));
         scene1.add(new ActionWait(10));
 
         scene1.add(
@@ -168,11 +169,11 @@ public class CanneryCentrifuge extends CanneryBase {
 
         scene1.add(
                 new ActionCreateActor(
-                        2, new ActorTileEntity(new ActorGasCent(), position(3, 1, 2))));
+                        2, new ActorBlockEntity(new ActorGasCent(), position(3, 1, 2))));
         scene1.add(new ActionWait(10));
         scene1.add(
                 new ActionCreateActor(
-                        3, new ActorTileEntity(new ActorGasCent(), position(2, 1, 2))));
+                        3, new ActorBlockEntity(new ActorGasCent(), position(2, 1, 2))));
         scene1.add(new ActionWait(10));
 
         scene1.add(

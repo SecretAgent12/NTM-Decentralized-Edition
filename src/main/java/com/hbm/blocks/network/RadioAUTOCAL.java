@@ -3,9 +3,9 @@
 
 package com.hbm.blocks.network;
 
+import com.hbm.blockentity.network.BlockEntityRadioAUTOCAL;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
-import com.hbm.tileentity.network.BlockEntityRadioAUTOCAL;
 import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
 import com.hbm.backport.InteractionResult;
@@ -17,23 +17,10 @@ import net.minecraft.world.phys.BlockHitResult;
 import org.jspecify.annotations.Nullable;
 
 public class RadioAUTOCAL extends BlockMultiblockCore implements ITickingBlock {
-
-    private static final int[] DIMENSIONS = {1, 0, 0, 0, 0, 0};
-
     public static Consumer<BlockEntityRadioAUTOCAL> OPEN_GUI = autocal -> {};
 
     public RadioAUTOCAL(Properties properties) {
         super(properties);
-    }
-
-    @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 0;
     }
 
     @Override

@@ -3,8 +3,13 @@
 
 package com.hbm.interfaces.injected;
 
-public interface UnstableFuseSchedule {
-    long hbm$nextUnstableFuse();
+import com.hbm.handler.UnstableFuseQueue;
 
-    void hbm$nextUnstableFuse(long deadline);
+// backport: injected interface methods are default (throwing): javac only resolves
+// an interface method on a concrete class read from bytecode if the method is not
+// abstract, which is the same rule Loom and ModDevGradle interface injection state.
+public interface UnstableFuseSchedule {
+    default UnstableFuseQueue hbm$unstableFuses() {
+        throw new AssertionError("backport: implemented by mixin");
+    }
 }

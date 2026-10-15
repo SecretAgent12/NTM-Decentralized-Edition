@@ -16,7 +16,6 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.BlockCompat;
 
 public abstract class BlockThermoBomb extends BlockCompat implements IBomb {
-
     protected static final int FIELD_RADIUS = 15;
     protected static final int ENTITY_RADIUS = 20;
     private static final float BLAST = 5.0F;
@@ -44,7 +43,6 @@ public abstract class BlockThermoBomb extends BlockCompat implements IBomb {
     public BombReturnCode explode(Level level, BlockPos pos, @Nullable Entity detonator) {
         level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
         field(level, pos);
-
         level.explode(
                 null, pos.getX(), pos.getY(), pos.getZ(), BLAST, Level.ExplosionInteraction.BLOCK);
         return BombReturnCode.DETONATED;

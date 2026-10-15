@@ -4,9 +4,10 @@
 package com.hbm.items.food;
 
 import com.hbm.NuclearTech;
+import com.hbm.config.NeoForgeHbmConfig;
 import com.hbm.extprop.HbmLivingProps;
 import com.hbm.handler.EntityEffectHandler;
-import com.hbm.platform.Services;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
@@ -30,8 +31,8 @@ public class ItemSyringeMku extends ItemCompat {
     public void backport$hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
         if (!(target.level() instanceof ServerLevel level)) return;
         HbmLivingProps.getData(target).contagion = EntityEffectHandler.CONTAGION_DURATION;
-        level.playSound(
-                null,
+        EntitySounds.play(
+                target,
                 target.getX(),
                 target.getY(),
                 target.getZ(),
@@ -40,7 +41,7 @@ public class ItemSyringeMku extends ItemCompat {
                 1.0F,
                 1.0F);
         stack.shrink(1);
-        if (Services.CONFIG.runtime().extendedLogging()) {
+        if (NeoForgeHbmConfig.runtime().extendedLogging()) {
             NuclearTech.LOGGER.info(
                     "[MKU] {} used an MKU syringe!", attacker.getName().getString());
         }

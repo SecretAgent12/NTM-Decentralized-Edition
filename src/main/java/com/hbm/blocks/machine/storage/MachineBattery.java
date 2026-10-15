@@ -3,23 +3,21 @@
 
 package com.hbm.blocks.machine.storage;
 
-import com.hbm.api.energymk2.PowerGraph;
+import com.hbm.blockentity.machine.storage.BatteryCharge;
+import com.hbm.blockentity.machine.storage.BlockEntityMachineBattery;
 import com.hbm.blocks.IPersistentInfoProvider;
 import com.hbm.blocks.ModBlockEntities;
-import com.hbm.blocks.RefreshesNeighborState;
 import com.hbm.blocks.machine.BlockMachineHorizontal;
 import com.hbm.capability.ICapabilityBlock;
 import com.hbm.capability.MachineCaps;
+import com.hbm.interfaces.ILookOverlay;
 import com.hbm.inventory.IGUIProvider;
 import com.hbm.items.ModDataComponents;
-import com.hbm.tileentity.machine.storage.BatteryCharge;
-import com.hbm.tileentity.machine.storage.BlockEntityMachineBattery;
 import com.hbm.util.BobMathUtil;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerLevel;
 import com.hbm.backport.InteractionResult;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Player;
@@ -32,9 +30,8 @@ import com.hbm.backport.Orientation;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jspecify.annotations.Nullable;
 
-// backport: @RefreshesNeighborState(be = BlockEntityMachineBattery.class, calling = "refreshMode") woven below
 public class MachineBattery extends BlockMachineHorizontal
-        implements ICapabilityBlock, IPersistentInfoProvider {
+        implements ICapabilityBlock, IPersistentInfoProvider, ILookOverlay {
 
     public final long maxPower;
 
@@ -48,10 +45,18 @@ public class MachineBattery extends BlockMachineHorizontal
     }
 
     @Override
-    protected void affectNeighborsAfterRemoval(
-            BlockState state, ServerLevel level, BlockPos pos, boolean movedByPiston) {
-        PowerGraph.get(level).removeNode(pos.asLong());
-        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
+    protected void neighborChanged(
+            BlockState state,
+            Level level,
+            BlockPos pos,
+            Block block,
+            @Nullable Orientation orientation,
+            boolean movedByPiston) {
+        super.neighborChanged(state, level, pos, block, orientation, movedByPiston);
+        if (!level.isClientSide()
+                && level.getBlockEntity(pos) instanceof BlockEntityMachineBattery battery) {
+            battery.refreshMode();
+        }
     }
 
     @Override
@@ -72,6 +77,12 @@ public class MachineBattery extends BlockMachineHorizontal
     @Override
     protected boolean hasAnalogOutputSignal(BlockState state) {
         return true;
+    }
+
+    @Override
+    public void buildLookOverlay(Level level, BlockPos pos, ILookOverlay.LookInfo info) {
+        if (!(level.getBlockEntity(pos) instanceof BlockEntityMachineBattery battery)) return;
+        info.title(getName(), 0xffff00, 0x404000).charge(battery.getPower(), battery.getMaxPower());
     }
 
     @Override
@@ -104,24 +115,5 @@ public class MachineBattery extends BlockMachineHorizontal
                                         + BobMathUtil.getShortNumber(maxPower)
                                         + "HE")
                         .withStyle(ChatFormatting.YELLOW));
-    }
-
-    // backport: woven by hbm-compiler NeighborEdge (@RefreshesNeighborState)
-    @Override
-    protected void neighborChanged(net.minecraft.world.level.block.state.BlockState state, net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.Block neighborBlock, com.hbm.backport.Orientation orientation, boolean movedByPiston) {
-        super.neighborChanged(state, level, pos, neighborBlock, orientation, movedByPiston);
-        net.minecraft.world.level.block.entity.BlockEntity hbm$be = level.getBlockEntity(pos);
-        if (hbm$be instanceof BlockEntityMachineBattery) {
-            ((BlockEntityMachineBattery) hbm$be).refreshMode();
-        }
-    }
-
-    @Override
-    protected void onPlace(net.minecraft.world.level.block.state.BlockState state, net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.state.BlockState oldState, boolean movedByPiston) {
-        super.onPlace(state, level, pos, oldState, movedByPiston);
-        net.minecraft.world.level.block.entity.BlockEntity hbm$be = level.getBlockEntity(pos);
-        if (hbm$be instanceof BlockEntityMachineBattery) {
-            ((BlockEntityMachineBattery) hbm$be).refreshMode();
-        }
     }
 }

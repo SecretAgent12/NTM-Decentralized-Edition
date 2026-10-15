@@ -66,7 +66,6 @@ public class BlockWoodStructure extends BlockCompat implements ClimbBox, SimpleW
     @Override
     protected VoxelShape getShape(
             BlockState state, BlockGetter level, BlockPos pos, CollisionContext ctx) {
-
         return kind == Kind.SCAFFOLD ? Shapes.block() : kind.shape;
     }
 

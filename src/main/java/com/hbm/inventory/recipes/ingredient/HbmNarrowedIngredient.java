@@ -9,6 +9,7 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.List;
 import java.util.stream.Stream;
+import com.hbm.backport.recipe.DataComponentMatchers;
 import net.minecraft.core.Holder;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -27,7 +28,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
 public record HbmNarrowedIngredient(Holder<Item> item, Ingredient within)
-        implements ICustomIngredient {
+        implements IngredientState, ICustomIngredient {
 
     public static final ResourceLocation ID = Library.id("narrowed");
 
@@ -58,6 +59,16 @@ public record HbmNarrowedIngredient(Holder<Item> item, Ingredient within)
     @Override
     public boolean test(ItemStack stack) {
         return stack.is(item) && within.test(stack);
+    }
+
+    @Override
+    public boolean acceptsState(ItemStack stack) {
+        return RecipeInputState.accepts(within, stack);
+    }
+
+    @Override
+    public boolean acceptsState(ItemStack stack, DataComponentMatchers additional) {
+        return RecipeInputState.accepts(within, stack, additional);
     }
 
     // backport: 1.21.1 custom ingredients have one getItems() for display and lookup

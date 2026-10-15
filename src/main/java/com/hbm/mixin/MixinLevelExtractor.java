@@ -4,13 +4,14 @@
 package com.hbm.mixin;
 
 import com.hbm.NuclearTech;
-import com.hbm.backport.client.core.BlockBreakingRenderState;
 import com.hbm.backport.client.core.ModelFeatureRenderer;
 import com.hbm.blocks.IBlockHighlight;
 import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.client.render.CullableRenderer;
 import com.hbm.client.render.MultiblockCrumbling;
 import com.hbm.client.render.MultiblockOutline;
+import com.hbm.client.render.flywheel.FalloutRainVisuals;
+import com.hbm.entity.FarVisible;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -22,11 +23,13 @@ import com.mojang.blaze3d.vertex.VertexMultiConsumer;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import java.util.SortedSet;
 import net.minecraft.client.Camera;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderBuffers;
-import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.resources.model.ModelBakery;
@@ -34,14 +37,13 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.BlockDestructionProgress;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.neoforged.neoforge.client.model.data.ModelData;
+import org.joml.Matrix4f;
 import org.jspecify.annotations.Nullable;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -61,8 +63,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *       destructionProgress lookup -> the same lookup in renderLevel's section block entity loop;
  *       the global block entities' crumbling overlay -> the global loop's dispatcher render, which
  *       gets 1.21.1's crumbling buffer wrapper (vanilla gives global block entities none);
- *   <li>extractBlockDestroyAnimation -> the destroyProgress loop's renderBreakingTexture: a
- *       multiblock dummy's breaking texture is drawn over its owner instead;
+ *   <li>extractBlockDestroyAnimation's destructionProgress read -> the destroyProgress loop's
+ *       destructionProgress read (getfield ordinal 1): a multiblock dummy's breaking texture is
+ *       drawn over its owner instead;
+ *   <li>extractVisibleEntities' setViewScale (fallout rain columns) -> the "entities" profiler
+ *       section (1.21.1 calls setViewScale in setupRender, which has no DeltaTracker);
  *   <li>isEntityVisible's section check -> the entity loop's isSectionCompiled;
  *   <li>setLevel -> setLevel; extract's section-geometry refresh -> right after renderLevel's light
  *       updates (together with 26.x ClientLevel.update's lightApplied), before section compilation.
@@ -108,6 +113,25 @@ public class MixinLevelExtractor {
         if (level == null) return;
         level.hbm$sectionGeometryIndex().lightApplied();
         level.hbm$sectionGeometryIndex().emptySections(level);
+    }
+
+    @Inject(
+            method = EXTRACT_RENDER_LEVEL,
+            at =
+                    @At(
+                            value = "INVOKE_STRING",
+                            target = "Lnet/minecraft/util/profiling/ProfilerFiller;popPush(Ljava/lang/String;)V",
+                            args = "ldc=entities"))
+    private void hbm$falloutRainColumns(
+            DeltaTracker deltaTracker,
+            boolean renderBlockOutline,
+            Camera camera,
+            GameRenderer gameRenderer,
+            LightTexture lightTexture,
+            Matrix4f frustumMatrix,
+            Matrix4f projectionMatrix,
+            CallbackInfo ci) {
+        if (level != null) FalloutRainVisuals.capture(camera, deltaTracker, level);
     }
 
     @Inject(
@@ -173,54 +197,18 @@ public class MixinLevelExtractor {
         original.call(dispatcher, blockEntity, partialTick, poseStack, buffers);
     }
 
-    @WrapOperation(
+    @ModifyExpressionValue(
             method = EXTRACT_RENDER_LEVEL,
             at =
                     @At(
-                            value = "INVOKE",
+                            value = "FIELD",
+                            opcode = Opcodes.GETFIELD,
                             target =
-                                    "Lnet/minecraft/client/renderer/block/BlockRenderDispatcher;renderBreakingTexture(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/BlockAndTintGetter;Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;Lnet/neoforged/neoforge/client/model/data/ModelData;)V"))
-    private void hbm$coreBreaking(
-            BlockRenderDispatcher dispatcher,
-            BlockState state,
-            BlockPos pos,
-            BlockAndTintGetter blockLevel,
-            PoseStack poseStack,
-            VertexConsumer consumer,
-            ModelData modelData,
-            Operation<Void> original,
-            @Local(argsOnly = true) Camera camera) {
-        ClientLevel level = this.level;
-        // the stage is not read by remaps/extractOwner (they use the collected per-core stage)
-        BlockBreakingRenderState mined = new BlockBreakingRenderState(pos, state, 0);
-        if (level == null || !MultiblockCrumbling.remaps(mined)) {
-            original.call(dispatcher, state, pos, blockLevel, poseStack, consumer, modelData);
-            return;
-        }
-        Vec3 eye = camera.getPosition();
-        MultiblockCrumbling.extractOwner(
-                mined,
-                level,
-                owner -> {
-                    BlockPos at = owner.blockPos();
-                    PoseStack pose = new PoseStack();
-                    pose.translate(at.getX() - eye.x, at.getY() - eye.y, at.getZ() - eye.z);
-                    VertexConsumer decal =
-                            new SheetedDecalTextureGenerator(
-                                    renderBuffers
-                                            .crumblingBufferSource()
-                                            .getBuffer(ModelBakery.DESTROY_TYPES.get(owner.progress())),
-                                    pose.last(),
-                                    1.0F);
-                    original.call(
-                            dispatcher,
-                            owner.blockState(),
-                            at,
-                            blockLevel,
-                            pose,
-                            decal,
-                            level.getModelData(at));
-                });
+                                    "Lnet/minecraft/client/renderer/LevelRenderer;destructionProgress:Lit/unimi/dsi/fastutil/longs/Long2ObjectMap;",
+                            ordinal = 1))
+    private Long2ObjectMap<SortedSet<BlockDestructionProgress>> hbm$coreBreaking(
+            Long2ObjectMap<SortedSet<BlockDestructionProgress>> mined) {
+        return level == null ? mined : MultiblockCrumbling.owners(level, mined);
     }
 
     @WrapOperation(
@@ -235,7 +223,7 @@ public class MixinLevelExtractor {
             BlockPos pos,
             Operation<Boolean> original,
             @Local Entity entity) {
-        if (original.call(renderer, pos)) return true;
+        if (original.call(renderer, pos) || entity instanceof FarVisible) return true;
         return NuclearTech.MOD_ID.equals(
                         BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).getNamespace())
                 && entityRenderDispatcher.getRenderer(entity) instanceof CullableRenderer cullable

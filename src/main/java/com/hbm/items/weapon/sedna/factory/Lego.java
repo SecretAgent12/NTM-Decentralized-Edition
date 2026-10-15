@@ -24,6 +24,7 @@ import com.hbm.particle.helper.ParticleCreators;
 import com.hbm.render.anim.AnimationEnums.GunAnimation;
 import com.hbm.render.anim.BusAnimation;
 import com.hbm.render.anim.BusAnimationSequence;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import com.hbm.stats.ModStats;
 import com.hbm.util.GameTime;
@@ -87,7 +88,6 @@ public class Lego {
             (stack, ctx) -> {
                 clickReceiver(stack, ctx, 0);
             };
-
     public static BiConsumer<ItemStack, LambdaContext> LAMBDA_STANDARD_CLICK_SECONDARY =
             (stack, ctx) -> {
                 LivingEntity entity = ctx.entity();
@@ -98,40 +98,35 @@ public class Lego {
                     int mode = ItemGunBaseNT.getMode(stack, 0);
                     ItemGunBaseNT.setMode(stack, index, 1 - mode);
                     if (mode == 0)
-                        entity.level()
-                                .playSound(
-                                        null,
-                                        entity.getX(),
-                                        entity.getY(),
-                                        entity.getZ(),
-                                        ModSounds.WEAPON_SWITCH_MODE_1.get(),
-                                        SoundSource.PLAYERS,
-                                        1F,
-                                        1F);
+                        EntitySounds.play(
+                                entity,
+                                entity.getX(),
+                                entity.getY(),
+                                entity.getZ(),
+                                ModSounds.WEAPON_SWITCH_MODE_1.get(),
+                                SoundSource.PLAYERS,
+                                1F,
+                                1F);
                     else
-                        entity.level()
-                                .playSound(
-                                        null,
-                                        entity.getX(),
-                                        entity.getY(),
-                                        entity.getZ(),
-                                        ModSounds.WEAPON_SWITCH_MODE_2.get(),
-                                        SoundSource.PLAYERS,
-                                        1F,
-                                        1F);
+                        EntitySounds.play(
+                                entity,
+                                entity.getX(),
+                                entity.getY(),
+                                entity.getZ(),
+                                ModSounds.WEAPON_SWITCH_MODE_2.get(),
+                                SoundSource.PLAYERS,
+                                1F,
+                                1F);
                 }
             };
-
     public static BiConsumer<ItemStack, LambdaContext> LAMBDA_STANDARD_SMOKE =
             (stack, ctx) -> {
                 handleStandardSmoke(ctx.entity(), stack, 2000, 0.025D, 1.15D, ctx.configIndex());
             };
-
     public static BiConsumer<ItemStack, LambdaContext> LAMBDA_TOGGLE_AIM =
             (stack, ctx) -> {
                 ItemGunBaseNT.setIsAiming(stack, !ItemGunBaseNT.getIsAiming(stack));
             };
-
     public static BiFunction<ItemStack, LambdaContext, Boolean> LAMBDA_STANDARD_CAN_FIRE =
             (stack, ctx) -> {
                 return ctx.config()
@@ -148,7 +143,6 @@ public class Lego {
                                 .getAmount(stack, ctx.inventory())
                         > 0;
             };
-
     public static BiFunction<ItemStack, LambdaContext, Boolean> LAMBDA_LOCKON_CAN_FIRE =
             (stack, ctx) -> {
                 return ctx.config()
@@ -158,12 +152,10 @@ public class Lego {
                                 > 0
                         && ItemGunBaseNT.getIsLockedOn(stack);
             };
-
     public static BiFunction<ItemStack, LambdaContext, Boolean> LAMBDA_DEBUG_CAN_FIRE =
             (stack, ctx) -> {
                 return true;
             };
-
     public static BiConsumer<ItemStack, LambdaContext> LAMBDA_STANDARD_FIRE =
             (stack, ctx) -> {
                 doStandardFire(stack, ctx, GunAnimation.CYCLE, 0, true);
@@ -172,12 +164,10 @@ public class Lego {
             (stack, ctx) -> {
                 doStandardFire(stack, ctx, GunAnimation.CYCLE, 1, true);
             };
-
     public static BiConsumer<ItemStack, LambdaContext> LAMBDA_NOWEAR_FIRE =
             (stack, ctx) -> {
                 doStandardFire(stack, ctx, GunAnimation.CYCLE, 0, false);
             };
-
     public static BiConsumer<ItemStack, LambdaContext> LAMBDA_LOCKON_FIRE =
             (stack, ctx) -> {
                 doStandardFire(stack, ctx, GunAnimation.CYCLE, 0, true);
@@ -313,16 +303,15 @@ public class Lego {
                 rec.getOnFire(stack).accept(stack, ctx);
 
                 if (rec.getFireSound(stack) != null)
-                    entity.level()
-                            .playSound(
-                                    null,
-                                    entity.getX(),
-                                    entity.getY(),
-                                    entity.getZ(),
-                                    rec.getFireSound(stack).get(),
-                                    SoundSource.PLAYERS,
-                                    rec.getFireVolume(stack),
-                                    rec.getFirePitch(stack));
+                    EntitySounds.play(
+                            entity,
+                            entity.getX(),
+                            entity.getY(),
+                            entity.getZ(),
+                            rec.getFireSound(stack).get(),
+                            SoundSource.PLAYERS,
+                            rec.getFireVolume(stack),
+                            rec.getFirePitch(stack));
 
                 int remaining = rec.getRoundsPerCycle(stack) - 1;
                 for (int i = 0; i < remaining; i++)
@@ -432,7 +421,6 @@ public class Lego {
                                 sideOffset,
                                 heightOffset,
                                 forwardOffset);
-
                 if (ItemGunBaseNT.getIsLockedOn(stack)
                         && entity.level() instanceof ServerLevel server)
                     mk4.lockonTarget = server.getEntity(ItemGunBaseNT.getLockonTarget(stack));
@@ -504,13 +492,9 @@ public class Lego {
             boolean calcWear,
             int index,
             boolean aim) {
-
         float spreadInnate = primary.getInnateSpread(stack);
-
         float spreadAmmo = config.spread * primary.getAmmoSpread(stack);
-
         float spreadHipfire = aim ? 0F : primary.getHipfireSpread(stack);
-
         float spreadWear =
                 !calcWear
                         ? 0F

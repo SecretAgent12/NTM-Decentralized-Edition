@@ -4,7 +4,7 @@
 
 package com.hbm.explosion;
 
-import com.hbm.config.BombConfig;
+import com.hbm.api.explosion.NukeDetonations;
 import com.hbm.data.ExplosionData;
 import com.hbm.entity.logic.EntityNukeExplosionMK5;
 import com.hbm.explosion.vanillant.ExplosionVNT;
@@ -14,8 +14,8 @@ import com.hbm.explosion.vanillant.standard.BlockProcessorStandard;
 import com.hbm.handler.radiation.RadiationSystemNT;
 import com.hbm.handler.threading.TargetPoint;
 import com.hbm.main.Polaroid;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toclient.MukePayload;
-import com.hbm.platform.Services;
 import com.hbm.sound.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -31,7 +31,7 @@ public class ExplosionNukeSmall {
 
         if (params.particle) {
             boolean balefire = Polaroid.isBalefireDay() || level.getRandom().nextInt(100) == 0;
-            Services.NETWORK.sendToAllAround(
+            PacketWire.sendToAllAround(
                     new MukePayload(posX, posY + 0.5D, posZ, params.tinytot, balefire),
                     new TargetPoint(level, posX, posY, posZ, 250));
         }
@@ -67,6 +67,7 @@ public class ExplosionNukeSmall {
                     EntityNukeExplosionMK5.statFac(
                             level, (int) params.blastRadius, posX, posY, posZ));
         }
+        if (params.miniNuke) NukeDetonations.detonated(level, posX, posZ, params.blastRadius);
 
         if (params.miniNuke) {
             float radMod = params.radiationLevel / 3F;
@@ -137,7 +138,6 @@ public class ExplosionNukeSmall {
         public float blastRadius;
         public float killRadius;
         public float radiationLevel = 1F;
-
         public boolean particle = true;
         public boolean tinytot = false;
         public int shrapnelCount = 25;

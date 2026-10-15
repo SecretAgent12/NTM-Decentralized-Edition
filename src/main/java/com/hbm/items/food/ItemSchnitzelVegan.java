@@ -13,9 +13,7 @@ import net.minecraft.world.phys.Vec3;
 import com.hbm.backport.compat.ItemCompat;
 
 public class ItemSchnitzelVegan extends ItemCompat {
-
-    private static final int FIRE_SECONDS = 5;
-
+    private static final int FIRE_SECONDS = 5 * 20;
     private static final double LAUNCH = 2.0D;
 
     public ItemSchnitzelVegan(Properties props) {

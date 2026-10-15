@@ -39,6 +39,7 @@ import com.hbm.client.render.flywheel.MultiblockCrumblingVisuals;
 import com.hbm.client.render.flywheel.TorexVisuals;
 import com.hbm.client.render.flywheel.TurretVisuals;
 import com.hbm.client.sound.ClientAudioFactory;
+import com.hbm.client.sound.MachineSoundInstance;
 import com.hbm.entity.ModEntities;
 import com.hbm.entity.particle.EntityChlorineFX;
 import com.hbm.entity.particle.EntityCloudFX;
@@ -80,16 +81,16 @@ import com.hbm.render.item.weapon.sedna.ItemRenderWeaponBase;
 import com.hbm.render.util.RenderScreenOverlay;
 import com.hbm.sound.AudioSystem;
 import com.hbm.sound.ModSounds;
-import com.hbm.tileentity.machine.*;
-import com.hbm.tileentity.machine.fusion.*;
-import com.hbm.tileentity.machine.oil.BlockEntityMachinePyroOven;
-import com.hbm.tileentity.machine.oil.BlockEntityMachineRefinery;
-import com.hbm.tileentity.machine.oil.BlockEntityMachineVacuumDistill;
-import com.hbm.tileentity.machine.rbmk.BlockEntityRBMKAutoloader;
-import com.hbm.tileentity.machine.storage.BlockEntityBatteryREDD;
-import com.hbm.tileentity.machine.storage.CrateType;
-import com.hbm.tileentity.network.BlockEntityRadioTorch;
-import com.hbm.tileentity.network.BlockEntityRadioTorchCounter;
+import com.hbm.blockentity.machine.*;
+import com.hbm.blockentity.machine.fusion.*;
+import com.hbm.blockentity.machine.oil.BlockEntityMachinePyroOven;
+import com.hbm.blockentity.machine.oil.BlockEntityMachineRefinery;
+import com.hbm.blockentity.machine.oil.BlockEntityMachineVacuumDistill;
+import com.hbm.blockentity.machine.rbmk.BlockEntityRBMKAutoloader;
+import com.hbm.blockentity.machine.storage.BlockEntityBatteryREDD;
+import com.hbm.blockentity.machine.storage.CrateType;
+import com.hbm.blockentity.network.BlockEntityRadioTorch;
+import com.hbm.blockentity.network.BlockEntityRadioTorchCounter;
 import com.hbm.wiaj.cannery.Jars;
 import com.mojang.serialization.MapCodec;
 import java.lang.reflect.Field;
@@ -163,7 +164,11 @@ public final class ClientRegistry {
     private ClientRegistry() {}
 
     public static void bindClientHooks() {
-
+        // backport: 1.0.3 registers EMF held-use / bow-pose predicates here through
+        // dev.engine_room.flywheel.impl.compat.EntityFeatureCompat (registerEmfHeldUse: player holding
+        // an ItemGunBaseNT; registerEmfBowRecognition: AkimboGhost.isAkimbo(main) && isGhost(off)).
+        // That class only exists in NEXT's 26.x Flywheel build; Flywheel 1.21.1 (1.0.7) has no EMF
+        // compat hook, so there is nothing to register on.
         BlockGasBase.REVEALED_TO_VIEWER =
                 () -> {
                     LocalPlayer viewer = Minecraft.getInstance().player;
@@ -172,6 +177,7 @@ public final class ClientRegistry {
                                     .is(ModItems.ASHGLASSES.get());
                 };
         ClientGameTime.install();
+        FarView.init();
         EntityEffectHandler.CLIENT_RADIATION_FX = ClientEffects::radiationAura;
         EntityEffectHandler.CLIENT_CRATER_AURA = ClientEffects::craterAura;
         AudioSystem.installClientFactory(ClientAudioFactory.INSTANCE);
@@ -225,7 +231,8 @@ public final class ClientRegistry {
                     Minecraft.getInstance()
                             .getSoundManager()
                             .play(
-                                    new SimpleSoundInstance(
+                                    new MachineSoundInstance(
+                                            pos,
                                             ModSounds.BOLTGUN.get(),
                                             SoundSource.BLOCKS,
                                             be.getVolume(0.25F),
@@ -267,6 +274,7 @@ public final class ClientRegistry {
                         Minecraft.getInstance().setScreen(new ScreenToolAbility(stack, tool));
                     }
                 };
+        ItemToolAbility.CYCLE_FROM_USE = Keybinds::cycleFromUse;
         ItemDesignatorManual.OPEN_SCREEN =
                 hand -> Minecraft.getInstance().setScreen(new ScreenManualDesignator(hand));
         ItemRTTYPager.OPEN_SCREEN =
@@ -317,13 +325,8 @@ public final class ClientRegistry {
         ClientSyncRecovery.tick();
         SettingsToolInfo.clientTick();
         InfoSystem.clientTick();
-        FluidPipeTintData.flushRequests();
-        CraneKeybindHandler.poll();
-        ToolKeybindHandler.poll();
-        GunKeybindHandler.poll();
-        PlayerKeybindHandler.poll();
-        CalculatorKeybindHandler.poll();
-        AbilityKeybindHandler.poll();
+        FluidPipeTintData.flushRequests(Minecraft.getInstance().level);
+        Keybinds.poll();
         ArmorMovementHandler.clientTick();
         if (Minecraft.getInstance().player != null)
             ArmorModHandler.clientTick(Minecraft.getInstance().player);
@@ -536,6 +539,7 @@ public final class ClientRegistry {
         reg.accept(ModEntities.EMP_LOGIC.get(), NoopRenderer::new);
         reg.accept(ModEntities.FALLOUT_RAIN.get(), RenderFallout::new);
         reg.accept(ModEntities.FALLING_BLOCK_NT.get(), RenderFallingBlockNT::new);
+        reg.accept(ModEntities.FALLING_BLOCK_BATCH.get(), RenderFallingBlockBatch::new);
         reg.accept(ModEntities.FALLING_MULTIBLOCK.get(), RenderFallingMultiblock::new);
         reg.accept(ModEntities.NUKE_TOREX.get(), RenderTorex::new);
         reg.accept(
@@ -1283,6 +1287,9 @@ public final class ClientRegistry {
         reg.accept(ModBlockEntities.SOYUZ_STRUCT.get(), context -> new RenderSoyuzStructPreview());
         reg.accept(ModBlockEntities.SOYUZ_LAUNCHER.get(), context -> new RenderSoyuzLauncher());
         reg.accept(ModBlockEntities.LAUNCHPAD_SOYUZ.get(), context -> new RenderLaunchpadSoyuz());
+        reg.accept(
+                ModBlockEntities.LAUNCHPAD_SOYUZ_ANCHOR.get(),
+                context -> new RenderLaunchpadSoyuz());
         reg.accept(ModBlockEntities.MISSILE_ASSEMBLY.get(), context -> new RenderMissileAssembly());
         reg.accept(ModBlockEntities.RBMK_ROD.get(), context -> new RenderRBMKFuelRod());
         reg.accept(ModBlockEntities.RBMK_ROD_REASIM.get(), context -> new RenderRBMKFuelRod());

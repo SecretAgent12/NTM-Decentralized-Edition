@@ -12,7 +12,8 @@ package com.hbm.client.ctm;
  * the loader is a no-op for now: with Continuity installed the ctm_continuity pack still applies its
  * {@code method=ctm} files; the six {@code method=hbm_ctm} files are skipped by Continuity (those
  * blocks show their plain texture). The 26.x source is at aca82fe0 for re-enabling once the jar is
- * on the classpath.
+ * on the classpath; NEXT 1.0.3 (1b8c6c2d) moved the joined predicate into a {@code Joined} record
+ * that implements both ConnectionPredicate#shouldConnect argument orders (older/newer Continuity).
  */
 public final class HbmCtmLoader {
 

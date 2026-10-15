@@ -5,16 +5,21 @@ package com.hbm.blocks.network.pneumatic;
 
 import com.hbm.api.ntl.IPneumaticConnector;
 import com.hbm.api.ntl.PneumaticNetwork;
+import com.hbm.blockentity.network.pneumatic.BlockEntityPneumoTube;
+import com.hbm.blocks.CapabilityDependentShape;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.ModBlockEntities;
+import com.hbm.blocks.multiblock.BlockMultiblockCore;
+import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.capability.ICapabilityBlock;
 import com.hbm.capability.MachineCaps;
 import com.hbm.interfaces.IToolable;
 import com.hbm.inventory.fluid.NTMFluids;
-import com.hbm.lib.Library;
-import com.hbm.tileentity.network.pneumatic.BlockEntityPneumoTube;
+import com.hbm.uninos.graph.EndpointRegistry;
 import com.hbm.uninos.graph.LevelNodeGraph;
+import com.hbm.uninos.graph.PhysicalGraph;
 import com.hbm.util.AutoRotate;
+import com.hbm.util.ChunkUtil;
 import com.hbm.util.InventoryUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -48,7 +53,11 @@ import com.hbm.backport.compat.BlockCompat;
 
 @AutoRotate
 public class PneumoTubeBlock extends BlockCompat
-        implements ITickingBlock, IToolable, ICapabilityBlock, SimpleWaterloggedBlock {
+        implements CapabilityDependentShape,
+                ITickingBlock,
+                IToolable,
+                ICapabilityBlock,
+                SimpleWaterloggedBlock {
 
     public static final BooleanProperty NORTH = BlockStateProperties.NORTH;
     public static final BooleanProperty EAST = BlockStateProperties.EAST;
@@ -64,9 +73,10 @@ public class PneumoTubeBlock extends BlockCompat
     private static final VoxelShape CORE = Shapes.box(LOWER, LOWER, LOWER, UPPER, UPPER, UPPER);
     private static final VoxelShape[] ARMS = buildArms();
     private static final VoxelShape[] COLLISION = buildCollisionShapes();
+    private static final BooleanProperty[] ARM_BY_DIRECTION = armByDirection();
 
     public PneumoTubeBlock(Properties props) {
-        super(props);
+        super(CapabilityDependentShape.deferShapeToFullChunk(props));
         registerDefaultState(
                 stateDefinition
                         .any()
@@ -78,8 +88,6 @@ public class PneumoTubeBlock extends BlockCompat
                         .setValue(DOWN, false)
                         .setValue(WATERLOGGED, false));
     }
-
-    private static final BooleanProperty[] ARM_BY_DIRECTION = armByDirection();
 
     private static BooleanProperty[] armByDirection() {
         BooleanProperty[] out = new BooleanProperty[Direction.values().length];
@@ -122,19 +130,76 @@ public class PneumoTubeBlock extends BlockCompat
     }
 
     public static boolean canConnectTo(BlockGetter level, BlockPos pos, Direction dir) {
-        BlockPos npos = pos.relative(dir);
-        if (level.getBlockState(npos).getBlock() instanceof PneumoTubeBlock) return true;
+        return canConnectTo(level.getBlockState(pos.relative(dir)));
+    }
 
-        return level.getBlockState(npos).getBlock() instanceof IPneumaticConnector;
+    private static boolean canConnectTo(BlockState state) {
+        return state.getBlock() instanceof PneumoTubeBlock
+                || state.getBlock() instanceof IPneumaticConnector;
     }
 
     public static boolean canConnectToAir(LevelReader level, BlockPos pos, Direction dir) {
-        if (!(level.getBlockEntity(pos) instanceof BlockEntityPneumoTube tube)) return false;
-        if (!tube.isCompressor()) return false;
-        if (tube.ejectionDir == dir || tube.insertionDir == dir) return false;
+        if (!(level.getBlockEntity(pos) instanceof BlockEntityPneumoTube tube)
+                || !isAirFace(tube, dir)) return false;
         BlockPos npos = pos.relative(dir);
-        if (level.getBlockState(npos).getBlock() instanceof PneumoTubeBlock) return false;
-        return Library.canConnectFluid(level, pos.relative(dir), dir.getOpposite(), NTMFluids.AIR);
+        return canConnectToAir(level, npos, dir.getOpposite(), level.getBlockState(npos));
+    }
+
+    private static boolean isAirFace(BlockEntityPneumoTube tube, Direction dir) {
+        return tube.isCompressor() && tube.ejectionDir != dir && tube.insertionDir != dir;
+    }
+
+    private static boolean canConnectToAir(
+            LevelReader level, BlockPos pos, Direction side, @Nullable BlockState state) {
+        return (state == null || !(state.getBlock() instanceof PneumoTubeBlock))
+                && PhysicalGraph.fluidContact(level, pos, side, NTMFluids.AIR);
+    }
+
+    private static boolean unresolvedAirPeer(
+            ServerLevel level, BlockPos pos, @Nullable BlockState state) {
+        if (state == null) return true;
+        if (state.getBlock() instanceof PneumoTubeBlock) return false;
+        long owner =
+                MultiblockSurface.recordedCorePacked(level, pos.getX(), pos.getY(), pos.getZ());
+        if (owner == MultiblockSurface.NO_CORE) {
+            EndpointRegistry.Endpoint endpoint = level.hbm$endpoints().declared(pos.asLong());
+            if (endpoint == null
+                    || (endpoint.domains() & (MachineCaps.FLUID_IN | MachineCaps.FLUID_OUT)) == 0) {
+                return false;
+            }
+            owner = endpoint.owner();
+        }
+        return BlockMultiblockCore.readableChunk(level, BlockPos.getX(owner), BlockPos.getZ(owner))
+                == null;
+    }
+
+    public static void refreshAirConnections(ServerLevel level, BlockPos pos) {
+        BlockState state = ChunkUtil.blockStateIfLoaded(level, pos);
+        if (state == null || !(state.getBlock() instanceof PneumoTubeBlock)) return;
+        BlockEntityPneumoTube tube =
+                ChunkUtil.blockEntityIfLoaded(BlockEntityPneumoTube.class, level, pos);
+        if (tube == null) return;
+        BlockState updated = state;
+        int air = 0;
+        for (Direction dir : Direction.VALUES) {
+            BlockPos neighbour = pos.relative(dir);
+            BlockState neighbourState = ChunkUtil.blockStateIfLoaded(level, neighbour);
+            int bit = 1 << dir.ordinal();
+            boolean joinsAir =
+                    isAirFace(tube, dir)
+                            && (canConnectToAir(level, neighbour, dir.getOpposite(), neighbourState)
+                                    || (tube.airMask & bit) != 0
+                                            && unresolvedAirPeer(level, neighbour, neighbourState));
+            if (joinsAir) air |= bit;
+            boolean pneumatic =
+                    neighbourState != null
+                            ? canConnectTo(neighbourState)
+                            : state.getValue(faceProperty(dir));
+            updated = updated.setValue(faceProperty(dir), pneumatic || joinsAir);
+        }
+        if (updated != state)
+            level.setBlock(pos, updated, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
+        tube.setAirMask(air);
     }
 
     public static void refreshConnections(Level level, BlockPos pos) {
@@ -168,6 +233,39 @@ public class PneumoTubeBlock extends BlockCompat
         int ordinal = dir == null ? 6 : dir.ordinal();
         int next = (ordinal + 1) % 7;
         return next == 6 ? null : Direction.from3DDataValue(next);
+    }
+
+    public static boolean screwDirections(Level level, Player player, BlockPos pos) {
+        if (level.isClientSide()) return true;
+        if (!(level.getBlockEntity(pos) instanceof BlockEntityPneumoTube tube)) return false;
+
+        boolean sneaking = player.isSecondaryUseActive();
+        Direction rot = sneaking ? tube.ejectionDir : tube.insertionDir;
+        Direction oth = sneaking ? tube.insertionDir : tube.ejectionDir;
+        Direction wasEjecting = tube.ejectionDir;
+
+        for (int i = 0; i < 7; i++) {
+            rot = nextDir(rot);
+            if (rot == null) break;
+            if (rot == oth) continue;
+            BlockPos next = pos.relative(rot);
+            if (level.getBlockEntity(next) instanceof BlockEntityPneumoTube) continue;
+            if (InventoryUtil.inventoryAt(level, next, rot.getOpposite())) break;
+        }
+
+        if (sneaking) tube.ejectionDir = rot;
+        else tube.insertionDir = rot;
+
+        tube.setChanged();
+        if (level instanceof ServerLevel server) ((Level) server).invalidateCapabilities(pos);
+        level.sendBlockUpdated(
+                pos, level.getBlockState(pos), level.getBlockState(pos), Block.UPDATE_ALL);
+        refreshConnections(level, pos);
+        if (level instanceof ServerLevel sl && wasEjecting != tube.ejectionDir) {
+            if (wasEjecting != null) PneumaticNetwork.setEndpoint(sl, pos, tube.isEndpoint());
+            LevelNodeGraph.invalidateEndpointsAt(sl, pos);
+        }
+        return true;
     }
 
     @Override
@@ -204,13 +302,15 @@ public class PneumoTubeBlock extends BlockCompat
         if (state.getValue(WATERLOGGED))
             ticks.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
         if (level.isClientSide()) {
-
-            return Library.predictArm(
+            return PhysicalGraph.predictArm(
                     state, faceProperty(dir), neighbourState, canConnectTo(level, pos, dir));
         }
-        return state.setValue(
-                faceProperty(dir),
-                canConnectTo(level, pos, dir) || canConnectToAir(level, pos, dir));
+        boolean air = canConnectToAir(level, pos, dir);
+        if (level.getBlockEntity(pos) instanceof BlockEntityPneumoTube tube) {
+            int mask = 1 << dir.ordinal();
+            tube.setAirMask(air ? tube.airMask | mask : tube.airMask & ~mask);
+        }
+        return state.setValue(faceProperty(dir), canConnectTo(level, pos, dir) || air);
     }
 
     @Override
@@ -276,39 +376,6 @@ public class PneumoTubeBlock extends BlockCompat
         return screwDirections(level, player, pos);
     }
 
-    public static boolean screwDirections(Level level, Player player, BlockPos pos) {
-        if (level.isClientSide()) return true;
-        if (!(level.getBlockEntity(pos) instanceof BlockEntityPneumoTube tube)) return false;
-
-        boolean sneaking = player.isSecondaryUseActive();
-        Direction rot = sneaking ? tube.ejectionDir : tube.insertionDir;
-        Direction oth = sneaking ? tube.insertionDir : tube.ejectionDir;
-        Direction wasEjecting = tube.ejectionDir;
-
-        for (int i = 0; i < 7; i++) {
-            rot = nextDir(rot);
-            if (rot == null) break;
-            if (rot == oth) continue;
-            BlockPos next = pos.relative(rot);
-            if (level.getBlockEntity(next) instanceof BlockEntityPneumoTube) continue;
-            if (InventoryUtil.inventoryAt(level, next, rot.getOpposite())) break;
-        }
-
-        if (sneaking) tube.ejectionDir = rot;
-        else tube.insertionDir = rot;
-
-        tube.setChanged();
-        level.sendBlockUpdated(
-                pos, level.getBlockState(pos), level.getBlockState(pos), Block.UPDATE_ALL);
-        refreshConnections(level, pos);
-
-        if (level instanceof ServerLevel sl && wasEjecting != tube.ejectionDir) {
-            if (wasEjecting != null) PneumaticNetwork.setEndpoint(sl, pos, tube.isEndpoint());
-            LevelNodeGraph.invalidateEndpointsAt(sl, pos);
-        }
-        return true;
-    }
-
     @Override
     protected void onPlace(
             BlockState state,
@@ -346,7 +413,8 @@ public class PneumoTubeBlock extends BlockCompat
         if (level instanceof ServerLevel sl) LevelNodeGraph.invalidateEndpointsAt(sl, pos);
         if (level.getBlockEntity(pos) instanceof BlockEntityPneumoTube be) be.refreshRedstone();
         refreshAir(level, pos);
-        if (level instanceof ServerLevel sl) Library.redrawArms(level.getBlockState(pos), sl, pos);
+        if (level instanceof ServerLevel sl)
+            PhysicalGraph.redraw(level.getBlockState(pos), sl, pos);
     }
 
     @Override

@@ -7,12 +7,12 @@ import com.hbm.api.conveyor.IConveyorBelt;
 import com.hbm.api.conveyor.IConveyorItem;
 import com.hbm.api.conveyor.IConveyorPackage;
 import com.hbm.api.conveyor.IEnterableBlock;
+import com.hbm.blockentity.network.BlockEntityCraneSplitter;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.entity.item.EntityMovingItem;
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.interfaces.IToolable;
-import com.hbm.tileentity.network.BlockEntityCraneSplitter;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -31,8 +31,6 @@ public class CraneSplitter extends BlockMultiblockCore
 
     public static final MapCodec<CraneSplitter> CODEC = simpleCodec(CraneSplitter::new);
 
-    private static final int[] DIMENSIONS = {0, 0, 0, 0, 0, 1};
-
     public CraneSplitter(Properties props) {
         super(props);
     }
@@ -44,16 +42,6 @@ public class CraneSplitter extends BlockMultiblockCore
     @Override
     protected MapCodec<? extends Block> codec() {
         return CODEC;
-    }
-
-    @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 0;
     }
 
     @Override

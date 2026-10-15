@@ -9,6 +9,7 @@ import com.hbm.inventory.fluid.tank.FluidTankNTM;
 import com.hbm.inventory.recipes.ingredient.CountIngredient;
 import com.hbm.inventory.recipes.loader.GenericRecipe;
 import com.hbm.inventory.recipes.loader.GenericRecipes;
+import com.hbm.inventory.recipes.loader.Outputs;
 import com.hbm.items.machine.ItemBlueprints;
 import com.hbm.packet.SyncField;
 import com.hbm.packet.SyncSource;
@@ -19,6 +20,7 @@ import com.hbm.backport.random.Weighted;
 import com.hbm.backport.random.WeightedList;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.material.Fluid;
 import com.hbm.backport.storage.ValueInput;
 import com.hbm.backport.storage.ValueOutput;
 import org.jspecify.annotations.Nullable;
@@ -35,11 +37,9 @@ public class ModuleMachineBase implements SyncSource {
     protected final int[] outputSlots;
     protected final FluidTankNTM[] inputTanks;
     protected final FluidTankNTM[] outputTanks;
-
     private final @Nullable IEnergyHandlerMK2 battery;
 
     @SyncField protected String recipe = "";
-
     @SyncField public double progress;
     @SyncField public boolean restrictedMode;
     public boolean didProcess;
@@ -85,17 +85,27 @@ public class ModuleMachineBase implements SyncSource {
         return power == 1D ? recipe.power : (long) (recipe.power * power);
     }
 
-    protected static void sizeTanks(FluidTankNTM[] tanks, FluidStackNTM[] fluids, int floor) {
+    protected void sizeTanks(FluidTankNTM[] tanks, FluidStackNTM[] fluids, int floor) {
         for (int i = 0; i < tanks.length && i < fluids.length; i++) {
+            int size = tanks[i].getMaxFill();
             tanks[i].changeTankSize(
                     (int) Math.max(Math.max(tanks[i].getFill(), fluids[i].amount() * 2L), floor));
+            if (tanks[i].getMaxFill() != size) markDirty = true;
         }
     }
 
-    private static void conform(FluidTankNTM[] tanks, FluidStackNTM @Nullable [] fluids) {
+    private void conform(FluidTankNTM[] tanks, FluidStackNTM @Nullable [] fluids) {
         for (int i = 0; i < tanks.length; i++) {
+            Fluid type = tanks[i].getTankType();
+            int pressure = tanks[i].getPressure();
+            int fill = tanks[i].getFill();
             if (fluids != null && fluids.length > i) tanks[i].conform(fluids[i]);
             else tanks[i].resetTank();
+            if (tanks[i].getTankType() != type
+                    || tanks[i].getPressure() != pressure
+                    || tanks[i].getFill() != fill) {
+                markDirty = true;
+            }
         }
     }
 
@@ -133,20 +143,22 @@ public class ModuleMachineBase implements SyncSource {
             didProcess = false;
             progress = 0D;
             recipe = "";
+            markDirty = true;
             return;
         }
 
-        setupTanks(selected);
-
         didProcess = false;
         markDirty = false;
+
+        setupTanks(selected);
 
         Match match = extraCondition ? canProcess(selected, power) : null;
         if (match != null) {
             process(match, speed, power);
             didProcess = true;
-        } else {
+        } else if (progress != 0D) {
             progress = 0D;
+            markDirty = true;
         }
     }
 
@@ -162,6 +174,7 @@ public class ModuleMachineBase implements SyncSource {
         String switched = autoSwitchTarget(recipe, this.recipe);
         if (switched != null) {
             this.recipe = switched;
+            markDirty = true;
             return null;
         }
 
@@ -212,7 +225,6 @@ public class ModuleMachineBase implements SyncSource {
         }
 
         boolean[] used = new boolean[inputSlots.length];
-
         int[] debitSlot = new int[ingredients.length * inputSlots.length];
         int[] debitCount = new int[debitSlot.length];
         int debits = 0;
@@ -245,30 +257,14 @@ public class ModuleMachineBase implements SyncSource {
         if (outputs == null) return true;
         int n = Math.min(outputs.length, outputSlots.length);
         for (int i = 0; i < n; i++) {
-            ItemStack slot = inventory.getItem(outputSlots[i]);
-            if (slot.isEmpty()) continue;
-            ItemStack single = single(outputs[i]);
-            if (single == null) return false;
-            if (single.isEmpty()) continue;
-            if (!ItemStack.isSameItemSameComponents(slot, single)) return false;
-            if (slot.getCount() + single.getCount() > slot.getMaxStackSize()) return false;
+            if (!Outputs.fits(inventory.getItem(outputSlots[i]), outputs[i])) return false;
         }
         return true;
     }
 
-    private static @Nullable ItemStack single(WeightedList<ItemStack> out) {
-        List<Weighted<ItemStack>> entries = out.unwrap();
-        if (entries.size() == 1) return entries.getFirst().value();
-        if (entries.size() != 2) return null;
-        ItemStack first = entries.get(0).value();
-        ItemStack second = entries.get(1).value();
-        if (first.isEmpty() == second.isEmpty()) return null;
-        return first.isEmpty() ? second : first;
-    }
-
     private static ItemStack roll(WeightedList<ItemStack> out) {
         List<Weighted<ItemStack>> entries = out.unwrap();
-        ItemStack single = single(out);
+        ItemStack single = Outputs.single(out);
         if (entries.size() != 2 || single == null)
             return out.getRandom(GenericRecipes.RNG).orElse(ItemStack.EMPTY);
         int total = entries.get(0).weight() + entries.get(1).weight();
@@ -287,7 +283,6 @@ public class ModuleMachineBase implements SyncSource {
     public boolean isItemValid(int slot, ItemStack stack) {
         GenericRecipe recipe = getRecipe();
         if (recipe == null || recipe.inputItem == null) return false;
-
         for (int i = 0; i < Math.min(inputSlots.length, recipe.inputItem.length); i++) {
             if (inputSlots[i] == slot && recipe.inputItem[i].matchesItem(stack)) return true;
         }
@@ -392,7 +387,6 @@ public class ModuleMachineBase implements SyncSource {
     public static final class Match {
 
         public final GenericRecipe recipe;
-
         private final int[] debitSlot;
         private final int[] debitCount;
 

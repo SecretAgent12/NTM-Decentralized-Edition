@@ -3,10 +3,12 @@
 
 package com.hbm.packet;
 
+import com.hbm.handler.FarTracking;
 import com.hbm.handler.threading.TargetPoint;
 import com.hbm.packet.threading.ThreadedPayload;
 import com.hbm.packet.toclient.UnitPayload;
-import com.hbm.platform.Services;
+import com.hbm.platform.NeoForgeNetwork;
+import com.hbm.platform.NeoForgeServerEvents;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -28,6 +30,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.neoforged.fml.ModList;
 
 public final class PacketWire {
 
@@ -36,9 +39,9 @@ public final class PacketWire {
     private static volatile byte[] ccpPacketIdBytes;
 
     private static final class Transport {
-        static final boolean EXTENDED_CHUNK_CACHE = Services.PLATFORM.isModLoaded("neb-fabric");
+        static final boolean EXTENDED_CHUNK_CACHE = ModList.get().isLoaded("neb-fabric");
         static final boolean MANAGED =
-                Services.PLATFORM.isModLoaded("bandwidthoptimizer") || EXTENDED_CHUNK_CACHE;
+                ModList.get().isLoaded("bandwidthoptimizer") || EXTENDED_CHUNK_CACHE;
     }
 
     public static boolean managedTransport() {
@@ -92,7 +95,7 @@ public final class PacketWire {
     }
 
     public static void sendToAll(ThreadedPayload payload) {
-        MinecraftServer server = Services.SERVER.getCurrentServer();
+        MinecraftServer server = NeoForgeServerEvents.getCurrentServer();
         if (server == null) {
             payload.release();
             return;
@@ -105,7 +108,7 @@ public final class PacketWire {
     }
 
     public static void sendToAllAround(ThreadedPayload payload, TargetPoint tp) {
-        sendToPlayers(payload, playersAround(tp));
+        sendToPlayers(payload, audience(payload, tp));
     }
 
     public static void sendToAllTracking(ThreadedPayload payload, TargetPoint tp) {
@@ -122,7 +125,7 @@ public final class PacketWire {
             payload.release();
             return;
         }
-        sendToPlayers(payload, Services.NETWORK.playersWatchingEntity(entity));
+        sendToPlayers(payload, NeoForgeNetwork.playersWatchingEntity(entity));
     }
 
     public static boolean hasPlayersTracking(ServerLevel level, BlockPos pos) {
@@ -130,7 +133,6 @@ public final class PacketWire {
         int chunkX = SectionPos.blockToSectionCoord(pos.getX());
         int chunkZ = SectionPos.blockToSectionCoord(pos.getZ());
         boolean tracked = ChunkTrackerIndex.isTracked(level, chunkX, chunkZ);
-
         // backport: Sable sub-level plot chunks are tracked outside the players' chunk views
         assert extendedChunkCache() || !tracked || anyViewContains(level, chunkX, chunkZ)
                         || ChunkTrackerIndex.isForeign(level, chunkX, chunkZ)
@@ -176,15 +178,27 @@ public final class PacketWire {
         return filtered;
     }
 
+    public static List<ServerPlayer> audience(ThreadedPayload payload, TargetPoint tp) {
+        if (!(payload instanceof FarAudience)) return playersAround(tp);
+        List<ServerPlayer> all = tp.level().players();
+        List<ServerPlayer> filtered = new ArrayList<>(all.size());
+        double r2 = tp.radius() * tp.radius();
+        for (ServerPlayer p : all) {
+            double dx = tp.x() - p.getX(), dy = tp.y() - p.getY(), dz = tp.z() - p.getZ();
+            double far = FarTracking.range(p);
+            if (dx * dx + dy * dy + dz * dz < r2 || dx * dx + dz * dz < far * far) filtered.add(p);
+        }
+        return filtered;
+    }
+
     public static void sendToPlayers(ThreadedPayload payload, Collection<ServerPlayer> recipients) {
         try {
             if (recipients.isEmpty()) return;
             assert onServerThread();
-
             ByteBuf wire = payload.getCompiledBuffer();
-
             if (!payload.compiledIncludesWirePrefix()) return;
             for (ServerPlayer p : recipients) {
+                // backport-fix: BF-055 covers upstream's channel() == null check, null-safe
                 if (!reachable(p)) continue;
                 OutboundBatch batch = OutboundBatch.take(p);
                 try {
@@ -231,7 +245,9 @@ public final class PacketWire {
      * as one); packets to them crashed the server tick with an NPE in framingContext.
      */
     static boolean reachable(ServerPlayer player) {
-        return Services.NETWORK.channelOf(player) != null;
+        return player.connection != null
+                && player.connection.getConnection() != null
+                && player.connection.getConnection().channel() != null;
     }
 
     static ChannelHandlerContext framingContext(Channel channel) {
@@ -318,7 +334,7 @@ public final class PacketWire {
     }
 
     private static boolean onServerThread() {
-        MinecraftServer server = Services.SERVER.getCurrentServer();
+        MinecraftServer server = NeoForgeServerEvents.getCurrentServer();
         return server == null || server.isSameThread();
     }
 }

@@ -7,7 +7,7 @@ import com.hbm.blocks.ModBlocks;
 import com.hbm.inventory.recipes.ExposureChamberRecipe;
 import com.hbm.inventory.recipes.ExposureChamberRecipes;
 import com.hbm.inventory.recipes.ingredient.CountIngredient;
-import com.hbm.tileentity.machine.BlockEntityMachineExposureChamber;
+import com.hbm.blockentity.machine.BlockEntityMachineExposureChamber;
 import java.util.List;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;

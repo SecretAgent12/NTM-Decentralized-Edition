@@ -3,6 +3,8 @@
 
 package com.hbm.blocks.generic;
 
+import com.hbm.blockentity.GraphResident;
+import com.hbm.blockentity.Synced;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.blocks.ModBlocks;
 import com.hbm.inventory.material.MaterialShapes;
@@ -12,9 +14,6 @@ import com.hbm.inventory.material.NTMMaterial;
 import com.hbm.items.machine.ItemScraps;
 import com.hbm.packet.SyncField;
 import com.hbm.packet.SyncUnitSchema;
-import com.hbm.tileentity.FoldedCoreResident;
-import com.hbm.tileentity.GraphResident;
-import com.hbm.tileentity.Synced;
 import io.netty.buffer.ByteBuf;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -44,6 +43,7 @@ import com.hbm.packet.BeSyncTable;
 import com.hbm.packet.BlobSynced;
 import com.hbm.packet.ChunkTrackerIndex;
 import com.hbm.packet.PacketWire;
+import com.hbm.packet.SyncAudience;
 import com.hbm.packet.SyncBindings;
 import com.hbm.packet.SyncSource;
 import com.hbm.packet.SyncUnitFrame;
@@ -52,6 +52,7 @@ import com.hbm.packet.SyncWire;
 import com.hbm.packet.WireReplayServer;
 import com.hbm.packet.threading.ThreadedPayload;
 import com.hbm.packet.toclient.UnitPayload;
+import com.hbm.util.ChunkUtil;
 import com.mojang.serialization.Codec;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.DecoderException;
@@ -173,7 +174,6 @@ public class BlockDynamicSlag extends BlockCompat implements EntityBlock {
 
     @Override
     protected List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {
-
         Float radius = params.getOptionalParameter(LootContextParams.EXPLOSION_RADIUS);
         if (radius != null && params.getLevel().getRandom().nextFloat() > 1.0F / radius)
             return List.of();
@@ -200,7 +200,7 @@ public class BlockDynamicSlag extends BlockCompat implements EntityBlock {
     }
 
     public static class BlockEntitySlag extends BlockEntityCompat
-            implements Synced, SyncUnitSchema, GraphResident, FoldedCoreResident {
+            implements Synced, SyncUnitSchema, GraphResident {
 
         public static final int MAX_AMOUNT = MaterialShapes.BLOCK.q(16);
 
@@ -328,7 +328,12 @@ public class BlockDynamicSlag extends BlockCompat implements EntityBlock {
         ThreadedPayload payload = hbm$syncGated(server);
         if (payload == null) return;
         hbm$syncedOnce = true;
-        BeSyncTable.refresh(payload, server, getBlockPos(), range);
+        BeSyncTable.refresh(
+                payload,
+                server,
+                getBlockPos(),
+                range,
+                (Object) this instanceof SyncAudience audience ? audience : null);
     }
 
     public void networkPackNTTracking() {
@@ -354,8 +359,7 @@ public class BlockDynamicSlag extends BlockCompat implements EntityBlock {
     }
 
     public void markChanged() {
-        Level level = getLevel();
-        if (level != null) level.blockEntityChanged(getBlockPos());
+        ChunkUtil.markUnsaved(this);
     }
 
     private UnitPayload hbm$syncUnitSnapshot(SyncUnitSchema schema) {
@@ -426,7 +430,6 @@ public class BlockDynamicSlag extends BlockCompat implements EntityBlock {
     public void setRemoved() {
         super.setRemoved();
         hbm$syncRemove();
-            com.hbm.tileentity.FoldedCoreResident.onRemove(this); // backport: hbm-compiler FoldedLifecycle
     }
 
     public final void releaseSync() {
@@ -677,13 +680,6 @@ public class BlockDynamicSlag extends BlockCompat implements EntityBlock {
             scratch.release();
         }
         if (changed != 0) syncUnitsChanged(3, changed);
-    }
-
-    // backport: hbm-compiler FoldedLifecycle
-    @Override
-    public void clearRemoved() {
-        super.clearRemoved();
-        com.hbm.tileentity.FoldedCoreResident.onLoad(this);
     }
 }
 }

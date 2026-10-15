@@ -3,16 +3,16 @@
 
 package com.hbm.items.tool;
 
+import com.hbm.blockentity.machine.rbmk.BlockEntityCraneConsole;
+import com.hbm.blockentity.machine.rbmk.BlockEntityRBMKConsole;
+import com.hbm.blockentity.machine.rbmk.BlockEntityRBMKDisplay;
 import com.hbm.blocks.machine.rbmk.RBMKBase;
 import com.hbm.blocks.machine.rbmk.RBMKConsole;
 import com.hbm.blocks.machine.rbmk.RBMKCraneConsole;
 import com.hbm.blocks.machine.rbmk.RBMKDisplay;
 import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.items.ModDataComponents;
-import com.hbm.tileentity.machine.rbmk.BlockEntityCraneConsole;
-import com.hbm.tileentity.machine.rbmk.BlockEntityRBMKConsole;
-import com.hbm.tileentity.machine.rbmk.BlockEntityRBMKDisplay;
-import com.hbm.util.I18nUtil;
+import com.hbm.util.TooltipStyle;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -50,7 +50,6 @@ public class ItemRBMKTool extends ItemCompat {
 
         if (b instanceof RBMKBase) {
             if (!level.isClientSide()) {
-
                 BlockPos core = MultiblockSurface.coreOfAny(level, pos);
                 if (core != null) {
                     stack.set(ModDataComponents.RBMK_TOOL_TARGET.get(), core.asLong());
@@ -100,8 +99,10 @@ public class ItemRBMKTool extends ItemCompat {
             TooltipDisplay display,
             Consumer<Component> adder,
             TooltipFlag flag) {
-        for (String line : I18nUtil.loreLines(this.getDescriptionId() + ".desc")) {
-            adder.accept(Component.literal(line).withStyle(ChatFormatting.YELLOW));
+        for (Component line :
+                TooltipStyle.lines(
+                        Component.translatableWithFallback(getDescriptionId() + ".desc", ""))) {
+            adder.accept(line.copy().withStyle(ChatFormatting.YELLOW));
         }
     }
 }

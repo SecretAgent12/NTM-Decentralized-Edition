@@ -4,15 +4,15 @@
 package com.hbm.client.model;
 
 import com.hbm.backport.client.rendertype.ChunkSectionLayer;
-import com.hbm.platform.Services;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Map;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.fml.ModList;
 import org.jspecify.annotations.Nullable;
 
 final class SectionGeometryShaders {
-    private static final boolean IRIS = Services.PLATFORM.isModLoaded("iris");
+    private static final boolean IRIS = ModList.get().isLoaded("iris");
 
     private SectionGeometryShaders() {}
 

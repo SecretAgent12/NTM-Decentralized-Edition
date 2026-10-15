@@ -18,10 +18,8 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.client.gui.GuiBounds;
 
 public final class RadarScopeElements {
-
     private static final int MAP_X = 8;
     private static final int MAP_Y = 17;
-
     public static final int SCOPE_X = 108;
     public static final int SCOPE_Y = 117;
 

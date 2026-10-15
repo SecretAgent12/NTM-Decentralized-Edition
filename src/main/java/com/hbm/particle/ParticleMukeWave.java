@@ -3,17 +3,24 @@
 
 package com.hbm.particle;
 
+import com.hbm.client.particle.MukeWaveVisual;
+import com.hbm.client.particle.VisualParticle;
+import dev.engine_room.flywheel.api.visual.EffectVisual;
+import dev.engine_room.flywheel.api.visualization.VisualizationContext;
+import dev.engine_room.flywheel.api.visualization.VisualizationManager;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
 import com.hbm.backport.client.particle.ParticleRenderType;
+import org.jspecify.annotations.Nullable;
 import com.hbm.backport.client.particle.ParticleCompat;
 
-public class ParticleMukeWave extends ParticleCompat {
+public class ParticleMukeWave extends ParticleCompat implements VisualParticle {
 
     public static final ParticleRenderType MUKE_WAVE_GROUP =
             new ParticleRenderType("hbm:muke_wave", "HMW");
 
     public float waveScale = 45F;
+    private @Nullable VisualizationManager visualManager;
 
     public ParticleMukeWave(ClientLevel level, double x, double y, double z) {
         super(level, x, y, z);
@@ -53,6 +60,26 @@ public class ParticleMukeWave extends ParticleCompat {
 
     public double interpZ(float pt) {
         return this.zo + (this.z - this.zo) * pt;
+    }
+
+    @Override
+    public ClientLevel level() {
+        return level;
+    }
+
+    @Override
+    public @Nullable VisualizationManager visualManager() {
+        return visualManager;
+    }
+
+    @Override
+    public void visualManager(@Nullable VisualizationManager manager) {
+        visualManager = manager;
+    }
+
+    @Override
+    public EffectVisual<?> visualize(VisualizationContext context, float partialTick) {
+        return new MukeWaveVisual(context, this, partialTick);
     }
 
     @Override

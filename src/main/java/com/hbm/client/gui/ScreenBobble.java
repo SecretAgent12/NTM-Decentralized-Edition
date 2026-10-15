@@ -4,9 +4,10 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.BlockEntityBobble;
+import com.hbm.blocks.generic.BlockBobble.Bobble;
 import com.hbm.blocks.generic.BlockBobble.BobbleType;
 import com.hbm.sound.ModSounds;
-import com.hbm.tileentity.BlockEntityBobble;
 import java.util.ArrayList;
 import java.util.List;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
@@ -18,7 +19,6 @@ import com.hbm.backport.client.gui.ScreenCompat;
 import com.hbm.backport.client.gui.WidgetBridge;
 
 public class ScreenBobble extends ScreenCompat {
-
     private static final int SIZE_X = 300;
     private static final int SIZE_Y = 150;
     private static final int SLAB_COLOR = 0xCC003300;
@@ -57,23 +57,23 @@ public class ScreenBobble extends ScreenCompat {
         line(graphics, "Nuclear Tech Commemorative Bobblehead", centre, nextLevel, HEADING);
         nextLevel += 10;
 
-        BobbleType type = this.bobble.type;
-        String bobbleName = type.name;
+        Bobble type = this.bobble.type;
+        String bobbleName = type.fullName();
         if (type == BobbleType.MELLOW) bobbleName = anagramIt(bobbleName, "GEORGEWILLIAMPATON");
         line(graphics, bobbleName, centre, nextLevel, BODY);
         nextLevel += 20;
 
-        if (type.contribution != null) {
+        if (type.contribution() != null) {
             line(graphics, "Has contributed", centre, nextLevel, HEADING);
             nextLevel += 10;
-            for (String text : type.contribution.split("\\$")) {
+            for (String text : type.contribution().split("\\$")) {
                 line(graphics, text, centre, nextLevel, BODY);
                 nextLevel += 10;
             }
             nextLevel += 10;
         }
 
-        if (type.inscription != null) {
+        if (type.inscription() != null) {
             line(
                     graphics,
                     "On the bottom is the following inscription:",
@@ -81,7 +81,7 @@ public class ScreenBobble extends ScreenCompat {
                     nextLevel,
                     HEADING);
             nextLevel += 10;
-            for (String text : type.inscription.split("\\$")) {
+            for (String text : type.inscription().split("\\$")) {
                 line(graphics, text, centre, nextLevel, BODY);
                 nextLevel += 10;
             }

@@ -3,11 +3,11 @@
 
 package com.hbm.client.render;
 
+import com.hbm.blockentity.BlockEntityEmitter;
 import com.hbm.blocks.generic.BlockEmitter;
 import com.hbm.render.util.BeamPronter.EnumBeamType;
 import com.hbm.render.util.BeamPronter.EnumWaveType;
 import com.hbm.render.util.BeamPronter;
-import com.hbm.tileentity.BlockEntityEmitter;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.hbm.lib.crankshaft.ConcurrentRenderStateExtraction;
@@ -74,7 +74,6 @@ public class RenderEmitter
                         | (int) (b * OUTER_MULT);
 
         state.randomStart = (int) (gameTime / 2L);
-
         state.spiralStart = (int) (gameTime + partialTicks) * -10 % 360;
     }
 

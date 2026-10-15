@@ -3,16 +3,19 @@
 
 package com.hbm.handler.ability;
 
-import com.hbm.blocks.ModBlocks;
-import com.hbm.blocks.generic.BlockBobble.BobbleType;
+import com.hbm.blockentity.BlockEntityBobble;
+import com.hbm.blocks.generic.BlockBobble.Bobble;
+import com.hbm.blocks.generic.BlockBobble;
 import com.hbm.items.ModItems;
 import com.hbm.items.weapon.sedna.factory.ConfettiUtil;
+import com.hbm.potion.CloudEffect;
 import com.hbm.potion.HbmPotion;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
-import com.hbm.tileentity.BlockEntityBobble;
 import com.hbm.util.ContaminationUtil.ContaminationType;
 import com.hbm.util.ContaminationUtil.HazardType;
 import com.hbm.util.ContaminationUtil;
+import java.util.List;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
@@ -75,7 +78,6 @@ public enum WeaponAbility implements BaseAbility {
             if (victim.getHealth() <= 0.0F) return;
 
             victim.setHealth(victim.getHealth() - amount);
-
             if (victim.getHealth() <= 0.0F) victim.die(level.damageSources().magic());
             attacker.heal(amount);
         }
@@ -97,8 +99,8 @@ public enum WeaponAbility implements BaseAbility {
         public void onHit(
                 ServerLevel level, int abilityLevel, Player attacker, LivingEntity victim) {
             int duration = DURATIONS[abilityLevel] * 20;
-            victim.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, duration, 4));
-            victim.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, duration, 4));
+            victim.addEffect(CloudEffect.local(MobEffects.MOVEMENT_SLOWDOWN, duration, 4));
+            victim.addEffect(CloudEffect.local(MobEffects.WEAKNESS, duration, 4));
         }
     },
     PHOSPHORUS("weapon.ability.phosphorus", 204) {
@@ -142,7 +144,6 @@ public enum WeaponAbility implements BaseAbility {
     },
     CHAINSAW("weapon.ability.chainsaw", 207) {
         private static final int[] DIVIDERS = {15, 10};
-
         private static final int MAX_NITRA = 250;
 
         @Override
@@ -168,8 +169,8 @@ public enum WeaponAbility implements BaseAbility {
             }
 
             ConfettiUtil.gib(victim);
-            level.playSound(
-                    null,
+            EntitySounds.play(
+                    victim,
                     victim.getX(),
                     victim.getY() + victim.getBbHeight() * 0.5,
                     victim.getZ(),
@@ -223,9 +224,9 @@ public enum WeaponAbility implements BaseAbility {
             RandomSource random = level.getRandom();
             if (random.nextInt(chance) != 0) return;
 
-            BobbleType[] types = BobbleType.values();
+            List<Bobble> types = BlockBobble.TYPES.values();
             ItemStack bobble =
-                    BlockEntityBobble.stackOf(types[random.nextInt(types.length - 1) + 1]);
+                    BlockEntityBobble.stackOf(types.get(random.nextInt(types.size() - 1) + 1));
             drop(monster, level, bobble);
         }
     };

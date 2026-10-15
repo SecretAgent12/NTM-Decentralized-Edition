@@ -7,7 +7,6 @@ import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.ARGB;
 
 public class NumberDisplay {
-
     private static final int VERTICAL_LENGTH = 5;
     private static final int HORIZONTAL_LENGTH = 4;
     private static final int THICKNESS = 1;

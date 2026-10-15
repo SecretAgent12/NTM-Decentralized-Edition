@@ -4,10 +4,10 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.network.BlockEntityRadioTelex;
 import com.hbm.lib.Library;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toserver.NbtControlPayload;
-import com.hbm.platform.Services;
-import com.hbm.tileentity.network.BlockEntityRadioTelex;
 import java.util.List;
 import java.util.Random;
 import net.minecraft.ChatFormatting;
@@ -323,7 +323,7 @@ public class ScreenRadioTelex extends ScreenCompat {
                 data.putString("txChan", txFrequency.getValue());
                 data.putString("rxChan", rxFrequency.getValue());
             }
-            Services.NETWORK.sendToServer(new NbtControlPayload(telex.getBlockPos(), data));
+            PacketWire.sendToServer(new NbtControlPayload(telex.getBlockPos(), data));
             handled = true;
         }
 
@@ -392,7 +392,7 @@ public class ScreenRadioTelex extends ScreenCompat {
     private void sendTxBuffer() {
         CompoundTag data = new CompoundTag();
         putTxBuffer(data);
-        Services.NETWORK.sendToServer(new NbtControlPayload(telex.getBlockPos(), data));
+        PacketWire.sendToServer(new NbtControlPayload(telex.getBlockPos(), data));
     }
 
     private void putTxBuffer(CompoundTag data) {

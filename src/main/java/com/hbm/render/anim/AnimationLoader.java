@@ -21,7 +21,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 
 public class AnimationLoader {
-
     public static final Gson gson = new Gson();
 
     public static HashMap<String, BusAnimation> load(ResourceLocation file) {

@@ -60,7 +60,6 @@ public class BlockOutgas extends BlockCompat {
                 if (level instanceof ServerLevel server) {
                     if (rand.nextInt(10) == 0) vent(server, above);
                 } else {
-
                     for (int i = 0; i < 5; i++) {
                         level.addParticle(
                                 ParticleTypes.MYCELIUM,

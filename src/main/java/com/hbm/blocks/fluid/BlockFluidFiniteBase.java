@@ -26,7 +26,6 @@ public abstract class BlockFluidFiniteBase extends BlockCompat {
     private static final Direction[] HORIZONTALS = {
         Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST
     };
-
     protected final int densityDir = -1;
     protected IntegerProperty levelProperty;
     private final VoxelShape[] fluidShapes;
@@ -54,7 +53,6 @@ public abstract class BlockFluidFiniteBase extends BlockCompat {
 
     public VoxelShape fluidPickShape(BlockState state, boolean sourceOnly) {
         int amount = state.getValue(levelProperty);
-
         return sourceOnly && amount != fluidShapes.length - 1
                 ? Shapes.empty()
                 : fluidShapes[amount];

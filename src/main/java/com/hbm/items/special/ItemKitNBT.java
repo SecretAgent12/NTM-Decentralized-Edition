@@ -5,6 +5,7 @@ package com.hbm.items.special;
 
 import com.hbm.items.ModDataComponents;
 import com.hbm.items.ModItems;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import java.util.Arrays;
 import java.util.List;
@@ -53,8 +54,8 @@ public class ItemKitNBT extends ItemCompat {
 
         stack.shrink(1);
 
-        level.playSound(
-                null,
+        EntitySounds.play(
+                player,
                 player.getX(),
                 player.getY(),
                 player.getZ(),

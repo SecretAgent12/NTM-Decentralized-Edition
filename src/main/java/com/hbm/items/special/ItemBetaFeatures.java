@@ -19,7 +19,6 @@ import com.hbm.backport.TooltipDisplay;
 import com.hbm.backport.compat.ItemCompat;
 
 public class ItemBetaFeatures extends ItemCompat implements IItemEntityUpdate {
-
     private static final int PINNED_FOOD = 10;
 
     public ItemBetaFeatures(Properties properties) {

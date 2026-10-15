@@ -34,14 +34,11 @@ public final class CreateGogglesCompat {
             NuclearTech.LOGGER.warn("Create is loaded but create:goggles is missing; goggles mod disabled");
             return;
         }
+        // ntm-next 1.0.3 has its own foreign armor mods: sockets mask + the armor piece it goes on
         ArmorModHandler.registerForeignMod(
                 goggles,
-                new ArmorModHandler.ForeignMod(
-                        (1 << ArmorModHandler.HELMET_ONLY) | (1 << ArmorModHandler.EXTRA),
-                        true,
-                        false,
-                        false,
-                        false));
+                (1 << ArmorModHandler.HELMET_ONLY) | (1 << ArmorModHandler.EXTRA),
+                EquipmentSlot.HEAD);
         GogglesItem.addIsWearingPredicate(CreateGogglesCompat::wearsGogglesMod);
     }
 

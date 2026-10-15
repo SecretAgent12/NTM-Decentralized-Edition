@@ -45,9 +45,7 @@ public abstract class BlockGraphiteDrilledBase extends BlockCompat implements IT
 
     public static final EnumProperty<Direction.Axis> AXIS = BlockStateProperties.AXIS;
     public static final BooleanProperty SHROUDED = BooleanProperty.create("shrouded");
-
     public static final BooleanProperty PU239 = BooleanProperty.create("pu239");
-
     public static final BooleanProperty WITHDRAWN = BooleanProperty.create("withdrawn");
     private static final Logger LOGGER = LoggerFactory.getLogger("NTM");
 
@@ -181,7 +179,6 @@ public abstract class BlockGraphiteDrilledBase extends BlockCompat implements IT
                 if (graphite.getInsertedItem(state) == null) break;
                 else if (i >= 3) return false;
             } else {
-
                 if (state.isCollisionShapeFullBlock(level, probe)
                         && state.canOcclude()
                         && !state.isSignalSource()) return false;

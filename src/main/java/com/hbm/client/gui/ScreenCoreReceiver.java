@@ -3,9 +3,9 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.machine.BlockEntityCoreReceiver;
 import com.hbm.inventory.container.MenuCoreReceiver;
 import com.hbm.lib.Library;
-import com.hbm.tileentity.machine.BlockEntityCoreReceiver;
 import com.hbm.util.BobMathUtil;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.client.rendertype.RenderPipelines;

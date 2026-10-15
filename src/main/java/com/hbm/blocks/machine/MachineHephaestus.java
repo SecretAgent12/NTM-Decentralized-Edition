@@ -3,6 +3,7 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.BlockEntityMachineHephaestus;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.capability.ICapabilityBlock;
@@ -13,8 +14,6 @@ import com.hbm.inventory.fluid.tank.FluidTankNTM;
 import com.hbm.items.ModDataComponents;
 import com.hbm.items.machine.FluidIdentifierData;
 import com.hbm.items.machine.FluidIdentifierItem;
-import com.hbm.tileentity.machine.BlockEntityMachineHephaestus;
-import com.hbm.util.I18nUtil;
 import java.util.Locale;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -34,43 +33,8 @@ import org.jspecify.annotations.Nullable;
 
 public class MachineHephaestus extends BlockMultiblockCore
         implements ITickingBlock, ILookOverlay, ICapabilityBlock {
-
-    private static final int[] DIMENSIONS = {11, 0, 1, 1, 1, 1};
-
     public MachineHephaestus(Properties props) {
         super(props);
-    }
-
-    @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 1;
-    }
-
-    @Override
-    protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
-        super.visitCells(core, facing, visitor);
-
-        for (int dy : new int[] {0, 11}) {
-            visitor.cell(core.offset(1, dy, 0), MASK_EAST);
-            visitor.cell(core.offset(-1, dy, 0), MASK_WEST);
-            visitor.cell(core.offset(0, dy, 1), MASK_SOUTH);
-            visitor.cell(core.offset(0, dy, -1), MASK_NORTH);
-        }
-    }
-
-    @Override
-    protected void visitPassiveCells(BlockPos core, Direction facing, PassiveCellVisitor visitor) {
-        for (int dy : new int[] {0, 11}) {
-            visitor.passiveCell(core.offset(1, dy, 0), MASK_ALL, PASSIVE_FLUID_IN);
-            visitor.passiveCell(core.offset(-1, dy, 0), MASK_ALL, PASSIVE_FLUID_IN);
-            visitor.passiveCell(core.offset(0, dy, 1), MASK_ALL, PASSIVE_FLUID_IN);
-            visitor.passiveCell(core.offset(0, dy, -1), MASK_ALL, PASSIVE_FLUID_IN);
-        }
     }
 
     @Override
@@ -111,7 +75,10 @@ public class MachineHephaestus extends BlockMultiblockCore
     @Override
     public void buildLookOverlay(Level level, BlockPos pos, LookInfo info) {
         if (!(level.getBlockEntity(pos) instanceof BlockEntityMachineHephaestus be)) return;
-        info.title(I18nUtil.resolveKey(getDescriptionId()), 0xFFFF00, 0x404000);
+        info.title(
+                Component.empty().append(Component.translatable(getDescriptionId())),
+                0xFFFF00,
+                0x404000);
         info.line(String.format(Locale.US, "%,d", be.bufferedHeat) + " TU");
 
         FluidTankNTM[] tanks = {be.input, be.output};
@@ -132,7 +99,6 @@ public class MachineHephaestus extends BlockMultiblockCore
 
     @Override
     public MachineCaps caps() {
-
         return MachineCaps.blockKeyed()
                 .fluidIn()
                 .fluidOut()

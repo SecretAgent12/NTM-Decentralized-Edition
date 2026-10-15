@@ -3,12 +3,12 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.BlockEntityMachineCentrifuge;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.capability.ICapabilityBlock;
 import com.hbm.capability.MachineCaps;
-import com.hbm.tileentity.machine.BlockEntityMachineCentrifuge;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import com.hbm.backport.InteractionResult;
@@ -17,40 +17,18 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jspecify.annotations.Nullable;
 
 public class MachineCentrifuge extends BlockMultiblockCore
         implements ITickingBlock, ICapabilityBlock {
-
-    private static final int[] DIMENSIONS = {3, 0, 0, 0, 0, 0};
-
     public MachineCentrifuge(Properties props) {
         super(props);
-        this.bounding.add(new AABB(-0.5D, 0D, -0.5D, 0.5D, 1D, 0.5D));
-        this.bounding.add(new AABB(-0.375D, 1D, -0.375D, 0.375D, 4D, 0.375D));
-    }
-
-    @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 0;
-    }
-
-    @Override
-    public int coreMask() {
-        return MASK_HORIZONTAL | MASK_DOWN;
     }
 
     @Override
     protected InteractionResult useAtCore(
             BlockState coreState, Level level, BlockPos core, Player player, BlockHitResult hit) {
-
         if (player.isSecondaryUseActive()) return InteractionResult.PASS;
         if (level.isClientSide()) return InteractionResult.SUCCESS;
         if (level.getBlockEntity(core) instanceof MenuProvider menu

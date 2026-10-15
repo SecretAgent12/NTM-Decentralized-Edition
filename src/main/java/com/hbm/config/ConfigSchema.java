@@ -3,7 +3,11 @@
 
 package com.hbm.config;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.ServiceLoader;
+import java.util.Set;
 
 import static com.hbm.config.ConfigEntry.*;
 
@@ -40,6 +44,16 @@ public final class ConfigSchema {
                     "bomber_short_approach",
                     false,
                     "Has bomber planes spawn closer to their target for smaller render distances.");
+    public static final ConfigEntry<Integer> FAR_TRACKING_RANGE =
+            integer(
+                    Domain.RUNTIME,
+                    "entities",
+                    "far_tracking_range",
+                    4096,
+                    0,
+                    65536,
+                    "Blocks within which missiles, mushroom clouds and meteors stay tracked to players whose Distant "
+                            + "Horizons or Voxy terrain reaches that far, past the view distance. 0 = view distance only.");
 
     public static final ConfigEntry<Boolean> ENABLE_LBSM =
             bool(
@@ -130,6 +144,14 @@ public final class ConfigSchema {
                     true,
                     "When enabled, prevents crates from becoming radioactive");
 
+    public static final ConfigEntry<Boolean> ENABLE_LBSM_SAFE_ME_DRIVES =
+            bool(
+                    Domain.CONTENT,
+                    "lbsm",
+                    "safe_me_drives",
+                    true,
+                    "When enabled, prevents ME Drives and Portable Cells from becoming radioactive");
+
     public static final ConfigEntry<Boolean> ENABLE_FOREIGN_MOD_CHANGES =
             bool(
                     Domain.CONTENT,
@@ -158,6 +180,14 @@ public final class ConfigSchema {
 
     public static final ConfigEntry<Boolean> ENABLE_EXPENSIVE_MODE =
             bool(Domain.CONTENT, "expensive", "enabled", false, "It does what the name implies.");
+
+    public static final ConfigEntry<Boolean> ENABLE_MOTD =
+            bool(
+                    Domain.RUNTIME,
+                    "login",
+                    "motd",
+                    true,
+                    "If enabled, shows the 'Loaded mod!' chat message when joining a world");
 
     public static final ConfigEntry<Boolean> ENABLE_DEBUG_MODE =
             bool(Domain.RUNTIME, "debug", "profiling_logs", false, "Enable debugging mode");
@@ -196,6 +226,13 @@ public final class ConfigSchema {
                     "machine_gravity",
                     true,
                     "Requires most large machines to have a proper foundation, or else they tilt and break.");
+    public static final ConfigEntry<Boolean> ENABLE_528_BOSNIA_SIMULATOR =
+            bool(
+                    Domain.CONTENT,
+                    "mode_528",
+                    "bosnia_simulator",
+                    true,
+                    "Enables anti tank mines spawning all over the world.");
     public static final ConfigEntry<Boolean> ENABLE_528_FORCE_REASIM_BOILERS =
             bool(
                     Domain.CONTENT,
@@ -242,7 +279,6 @@ public final class ConfigSchema {
                     1,
                     Integer.MAX_VALUE,
                     "Columns per tick the MK3 spiral steps");
-
     public static final ConfigEntry<Integer> MK5_BLAST_TIME =
             integer(
                     Domain.RUNTIME,
@@ -261,7 +297,6 @@ public final class ConfigSchema {
                     0,
                     Integer.MAX_VALUE,
                     "How many ticks to wait for the next fallout chunk computation");
-
     public static final ConfigEntry<Integer> BLAST_CHUNKS_IN_FLIGHT =
             integer(
                     Domain.RUNTIME,
@@ -281,7 +316,6 @@ public final class ConfigSchema {
                     2,
                     "Configures the algorithm of mk5 explosion. 0 = Legacy, 1 = Threaded DDA, "
                             + "2 = Threaded DDA with damage accumulation.");
-
     public static final ConfigEntry<Integer> BOMB_MAX_THREADS =
             integer(
                     Domain.RUNTIME,
@@ -351,8 +385,8 @@ public final class ConfigSchema {
                     "radiation",
                     "unstable_recovery_sweep",
                     false,
-                    "Audit every loaded container every 20 ticks, so an armed item that left a mod's opaque storage "
-                            + "without notifying still detonates. Costs a walk of all loaded chunks and entities.");
+                    "Recover unreported changes in loaded entity and player inventories every 20 ticks. "
+                            + "Block storage requires slot notifications and is never audited.");
 
     public static final ConfigEntry<Integer> TOOL_HUD_INDICATOR_X =
             integer(
@@ -380,6 +414,14 @@ public final class ConfigSchema {
                     "crate_opens_held",
                     true,
                     "Right-click with a held crate opens it; sneak to place it.");
+    public static final ConfigEntry<Boolean> ORIGINAL_STEREO_EXPLOSIONS =
+            bool(
+                    Domain.CLIENT,
+                    "audio",
+                    "original_stereo_explosions",
+                    false,
+                    "Preserve stereo explosion recordings instead of positioning them in the world, with distance falloff. "
+                            + "Mono recordings remain positional. Applies to newly played sounds.");
     public static final ConfigEntry<Boolean> COOLING_TOWER_PARTICLES =
             bool(Domain.CLIENT, "render", "cooling_tower_particles", true, "");
     public static final ConfigEntry<Boolean> JEI_HIDE_SECRETS =
@@ -444,7 +486,6 @@ public final class ConfigSchema {
                     Integer.MIN_VALUE,
                     Integer.MAX_VALUE,
                     "");
-
     public static final ConfigEntry<Integer> INFO_POSITION =
             integer(
                     Domain.CLIENT,
@@ -472,13 +513,6 @@ public final class ConfigSchema {
                     Integer.MIN_VALUE,
                     Integer.MAX_VALUE,
                     "");
-    public static final ConfigEntry<Boolean> TOOLTIP_ORE_DICT =
-            bool(
-                    Domain.CLIENT,
-                    "hud",
-                    "tooltip_ore_dict",
-                    true,
-                    "List an item's tags in advanced tooltips.");
     public static final ConfigEntry<Boolean> TOOLTIP_CUSTOM_NUKE =
             bool(
                     Domain.CLIENT,
@@ -494,12 +528,19 @@ public final class ConfigSchema {
                     true,
                     "List an RBMK column's diagnostic data while looking at it.");
 
+    private static final List<ConfigSchemaExtension> EXTENSIONS =
+            ServiceLoader.load(ConfigSchemaExtension.class, ConfigSchema.class.getClassLoader())
+                    .stream()
+                    .map(ServiceLoader.Provider::get)
+                    .toList();
+
     public static final List<ConfigEntry<?>> ENTRIES =
-            List.of(
+            withAddons(
                     CONVEYOR_CRAM_MAX,
                     CONVEYOR_CRAM_EXPLODE,
                     ULTRA_LARP_MODE,
                     ENABLE_BOMBER_SHORT_MODE,
+                    FAR_TRACKING_RANGE,
                     ENABLE_LBSM,
                     ENABLE_LBSM_FULL_SCHRAB,
                     ENABLE_LBSM_SHORTER_DECAY,
@@ -511,10 +552,12 @@ public final class ConfigSchema {
                     ENABLE_LBSM_UNLOCK_ANVIL,
                     ENABLE_LBSM_SIMPLE_MEDICINE,
                     ENABLE_LBSM_SAFE_CRATES,
+                    ENABLE_LBSM_SAFE_ME_DRIVES,
                     ENABLE_FOREIGN_MOD_CHANGES,
                     ENABLE_MEKANISM_CHANGES,
                     ENABLE_TECHREBORN_CHANGES,
                     ENABLE_EXPENSIVE_MODE,
+                    ENABLE_MOTD,
                     ENABLE_DEBUG_MODE,
                     ENABLE_EXTENDED_LOGGING,
                     ENABLE_SKYBOXES,
@@ -522,6 +565,7 @@ public final class ConfigSchema {
                     ENABLE_528_PRESSURIZED_RECIPES,
                     ENABLE_528_MACHINE_GRAVITY,
                     ENABLE_528_FORCE_REASIM_BOILERS,
+                    ENABLE_528_BOSNIA_SIMULATOR,
                     RAD_TICK_RATE,
                     HAZARD_RATE,
                     LIMIT_EXPLOSION_LIFESPAN,
@@ -541,6 +585,7 @@ public final class ConfigSchema {
                     TOOL_HUD_INDICATOR_X,
                     TOOL_HUD_INDICATOR_Y,
                     CRATE_OPEN_HELD,
+                    ORIGINAL_STEREO_EXPLOSIONS,
                     COOLING_TOWER_PARTICLES,
                     JEI_HIDE_SECRETS,
                     GUN_MODEL_FOV,
@@ -556,13 +601,36 @@ public final class ConfigSchema {
                     INFO_POSITION,
                     INFO_OFFSET_HORIZONTAL,
                     INFO_OFFSET_VERTICAL,
-                    TOOLTIP_ORE_DICT,
                     TOOLTIP_CUSTOM_NUKE,
                     DODD_RBMK_DIAGNOSTIC);
 
     private ConfigSchema() {}
 
+    private static List<ConfigEntry<?>> withAddons(ConfigEntry<?>... ntm) {
+        List<ConfigEntry<?>> entries = new ArrayList<>(List.of(ntm));
+        Set<String> paths = new HashSet<>();
+        for (ConfigEntry<?> entry : ntm) paths.add(entry.section() + "." + entry.key());
+        for (ConfigSchemaExtension extension : EXTENSIONS) {
+            for (ConfigEntry<?> entry : extension.entries()) {
+                if (!paths.add(entry.section() + "." + entry.key())) {
+                    throw new IllegalStateException(
+                            extension.getClass().getName()
+                                    + " redeclares config "
+                                    + entry.section()
+                                    + "."
+                                    + entry.key());
+                }
+                entries.add(entry);
+            }
+        }
+        return List.copyOf(entries);
+    }
+
     public static List<ConfigEntry<?>> of(Domain domain) {
         return ENTRIES.stream().filter(e -> e.domain() == domain).toList();
+    }
+
+    public static void loadAddonClientFacades(ConfigStore client) {
+        for (ConfigSchemaExtension extension : EXTENSIONS) extension.loadClient(client);
     }
 }

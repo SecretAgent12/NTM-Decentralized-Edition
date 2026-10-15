@@ -31,9 +31,7 @@ import net.minecraft.world.phys.Vec3;
 public final class No9Flashlight {
 
     private static final double RANGE = 50D;
-
     private static final int LINGER = 5;
-
     private static final Direction[] SPREAD = {
         Direction.EAST,
         Direction.WEST,
@@ -45,9 +43,7 @@ public final class No9Flashlight {
 
     private static final Long2LongOpenHashMap written = new Long2LongOpenHashMap();
     private static final LongOpenHashSet visited = new LongOpenHashSet();
-
     private static final Long2ObjectOpenHashMap<DataLayer> patched = new Long2ObjectOpenHashMap<>();
-
     private static ClientLevel owner;
 
     private No9Flashlight() {}
@@ -80,6 +76,7 @@ public final class No9Flashlight {
                                 player));
         if (hit.getType() != HitResult.Type.BLOCK) return;
 
+        level.getLightEngine().runLightUpdates();
         int light = (int) (25D - eye.distanceTo(hit.getLocation()) * 25D / RANGE);
         spread(level, hit.getBlockPos().relative(hit.getDirection()), Math.min(15, light));
         visited.clear();
@@ -89,7 +86,6 @@ public final class No9Flashlight {
     private static void spread(ClientLevel level, BlockPos pos, int light) {
         if (light <= 0) return;
         if (!visited.add(pos.asLong())) return;
-
         if (level.getBlockState(pos).getLightBlock(net.minecraft.world.level.EmptyBlockGetter.INSTANCE, net.minecraft.core.BlockPos.ZERO) >= 15) return;
 
         write(
@@ -127,6 +123,7 @@ public final class No9Flashlight {
             level.setSectionDirtyWithNeighbors(section.x(), section.y(), section.z());
         }
         patched.clear();
+        engine.runLightUpdates();
     }
 
     private static void expire(ClientLevel level) {

@@ -19,7 +19,6 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.RecipeSerializers;
 
 public class CrystallizerRecipe extends GenericRecipe {
-
     private static final MapCodec<Float> PRODUCTIVITY_MAP_CODEC =
             Codec.FLOAT.optionalFieldOf("productivity", 0F);
     private static final StreamCodec<RegistryFriendlyByteBuf, Float> PRODUCTIVITY_STREAM_CODEC =
@@ -42,7 +41,6 @@ public class CrystallizerRecipe extends GenericRecipe {
                     EXTRACT_PRODUCTIVITY);
     public static final RecipeSerializer<CrystallizerRecipe> SERIALIZER =
             RecipeSerializers.of(MAP_CODEC, STREAM_CODEC);
-
     public float productivity;
 
     public CrystallizerRecipe(String name) {

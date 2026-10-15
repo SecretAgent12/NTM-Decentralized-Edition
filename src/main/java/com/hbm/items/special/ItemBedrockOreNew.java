@@ -9,14 +9,18 @@ import com.hbm.inventory.material.NTMMaterial.SmeltingBehavior;
 import com.hbm.inventory.material.NTMMaterial;
 import com.hbm.items.ModDataComponents;
 import com.hbm.items.ModItems;
+import com.hbm.lib.Library;
+import com.hbm.registration.OpenRegistry;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.netty.buffer.ByteBuf;
 import java.util.Locale;
 import java.util.function.Consumer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.item.Item;
@@ -58,11 +62,11 @@ public class ItemBedrockOreNew extends ItemCompat {
                 Math.min((int) Math.ceil(o.amount * amount), fragment.getDefaultMaxStackSize()));
     }
 
-    public static ItemStack make(BedrockOreGrade grade, BedrockOreType type) {
+    public static ItemStack make(BedrockOreGrade grade, BedrockOreKind type) {
         return make(grade, type, 1);
     }
 
-    public static ItemStack make(BedrockOreGrade grade, BedrockOreType type, int amount) {
+    public static ItemStack make(BedrockOreGrade grade, BedrockOreKind type, int amount) {
         ItemStack stack = new ItemStack(ModItems.BEDROCK_ORE.get(), amount);
         stack.set(ModDataComponents.BEDROCK_ORE.get(), new Ore(grade, type));
         return stack;
@@ -75,9 +79,12 @@ public class ItemBedrockOreNew extends ItemCompat {
     @Override
     public Component getName(ItemStack stack) {
         Ore ore = ore(stack);
-        Component type = Component.translatable(getDescriptionId() + ".type." + ore.type().suffix);
-        return Component.translatable(
-                getDescriptionId() + ".grade." + ore.grade().name().toLowerCase(Locale.US), type);
+        MutableComponent name =
+                Component.translatable(
+                        getDescriptionId() + ".grade." + ore.grade().name().toLowerCase(Locale.US),
+                        ore.type().typeName());
+        Component suffix = ore.type().nameSuffix();
+        return suffix == null ? name : name.append(suffix);
     }
 
     @Override
@@ -87,14 +94,16 @@ public class ItemBedrockOreNew extends ItemCompat {
             TooltipDisplay display,
             Consumer<Component> adder,
             TooltipFlag flag) {
-        for (ProcessingTrait trait : ore(stack).grade().traits) {
+        Ore ore = ore(stack);
+        for (ProcessingTrait trait : ore.grade().traits) {
             adder.accept(
                     Component.translatable(
                             getDescriptionId() + ".trait." + trait.name().toLowerCase(Locale.US)));
         }
+        ore.type().appendHoverText(ore.grade(), adder);
     }
 
-    public record Ore(BedrockOreGrade grade, BedrockOreType type) {
+    public record Ore(BedrockOreGrade grade, BedrockOreKind type) {
 
         public static final Ore BASE = new Ore(BedrockOreGrade.BASE, BedrockOreType.LIGHT_METAL);
         public static final Codec<Ore> CODEC =
@@ -105,7 +114,8 @@ public class ItemBedrockOreNew extends ItemCompat {
                                                         .optionalFieldOf(
                                                                 "grade", BedrockOreGrade.BASE)
                                                         .forGetter(Ore::grade),
-                                                BedrockOreType.CODEC
+                                                BedrockOreType.KINDS
+                                                        .codec()
                                                         .optionalFieldOf(
                                                                 "type", BedrockOreType.LIGHT_METAL)
                                                         .forGetter(Ore::type))
@@ -115,8 +125,7 @@ public class ItemBedrockOreNew extends ItemCompat {
                         ByteBufCodecs.idMapper(
                                 i -> BedrockOreGrade.VALUES[i], BedrockOreGrade::ordinal),
                         Ore::grade,
-                        ByteBufCodecs.idMapper(
-                                i -> BedrockOreType.VALUES[i], BedrockOreType::ordinal),
+                        BedrockOreType.KINDS.streamCodec(),
                         Ore::type,
                         Ore::new);
 
@@ -129,7 +138,7 @@ public class ItemBedrockOreNew extends ItemCompat {
         }
     }
 
-    public enum BedrockOreType implements StringRepresentable {
+    public enum BedrockOreType implements BedrockOreKind, StringRepresentable {
         LIGHT_METAL(
                 0xFFFFFF,
                 0x353535,
@@ -222,8 +231,12 @@ public class ItemBedrockOreNew extends ItemCompat {
                 o(MAT_SODALITE, 9));
 
         public static final BedrockOreType[] VALUES = values();
-        public static final Codec<BedrockOreType> CODEC =
-                StringRepresentable.fromEnum(BedrockOreType::values);
+        public static final OpenRegistry<BedrockOreKind> KINDS =
+                new OpenRegistry<>("bedrock ore type", BedrockOreKind::id);
+
+        static {
+            for (BedrockOreType type : VALUES) KINDS.add(type);
+        }
 
         public final int light;
         public final int dark;
@@ -274,6 +287,31 @@ public class ItemBedrockOreNew extends ItemCompat {
         @Override
         public String getSerializedName() {
             return name().toLowerCase(Locale.ROOT);
+        }
+
+        @Override
+        public String id() {
+            return getSerializedName();
+        }
+
+        @Override
+        public String suffix() {
+            return suffix;
+        }
+
+        @Override
+        public int light() {
+            return light;
+        }
+
+        @Override
+        public int dark() {
+            return dark;
+        }
+
+        @Override
+        public ResourceLocation channel() {
+            return Library.id("bedrock_ore/" + id());
         }
     }
 

@@ -3,21 +3,16 @@
 
 package com.hbm.util;
 
+import com.hbm.platform.NeoForgeCaps;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.world.Container;
-import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import com.hbm.backport.transfer.Capabilities;
 import com.hbm.lib.neotransfer.ResourceHandler;
 import com.hbm.lib.neotransfer.item.ItemResource;
-import com.hbm.lib.neotransfer.item.VanillaContainerWrapper;
-import com.hbm.lib.neotransfer.item.WorldlyContainerWrapper;
-import com.hbm.lib.neotransfer.transaction.Transaction;
 import org.jspecify.annotations.Nullable;
 
 public final class ForeignItems {
@@ -25,96 +20,39 @@ public final class ForeignItems {
     private ForeignItems() {}
 
     public static boolean present(Level level, BlockPos pos, @Nullable Direction face) {
-        return handler(level, pos, face) != null;
+        return NeoForgeCaps.findItemStore(level, pos, face) != null;
     }
 
     public static ItemStack insert(
             Level level, BlockPos pos, @Nullable Direction face, ItemStack stack) {
         if (stack.isEmpty()) return stack;
-
-        ResourceHandler<ItemResource> handler = handler(level, pos, face);
-        if (handler == null) return stack;
-        try (Transaction tx = Transaction.openRoot()) {
-            int moved = handler.insert(ItemResource.of(stack), stack.getCount(), tx);
-            tx.commit();
-            return rest(stack, moved);
-        }
+        ResourceHandler<ItemResource> handler = NeoForgeCaps.findItemStore(level, pos, face);
+        return handler == null ? stack : NeoForgeCaps.insert(handler, stack);
     }
 
-    public static ItemStack merge(
-            Level level, BlockPos pos, @Nullable Direction face, ItemStack stack) {
-        if (stack.isEmpty()) return stack;
-
-        ResourceHandler<ItemResource> handler = handler(level, pos, face);
-        if (handler == null) return stack;
-        ItemResource resource = ItemResource.of(stack);
-        int moved = 0;
-        try (Transaction tx = Transaction.openRoot()) {
-            for (int index = 0; index < handler.size() && moved < stack.getCount(); index++) {
-                if (handler.getResource(index).equals(resource)) {
-                    moved += handler.insert(index, resource, stack.getCount() - moved, tx);
-                }
-            }
-            tx.commit();
-        }
-
-        return rest(stack, moved);
-    }
-
-    private static ItemStack rest(ItemStack stack, long moved) {
-        return moved >= stack.getCount()
-                ? ItemStack.EMPTY
-                : stack.copyWithCount(stack.getCount() - (int) moved);
+    public static int move(
+            Level level,
+            BlockPos sourcePos,
+            @Nullable Direction sourceFace,
+            BlockPos destPos,
+            @Nullable Direction destFace,
+            ItemStack stack,
+            int amount) {
+        ResourceHandler<ItemResource> source =
+                NeoForgeCaps.findItemStore(level, sourcePos, sourceFace);
+        if (source == null) return 0;
+        ResourceHandler<ItemResource> dest = NeoForgeCaps.findItemStore(level, destPos, destFace);
+        return dest == null ? 0 : NeoForgeCaps.move(source, dest, stack, amount);
     }
 
     public static ItemStack extract(
-            Level level,
-            BlockPos pos,
-            @Nullable Direction face,
-            Predicate<ItemStack> accept,
-            int max) {
-        if (max <= 0) return ItemStack.EMPTY;
-
-        ResourceHandler<ItemResource> handler = handler(level, pos, face);
-        if (handler == null) return ItemStack.EMPTY;
-        for (int index = 0; index < handler.size(); index++) {
-            ItemResource resource = handler.getResource(index);
-            int amount = handler.getAmountAsInt(index);
-            if (resource.isEmpty() || amount <= 0) continue;
-            if (!accept.test(resource.toStack(amount))) continue;
-            try (Transaction tx = Transaction.openRoot()) {
-                int moved = handler.extract(index, resource, Math.min(max, amount), tx);
-                tx.commit();
-                if (moved > 0) return resource.toStack(moved);
-            }
-        }
-        return ItemStack.EMPTY;
+            Level level, BlockPos pos, @Nullable Direction face, ToIntFunction<ItemStack> request) {
+        ResourceHandler<ItemResource> handler = NeoForgeCaps.findItemStore(level, pos, face);
+        return handler == null ? ItemStack.EMPTY : NeoForgeCaps.extract(handler, request);
     }
 
     public static List<ItemStack> contents(Level level, BlockPos pos, @Nullable Direction face) {
-        List<ItemStack> out = new ArrayList<>();
-
-        ResourceHandler<ItemResource> handler = handler(level, pos, face);
-        if (handler == null) return out;
-        for (int index = 0; index < handler.size(); index++) {
-            ItemResource resource = handler.getResource(index);
-            int amount = handler.getAmountAsInt(index);
-            if (resource.isEmpty() || amount <= 0) continue;
-            out.add(resource.toStack(amount));
-        }
-
-        return out;
-    }
-
-    private static @Nullable ResourceHandler<ItemResource> handler(
-            Level level, BlockPos pos, @Nullable Direction face) {
-        ResourceHandler<ItemResource> handler =
-                level.getCapability(Capabilities.Item.BLOCK, pos, face);
-        if (handler != null) return handler;
-        Container container = InventoryUtil.containerAt(level, pos);
-        if (container == null) return null;
-        return face != null && container instanceof WorldlyContainer worldly
-                ? new WorldlyContainerWrapper(worldly, face)
-                : VanillaContainerWrapper.of(container);
+        ResourceHandler<ItemResource> handler = NeoForgeCaps.findItemStore(level, pos, face);
+        return handler == null ? new ArrayList<>() : NeoForgeCaps.contents(handler);
     }
 }

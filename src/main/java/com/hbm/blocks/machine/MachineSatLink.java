@@ -3,13 +3,13 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.BlockEntityMachineSatLink;
 import com.hbm.blocks.ITickingBlock;
-import com.hbm.blocks.ModBlockEntities;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.items.ISatChip;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
-import com.hbm.tileentity.machine.BlockEntityMachineSatLink;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -27,31 +27,13 @@ import org.jspecify.annotations.Nullable;
 
 public final class MachineSatLink extends BlockMultiblockCore
         implements ITickingBlock, ILookOverlay {
-
-    private static final int[] DIMENSIONS = {6, 0, 1, 0, 1, 0};
-
     public MachineSatLink(Properties properties) {
         super(properties);
     }
 
     @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 0;
-    }
-
-    @Override
     protected RenderShape getRenderShape(BlockState state) {
         return RenderShape.MODEL;
-    }
-
-    @Override
-    protected boolean proxyCellAt(int lx, int ly, int lz) {
-        return ly == 0 && (lx == -1 && (lz == 0 || lz == -1) || lx == 0 && lz == -1);
     }
 
     @Override
@@ -71,8 +53,8 @@ public final class MachineSatLink extends BlockMultiblockCore
             player.sendSystemMessage(
                     Component.translatable("chat.machineSatLink.frequencySet", link.freq)
                             .withStyle(ChatFormatting.YELLOW));
-            level.playSound(
-                    null,
+            EntitySounds.play(
+                    player,
                     player.blockPosition(),
                     ModSounds.TECH_BLEEP.get(),
                     SoundSource.PLAYERS,
@@ -98,8 +80,10 @@ public final class MachineSatLink extends BlockMultiblockCore
         BlockEntityMachineSatLink link = (BlockEntityMachineSatLink) level.getBlockEntity(pos);
         info.title(getName().getString(), 0xFFFF00, 0x404000);
         info.line(
-                Component.translatable("desc.block.machineSatLink.frequency", link.freq)
-                        .getString());
+                Component.empty()
+                        .append(
+                                Component.translatable(
+                                        "desc.block.machineSatLink.frequency", link.freq)));
         String answer =
                 (link.connected ? ChatFormatting.GREEN : ChatFormatting.RED)
                         + Component.translatable(
@@ -108,7 +92,10 @@ public final class MachineSatLink extends BlockMultiblockCore
                                                 : "tile.machine_satlink.no")
                                 .getString();
         info.line(
-                Component.translatable("desc.block.machineSatLink.connected", answer).getString());
+                Component.empty()
+                        .append(
+                                Component.translatable(
+                                        "desc.block.machineSatLink.connected", answer)));
         for (Component line : link.info) info.line(line.getString());
     }
 }

@@ -3,6 +3,7 @@
 
 package com.hbm.items;
 
+import com.hbm.backport.ItemInstance;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import com.hbm.backport.Nbt;
@@ -17,7 +18,7 @@ public interface ISatChip {
         if (stack.getItem() instanceof ISatChip chip) chip.setFreq(stack, freq);
     }
 
-    default int getFreq(ItemStack stack) {
+    default int getFreq(ItemInstance stack) {
         CustomData data = stack.get(ModDataComponents.PERSISTENT_DATA.get());
         return data == null ? 0 : Nbt.getIntOr(data.copyTag(), "freq", 0);
     }

@@ -3,11 +3,10 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.BlockEntityCargoElevator;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.blocks.multiblock.MultiblockSurface;
-import com.hbm.platform.Services;
-import com.hbm.tileentity.machine.BlockEntityCargoElevator;
 import com.hbm.util.BlockReadBounds;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +43,6 @@ import com.hbm.backport.InteractionResults;
 public class BlockCargoElevator extends BlockMultiblockCore implements ITickingBlock {
 
     public static final EnumProperty<Part> PART = EnumProperty.create("part", Part.class);
-    private static final int[] DIMENSIONS = {0, 0, 1, 1, 1, 1};
 
     public BlockCargoElevator(Properties properties) {
         super(properties);
@@ -55,16 +53,6 @@ public class BlockCargoElevator extends BlockMultiblockCore implements ITickingB
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         super.createBlockStateDefinition(builder);
         builder.add(PART);
-    }
-
-    @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 1;
     }
 
     @Override
@@ -97,7 +85,7 @@ public class BlockCargoElevator extends BlockMultiblockCore implements ITickingB
 
     @Override
     protected void visitPlacedCells(
-            LevelAccessor level, BlockPos core, Direction facing, CellVisitor visitor) {
+            LevelAccessor level, BlockPos core, Direction facing, FootprintVisitor visitor) {
         int height =
                 level.getBlockEntity(core) instanceof BlockEntityCargoElevator elevator
                         ? elevator.height
@@ -107,18 +95,17 @@ public class BlockCargoElevator extends BlockMultiblockCore implements ITickingB
 
     @Override
     protected void visitTeardownCells(
-            LevelAccessor level, BlockPos core, Direction facing, CellVisitor visitor) {
-
+            LevelAccessor level, BlockPos core, Direction facing, FootprintVisitor visitor) {
         visitSections(core, (level.getMaxBuildHeight() - 1) - core.getY(), visitor);
     }
 
-    private static void visitSections(BlockPos core, int height, CellVisitor visitor) {
+    private static void visitSections(BlockPos core, int height, FootprintVisitor visitor) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int y = 0; y <= height; y++) {
             for (int x = -1; x <= 1; x++) {
                 for (int z = -1; z <= 1; z++) {
                     if (x == 0 && y == 0 && z == 0) continue;
-                    visitor.cell(pos.setWithOffset(core, x, y, z), MASK_NONE);
+                    visitor.cell(pos.setWithOffset(core, x, y, z));
                 }
             }
         }
@@ -252,7 +239,7 @@ public class BlockCargoElevator extends BlockMultiblockCore implements ITickingB
         if (isCellState(state)
                 && level instanceof ServerLevel server
                 && !player.getAbilities().instabuild
-                && Services.PLATFORM.canHarvestBlock(level, pos, state, player)) {
+                && state.canHarvestBlock((BlockGetter) level, pos, player)) {
             BlockEntityCargoElevator elevator = elevator(level, pos);
             if (elevator != null) {
                 Block.dropResources(

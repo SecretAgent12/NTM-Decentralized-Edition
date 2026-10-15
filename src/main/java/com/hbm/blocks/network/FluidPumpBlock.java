@@ -4,6 +4,7 @@
 package com.hbm.blocks.network;
 
 import com.hbm.api.fluidmk2.FluidCaps;
+import com.hbm.blockentity.network.BlockEntityFluidPump;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.blocks.RefreshesNeighborState;
@@ -14,11 +15,11 @@ import com.hbm.inventory.fluid.NTMFluidProperties;
 import com.hbm.items.ModDataComponents;
 import com.hbm.items.machine.FluidIdentifierData;
 import com.hbm.items.machine.FluidIdentifierItem;
-import com.hbm.platform.Services;
+import com.hbm.platform.NeoForgeCaps;
 import com.hbm.registration.RegistryHandle;
-import com.hbm.tileentity.network.BlockEntityFluidPump;
 import java.util.Locale;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -33,6 +34,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -40,7 +42,6 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
-import com.hbm.backport.Orientation;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.BlockCompat;
@@ -65,7 +66,6 @@ public class FluidPumpBlock extends BlockCompat implements ITickingBlock, ILookO
 
     @Override
     public @Nullable BlockState getStateForPlacement(BlockPlaceContext ctx) {
-
         return defaultBlockState().setValue(FACING, ctx.getHorizontalDirection().getOpposite());
     }
 
@@ -94,7 +94,6 @@ public class FluidPumpBlock extends BlockCompat implements ITickingBlock, ILookO
             InteractionHand hand,
             BlockHitResult hit) {
         if (player.isShiftKeyDown()) return InteractionResult.PASS;
-
         if (stack.getItem() instanceof FluidIdentifierItem) {
             if (level.isClientSide()) return InteractionResult.SUCCESS;
             if (level.getBlockEntity(pos) instanceof BlockEntityFluidPump pump) {
@@ -104,8 +103,7 @@ public class FluidPumpBlock extends BlockCompat implements ITickingBlock, ILookO
                                 FluidIdentifierData.EMPTY);
                 Fluid type = data.primary();
                 if (type != null && type != Fluids.EMPTY) {
-                    pump.type = type;
-                    pump.setChanged();
+                    if (pump.setFluidType(type)) pump.markChanged();
                     player.sendSystemMessage(
                             Component.translatable(
                                     "hbm.message.pumpSet",
@@ -158,15 +156,24 @@ public class FluidPumpBlock extends BlockCompat implements ITickingBlock, ILookO
 
     @Override
     public void declareExtraCaps(RegistryHandle<? extends Block> self) {
-
-        Services.CAPS.registerProvider(
-                FluidCaps.PROVIDER,
-                ModBlockEntities.PIPE_PUMP,
-                (be, face) -> face.side() == be.output() && be.carries(face.fluid()) ? be : null);
-        Services.CAPS.registerProvider(
-                FluidCaps.RECEIVER,
-                ModBlockEntities.PIPE_PUMP,
-                (be, face) -> face.side() == be.intake() && be.carries(face.fluid()) ? be : null);
+        NeoForgeCaps.pending.add(
+                new NeoForgeCaps.Registration<>(
+                        FluidCaps.PROVIDER,
+                        (Supplier<? extends BlockEntityType<? extends BlockEntityFluidPump>>)
+                                ModBlockEntities.PIPE_PUMP,
+                        (be, face) ->
+                                face.side() == be.output() && be.carries(face.fluid())
+                                        ? be
+                                        : null));
+        NeoForgeCaps.pending.add(
+                new NeoForgeCaps.Registration<>(
+                        FluidCaps.RECEIVER,
+                        (Supplier<? extends BlockEntityType<? extends BlockEntityFluidPump>>)
+                                ModBlockEntities.PIPE_PUMP,
+                        (be, face) ->
+                                face.side() == be.intake() && be.carries(face.fluid())
+                                        ? be
+                                        : null));
     }
 
     // backport: woven by hbm-compiler NeighborEdge (@RefreshesNeighborState)

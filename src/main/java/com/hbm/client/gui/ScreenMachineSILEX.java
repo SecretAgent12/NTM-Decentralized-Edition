@@ -4,16 +4,15 @@
 
 package com.hbm.client.gui;
 
-import com.hbm.interfaces.ILookOverlay;
+import com.hbm.blockentity.machine.BlockEntitySILEX;
 import com.hbm.inventory.container.MenuMachineSILEX;
 import com.hbm.inventory.fluid.NTMFluidProperties;
 import com.hbm.inventory.fluid.NTMFluids;
 import com.hbm.inventory.recipes.SILEXRecipes;
 import com.hbm.items.machine.EnumWavelengths;
 import com.hbm.lib.Library;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toserver.NbtControlPayload;
-import com.hbm.platform.Services;
-import com.hbm.tileentity.machine.BlockEntitySILEX;
 import java.awt.*;
 import java.util.List;
 import net.minecraft.client.Minecraft;
@@ -45,6 +44,10 @@ public class ScreenMachineSILEX extends ScreenInfoContainer<MenuMachineSILEX> {
         return this.imageWidth / 2 - 54;
     }
 
+    public static float waveFrequency(EnumWavelengths mode) {
+        return 0.1F * (float) Math.pow(2, mode.ordinal());
+    }
+
     @Override
     protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         graphics.blit(
@@ -62,7 +65,7 @@ public class ScreenMachineSILEX extends ScreenInfoContainer<MenuMachineSILEX> {
         BlockEntitySILEX be = silex();
 
         if (be.mode != EnumWavelengths.NULL) {
-            float freq = 0.1F * (float) Math.pow(2, be.mode.ordinal());
+            float freq = waveFrequency(be.mode);
             int color =
                     be.mode != EnumWavelengths.VISIBLE
                             ? be.mode.guiColor
@@ -210,7 +213,7 @@ public class ScreenMachineSILEX extends ScreenInfoContainer<MenuMachineSILEX> {
             if (core != null) {
                 CompoundTag data = new CompoundTag();
                 data.putBoolean("void", true);
-                Services.NETWORK.sendToServer(new NbtControlPayload(core, data));
+                PacketWire.sendToServer(new NbtControlPayload(core, data));
                 playClick();
                 return true;
             }

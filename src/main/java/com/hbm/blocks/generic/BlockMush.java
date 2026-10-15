@@ -4,7 +4,6 @@
 package com.hbm.blocks.generic;
 
 import com.hbm.blocks.ModBlocks;
-import com.hbm.config.RadiationConfig;
 import com.hbm.data.WorldData;
 import com.hbm.world.feature.HugeMushFeature;
 import net.minecraft.core.BlockPos;
@@ -23,7 +22,6 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import com.hbm.backport.compat.BushBlockCompat;
 
 public class BlockMush extends BushBlockCompat implements BonemealableBlock {
-
     private static final VoxelShape SHAPE = box(5.0D, 0.0D, 5.0D, 11.0D, 6.4D, 11.0D);
 
     // backport: 1.21.1's BushBlock declares codec() abstract
@@ -35,12 +33,9 @@ public class BlockMush extends BushBlockCompat implements BonemealableBlock {
     }
 
     private static final int SPREAD_CHANCE = 25;
-
     private static final int CROWD_REACH = 4;
     private static final int CROWD_LIMIT = 3;
-
     private static final int MYCELIUM_CHANCE = 5;
-
     private static final float BONEMEAL_CHANCE = 0.4F;
 
     public BlockMush(Properties props) {
@@ -74,7 +69,6 @@ public class BlockMush extends BushBlockCompat implements BonemealableBlock {
     @Override
     protected void randomTick(
             BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-
         if (WorldData.ENABLE_MYCELIUM.get()
                 && level.getBlockState(pos.below()).is(ModBlocks.WASTE_EARTH.get())
                 && random.nextInt(MYCELIUM_CHANCE) == 0) {

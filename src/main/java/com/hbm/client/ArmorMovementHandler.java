@@ -3,11 +3,17 @@
 
 package com.hbm.client;
 
+import com.hbm.api.environment.Environment;
+import com.hbm.api.environment.EnvironmentProvider;
 import com.hbm.extprop.HbmPlayerProps;
 import com.hbm.items.armor.ArmorDash;
+import com.hbm.items.armor.ArmorFlight;
 import com.hbm.items.armor.ArmorSuitEffects.Jetpack;
 import com.hbm.items.armor.ArmorSuitEffects;
 import com.hbm.items.armor.ItemWings;
+import com.hbm.items.armor.ModArmorItem;
+import com.hbm.packet.PacketWire;
+import com.hbm.packet.toserver.ArmorFlightPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.client.player.LocalPlayer;
@@ -20,13 +26,28 @@ public final class ArmorMovementHandler {
     public static void clientTick() {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
-
         if (player == null || minecraft.isPaused()) return;
 
         ArmorSuitEffects.Jetpack kind = ArmorSuitEffects.jetpackKind(player);
-        if (kind != null) jetpack(player, kind);
         ItemWings.Kind wings = ArmorSuitEffects.wingsKind(player);
+        HbmPlayerProps props = HbmPlayerProps.getData(player);
+        int intent = ArmorFlight.mode(player, kind, wings).ordinal();
+        if (kind != null) jetpack(player, kind);
         if (wings != null) wings(player, wings);
+        boolean capped =
+                !player.isFallFlying()
+                        && player.getDeltaMovement().y < -0.25D
+                        && ArmorSuitEffects.hasFullSet(player, ModArmorItem.Suit.EUPHEMIUM);
+        if (capped) {
+            Vec3 motion = player.getDeltaMovement();
+            player.setDeltaMovement(motion.x, -0.25D, motion.z);
+            player.fallDistance = 0;
+        }
+        if (props.armorFlightIntent != intent || props.euphemiumFallCapped != capped) {
+            props.armorFlightIntent = intent;
+            props.euphemiumFallCapped = capped;
+            PacketWire.sendToServer(new ArmorFlightPayload(intent, capped));
+        }
         if (ArmorSuitEffects.hasEnvsuitSwim(player)) envsuitSwim(player);
         ArmorDash.tick(player, forwardInput(), strafeInput());
     }
@@ -34,23 +55,32 @@ public final class ArmorMovementHandler {
     private static void jetpack(LocalPlayer player, Jetpack kind) {
         HbmPlayerProps props = HbmPlayerProps.getData(player);
         Vec3 motion = player.getDeltaMovement();
+        float gravity = Environment.gravity(player);
 
         if (props.isJetpackActive() && !(kind == Jetpack.BRAKE && player.isShiftKeyDown())) {
-
-            if (motion.y < kind.ceiling)
-                player.setDeltaMovement(motion.x, motion.y + kind.thrust, motion.z);
+            if (gravity == 0F && (kind == Jetpack.FLY || kind == Jetpack.BRAKE)) {
+                player.setDeltaMovement(motion.add(player.getLookAngle().scale(0.05D)));
+            } else if (motion.y < kind.ceiling) {
+                player.setDeltaMovement(
+                        motion.x, motion.y + kind.thrust * kind.lift(gravity), motion.z);
+            }
             if (kind.lookThrust == 0D) player.fallDistance = 0;
-
             if (kind.lookThrust > 0D && player.getDeltaMovement().length() < kind.speedCap) {
                 Vec3 look = player.getLookAngle();
                 player.setDeltaMovement(player.getDeltaMovement().add(look.scale(kind.lookThrust)));
                 if (look.y > 0D) player.fallDistance = 0;
             }
+            if (kind == Jetpack.DNS && player.isShiftKeyDown() && !player.onGround()) {
+                Vec3 current = player.getDeltaMovement();
+                player.setDeltaMovement(current.x, current.y - 0.1D, current.z);
+            }
             return;
         }
 
+        if (player.isFallFlying() && !props.isJetpackActive()) return;
+
         if (kind == Jetpack.BRAKE) {
-            brakeHover(player, motion, props);
+            brakeHover(player, motion, props, gravity);
             return;
         }
 
@@ -84,15 +114,20 @@ public final class ArmorMovementHandler {
         }
     }
 
-    private static void brakeHover(LocalPlayer player, Vec3 motion, HbmPlayerProps props) {
+    private static void brakeHover(
+            LocalPlayer player, Vec3 motion, HbmPlayerProps props, float gravity) {
         if (player.isShiftKeyDown() && !props.isJetpackActive()
                 || player.onGround()
-                || !props.enableBackpack) return;
+                || !props.enableBackpack
+                || !(gravity > 0F)) return;
         player.fallDistance = 0;
+        float thrust = Math.max(gravity / EnvironmentProvider.STANDARD_GRAVITY, 1);
         double dy =
-                motion.y < -1D
-                        ? motion.y + 0.2D
-                        : motion.y < -0.1D ? motion.y + 0.1D : motion.y < 0D ? 0D : motion.y;
+                motion.y < -1 * thrust
+                        ? motion.y + 0.2D * thrust
+                        : motion.y < -0.1 * thrust
+                                ? motion.y + 0.1D * thrust
+                                : motion.y < 0D ? 0D : motion.y;
         player.setDeltaMovement(motion.x * 1.025D, dy, motion.z * 1.025D);
     }
 
@@ -105,6 +140,9 @@ public final class ArmorMovementHandler {
 
     private static void wings(LocalPlayer player, ItemWings.Kind kind) {
         if (player.onGround()) return;
+        if (player.isFallFlying()
+                && (kind == ItemWings.Kind.LIMP
+                        || !HbmPlayerProps.getData(player).isJetpackActive())) return;
         player.fallDistance = 0;
         Vec3 motion = player.getDeltaMovement();
 
@@ -131,6 +169,17 @@ public final class ArmorMovementHandler {
             }
         } else if (props.enableBackpack && !player.isShiftKeyDown()) {
             dy = dy < -1D ? dy + 0.4D : dy < -0.1D ? dy + 0.2D : dy < 0D ? 0D : dy;
+        } else if (props.enableBackpack) {
+            float gravity = Environment.gravity(player);
+            if (gravity > 1.5F) {
+                if (Environment.installed()) return;
+            } else {
+                if (gravity != 0 && gravity < 0.2F) gravity = 0.2F;
+                dy /= 0.98F;
+                dy += gravity / 20F;
+                dy -= EnvironmentProvider.STANDARD_GRAVITY / 20F;
+                dy *= 0.98F;
+            }
         }
 
         double dx = motion.x;
@@ -138,7 +187,6 @@ public final class ArmorMovementHandler {
         if (props.enableBackpack) {
             Vec3 look = player.getLookAngle().multiply(1.0D, 0.0D, 1.0D).normalize();
             double mod = player.isSprinting() ? 1D : 0.25D;
-
             if (player.zza != 0F) {
                 dx += look.x * 0.35D * player.zza * mod;
                 dz += look.z * 0.35D * player.zza * mod;

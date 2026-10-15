@@ -3,10 +3,10 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.BlockEntitySnowglobe;
 import com.hbm.blocks.generic.BlockSnowglobe.SnowglobeType;
 import com.hbm.client.I18nClient;
 import com.hbm.sound.ModSounds;
-import com.hbm.tileentity.BlockEntitySnowglobe;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import com.hbm.backport.client.gui.input.KeyEvent;
@@ -16,7 +16,6 @@ import com.hbm.backport.client.gui.ScreenCompat;
 import com.hbm.backport.client.gui.WidgetBridge;
 
 public class ScreenSnowglobe extends ScreenCompat {
-
     private static final int SIZE_X = 300;
     private static final int SIZE_Y = 150;
     private static final int SLAB_COLOR = 0xCC003300;

@@ -10,6 +10,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -22,9 +23,7 @@ public class DescBlockItem extends BlockItemCompat {
 
     public enum Desc {
         STANDARD,
-
         YELLOW,
-
         PLAIN
     }
 
@@ -48,19 +47,18 @@ public class DescBlockItem extends BlockItemCompat {
             TooltipDisplay display,
             Consumer<Component> adder,
             TooltipFlag flag) {
-
         if (descLines > 0) {
-            if (mode != Desc.STANDARD || ModifierKeys.leftShiftHeld()) {
-                String key = "desc.hbm." + BuiltInRegistries.BLOCK.getKey(getBlock()).getPath();
+            if (mode != Desc.STANDARD || ModifierKeys.detailsHeld()) {
+                ResourceLocation id = BuiltInRegistries.BLOCK.getKey(getBlock());
+                String key = "desc." + id.getNamespace() + "." + id.getPath();
                 for (int i = 1; i <= descLines; i++) {
                     MutableComponent line = Component.translatable(key + ".line" + i);
                     adder.accept(mode == Desc.PLAIN ? line : line.withStyle(ChatFormatting.YELLOW));
                 }
             } else {
-                adder.accept(TooltipStyle.holdLshift());
+                adder.accept(TooltipStyle.holdDetails());
             }
         }
-
         super.appendHoverText(stack, context, display, adder, flag);
     }
 }

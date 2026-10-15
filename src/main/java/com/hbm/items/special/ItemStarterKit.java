@@ -11,6 +11,7 @@ import com.hbm.items.machine.EnumBatteryPack;
 import com.hbm.items.machine.ItemBreedingRod.BreedingRodType;
 import com.hbm.items.machine.ItemFluidTank;
 import com.hbm.registration.RegistryHandle;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import java.util.List;
 import java.util.function.Consumer;
@@ -35,7 +36,6 @@ import com.hbm.backport.compat.ItemCompat;
 import com.hbm.backport.ColorFamilies;
 
 public class ItemStarterKit extends ItemCompat {
-
     private enum Haz {
         PLAIN,
         RED,
@@ -97,8 +97,8 @@ public class ItemStarterKit extends ItemCompat {
             }
             if (kind.haz != null) giveHaz(server, player, kind.haz);
 
-            server.playSound(
-                    null,
+            EntitySounds.play(
+                    player,
                     player.getX(),
                     player.getY(),
                     player.getZ(),
@@ -272,7 +272,6 @@ public class ItemStarterKit extends ItemCompat {
     }
 
     private static List<ItemStack> nukeElectric() {
-
         return List.of(
                 new ItemStack(ModItems.COIL_COPPER, 16),
                 new ItemStack(ModItems.COIL_GOLD, 8),

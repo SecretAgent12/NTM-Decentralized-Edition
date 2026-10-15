@@ -6,10 +6,11 @@ package com.hbm.items.machine;
 import com.hbm.inventory.material.MaterialShapes;
 import com.hbm.inventory.material.NTMMaterial;
 import com.hbm.lib.Library;
-import com.hbm.util.I18nUtil;
+import com.hbm.registration.NeoForgeRegistrar;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -44,7 +45,7 @@ public class ItemMold extends ItemCompat {
             TooltipDisplay display,
             Consumer<Component> adder,
             TooltipFlag flag) {
-        adder.accept(Component.literal(mold.getTitle()).withStyle(ChatFormatting.YELLOW));
+        adder.accept(mold.getTitle().copy().withStyle(ChatFormatting.YELLOW));
         if (mold.size == SIZE_SMALL) {
             adder.accept(
                     Component.translatable("block.hbm.foundry_mold")
@@ -71,7 +72,7 @@ public class ItemMold extends ItemCompat {
 
         public abstract int getCost();
 
-        public abstract String getTitle();
+        public abstract Component getTitle();
     }
 
     public static class MoldShape extends Mold {
@@ -101,9 +102,9 @@ public class ItemMold extends ItemCompat {
                 if (fallback == null) fallback = item;
                 if (!"hbm".equals(id.getNamespace())) continue;
                 if (id.getPath().contains("fragment")) continue;
-                return new ItemStack(item, this.amount);
+                return new ItemStack(item, amount);
             }
-            return new ItemStack(fallback, this.amount);
+            return new ItemStack(fallback, amount);
         }
 
         @Override
@@ -112,8 +113,8 @@ public class ItemMold extends ItemCompat {
         }
 
         @Override
-        public String getTitle() {
-            return I18nUtil.resolveKey("shape." + shape.name()) + " x" + amount;
+        public Component getTitle() {
+            return Component.translatable("shape." + shape.name()).append(" x" + amount);
         }
     }
 
@@ -145,6 +146,8 @@ public class ItemMold extends ItemCompat {
 
     public static class MoldMulti extends Mold {
 
+        private static final Map<String, MoldMulti> NAMED = new HashMap<>();
+
         private final HashMap<NTMMaterial, ResourceLocation> map = new HashMap<>();
         private final int amount;
 
@@ -153,6 +156,20 @@ public class ItemMold extends ItemCompat {
             this.amount = amount;
             for (int i = 0; i < inputs.length; i += 2) {
                 map.put((NTMMaterial) inputs[i], Library.id((String) inputs[i + 1]));
+            }
+            NAMED.put(name, this);
+        }
+
+        public static MoldMulti named(String name) {
+            MoldMulti mold = NAMED.get(name);
+            if (mold == null) throw new IllegalArgumentException("no fixed-output mold " + name);
+            return mold;
+        }
+
+        public void addon(NTMMaterial mat, ResourceLocation item) {
+            NeoForgeRegistrar.assertOpen("MoldMulti.addon(" + name + ")");
+            if (map.putIfAbsent(mat, item) != null) {
+                throw new IllegalStateException(name + " already casts " + mat.tagPath);
             }
         }
 
@@ -169,8 +186,8 @@ public class ItemMold extends ItemCompat {
         }
 
         @Override
-        public String getTitle() {
-            return I18nUtil.resolveKey("shape." + name) + " x1";
+        public Component getTitle() {
+            return Component.translatable("shape." + name).append(" x1");
         }
     }
 }

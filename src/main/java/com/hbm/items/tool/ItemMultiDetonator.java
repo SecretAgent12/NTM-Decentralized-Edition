@@ -5,10 +5,12 @@ package com.hbm.items.tool;
 
 import com.hbm.NuclearTech;
 import com.hbm.capability.NtmContracts;
+import com.hbm.config.NeoForgeHbmConfig;
 import com.hbm.interfaces.IBomb;
 import com.hbm.items.ModDataComponents;
-import com.hbm.platform.Services;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
+import com.hbm.util.KeyHints;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -51,7 +53,6 @@ public class ItemMultiDetonator extends ItemCompat {
     public InteractionResult backport$useOn(UseOnContext context) {
         Player player = context.getPlayer();
         if (player == null) return InteractionResult.PASS;
-
         if (!player.isShiftKeyDown()) return InteractionResult.PASS;
 
         Level level = context.getLevel();
@@ -60,8 +61,8 @@ public class ItemMultiDetonator extends ItemCompat {
         grown.add(context.getClickedPos().asLong());
         stack.set(ModDataComponents.DETONATOR_POS_LIST.get(), List.copyOf(grown));
 
-        level.playSound(
-                null,
+        EntitySounds.play(
+                player,
                 player.blockPosition(),
                 ModSounds.TECH_BOOP.get(),
                 SoundSource.PLAYERS,
@@ -93,8 +94,8 @@ public class ItemMultiDetonator extends ItemCompat {
 
         if (player.isShiftKeyDown()) {
             stack.remove(ModDataComponents.DETONATOR_POS_LIST.get());
-            level.playSound(
-                    null,
+            EntitySounds.play(
+                    player,
                     player.blockPosition(),
                     ModSounds.TECH_BOOP.get(),
                     SoundSource.PLAYERS,
@@ -112,12 +113,11 @@ public class ItemMultiDetonator extends ItemCompat {
         int fired = 0;
         if (!level.isClientSide()) {
             for (long packed : linked) {
-
                 BlockPos pos = ItemDetonator.bombTarget(level, BlockPos.of(packed));
                 IBomb bomb = NtmContracts.BOMB.at(level, pos);
                 if (bomb == null) continue;
                 if (bomb.explode(level, pos, player).wasSuccessful()) fired++;
-                if (Services.CONFIG.runtime().extendedLogging()) {
+                if (NeoForgeHbmConfig.runtime().extendedLogging()) {
                     NuclearTech.LOGGER.info(
                             "[DET] Tried to detonate block at {} / {} / {} by {}!",
                             pos.getX(),
@@ -127,8 +127,8 @@ public class ItemMultiDetonator extends ItemCompat {
                 }
             }
         }
-        level.playSound(
-                null,
+        EntitySounds.play(
+                player,
                 player.blockPosition(),
                 ModSounds.TECH_BLEEP.get(),
                 SoundSource.PLAYERS,
@@ -151,9 +151,20 @@ public class ItemMultiDetonator extends ItemCompat {
             TooltipDisplay display,
             Consumer<Component> adder,
             TooltipFlag flag) {
-        adder.accept(Component.translatable("item.hbm.detonator_multi.desc1"));
-        adder.accept(Component.translatable("item.hbm.detonator_multi.desc2"));
-        adder.accept(Component.translatable("item.hbm.detonator_multi.desc3"));
+        adder.accept(
+                Component.translatable(
+                        "tooltip.hbm.detonator.add_position",
+                        KeyHints.key("key.sneak", "key.keyboard.left.shift"),
+                        KeyHints.key("key.use", "key.mouse.right")));
+        adder.accept(
+                Component.translatable(
+                        "tooltip.hbm.detonator.detonate",
+                        KeyHints.key("key.use", "key.mouse.right")));
+        adder.accept(
+                Component.translatable(
+                        "tooltip.hbm.detonator.clear_positions",
+                        KeyHints.key("key.sneak", "key.keyboard.left.shift"),
+                        KeyHints.key("key.use", "key.mouse.right")));
 
         List<Long> linked = positions(stack);
         if (linked.isEmpty()) {

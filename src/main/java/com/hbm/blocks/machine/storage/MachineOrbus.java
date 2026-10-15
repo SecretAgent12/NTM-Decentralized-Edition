@@ -3,6 +3,8 @@
 
 package com.hbm.blocks.machine.storage;
 
+import com.hbm.blockentity.machine.storage.BlockEntityBarrel;
+import com.hbm.blockentity.machine.storage.BlockEntityMachineOrbus;
 import com.hbm.blocks.IPersistentInfoProvider;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.ModBlockEntities;
@@ -14,12 +16,9 @@ import com.hbm.inventory.fluid.NTMFluidProperties;
 import com.hbm.items.ModDataComponents;
 import com.hbm.items.machine.FluidIdentifierData;
 import com.hbm.items.machine.FluidIdentifierItem;
-import com.hbm.tileentity.machine.storage.BlockEntityBarrel;
-import com.hbm.tileentity.machine.storage.BlockEntityMachineOrbus;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import com.hbm.backport.InteractionResult;
@@ -36,60 +35,8 @@ import org.jspecify.annotations.Nullable;
 
 public class MachineOrbus extends BlockMultiblockCore
         implements ITickingBlock, ICapabilityBlock, IPersistentInfoProvider {
-
-    private static final int[] DIMENSIONS = {4, 0, 2, 1, 2, 1};
-
     public MachineOrbus(Properties props) {
         super(props);
-    }
-
-    @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 1;
-    }
-
-    @Override
-    protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
-        super.visitCells(core, facing, visitor);
-
-        Direction back = facing.getOpposite();
-        Direction rot = facing.getClockWise();
-        BlockPos top = core.above(4);
-
-        visitor.cell(core.relative(back), MASK_DOWN);
-        visitor.cell(core.relative(rot), MASK_DOWN);
-        visitor.cell(core.relative(back).relative(rot), MASK_DOWN);
-
-        visitor.cell(top, MASK_UP);
-        visitor.cell(top.relative(back), MASK_UP);
-        visitor.cell(top.relative(rot), MASK_UP);
-        visitor.cell(top.relative(back).relative(rot), MASK_UP);
-    }
-
-    @Override
-    public int coreMask() {
-        return MASK_DOWN;
-    }
-
-    @Override
-    protected void visitPassiveCells(BlockPos core, Direction facing, PassiveCellVisitor visitor) {
-        Direction back = facing.getOpposite();
-        Direction rot = facing.getClockWise();
-        BlockPos top = core.above(4);
-
-        visitor.passiveCell(core.relative(back), MASK_ALL, PASSIVE_FLUID_IN);
-        visitor.passiveCell(core.relative(rot), MASK_ALL, PASSIVE_FLUID_IN);
-        visitor.passiveCell(core.relative(back).relative(rot), MASK_ALL, PASSIVE_FLUID_IN);
-
-        visitor.passiveCell(top, MASK_ALL, PASSIVE_FLUID_IN);
-        visitor.passiveCell(top.relative(back), MASK_ALL, PASSIVE_FLUID_IN);
-        visitor.passiveCell(top.relative(rot), MASK_ALL, PASSIVE_FLUID_IN);
-        visitor.passiveCell(top.relative(back).relative(rot), MASK_ALL, PASSIVE_FLUID_IN);
     }
 
     @Override
@@ -127,7 +74,6 @@ public class MachineOrbus extends BlockMultiblockCore
     @Override
     protected InteractionResult useAtCore(
             BlockState coreState, Level level, BlockPos core, Player player, BlockHitResult hit) {
-
         if (player.isShiftKeyDown()) return InteractionResult.SUCCESS;
         if (level.isClientSide()) return InteractionResult.SUCCESS;
         if (level.getBlockEntity(core) instanceof MenuProvider menu) {
@@ -143,7 +89,6 @@ public class MachineOrbus extends BlockMultiblockCore
 
     @Override
     public MachineCaps caps() {
-
         return MachineCaps.of(ModBlockEntities.ORBUS)
                 .fluidIn()
                 .fluidOut()

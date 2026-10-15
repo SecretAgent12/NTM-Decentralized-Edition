@@ -18,7 +18,6 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.BlockCompat;
 
 public class BlockFloatBomb extends BlockCompat implements IBomb {
-
     private static final int RADIUS = 15;
     private static final int LIFT = 50;
 

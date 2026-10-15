@@ -12,9 +12,11 @@ import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import net.minecraft.client.renderer.RenderType;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.jspecify.annotations.Nullable;
 
 /**
  * 26.x {@code net.minecraft.client.renderer.state.level.QuadParticleRenderState}: camera-relative
@@ -27,6 +29,23 @@ import org.joml.Vector3f;
 public class QuadParticleRenderState implements ParticleGroupRenderState {
 
     private static final int STRIDE = 14;
+
+    /**
+     * backport: where 26.x mods mix into QuadParticleFeatureRenderer (drawLayers picks each
+     * layer's pipeline, executeGroup draws a group's layers): the render type a layer is drawn
+     * with, and a pass drawn after all layers of a {@link #submit} with the quads of the layers it
+     * selects (hbm: {@code com.hbm.client.particle.ParticleLayers}).
+     */
+    public interface DrawHook {
+        RenderType renderType(SingleQuadParticle.Layer layer);
+
+        /** The render type of the pass after all layers, or null for none this frame. */
+        @Nullable RenderType afterLayers();
+
+        boolean drawnAfterLayers(SingleQuadParticle.Layer layer);
+    }
+
+    public static @Nullable DrawHook drawHook;
 
     private final Map<SingleQuadParticle.Layer, Batch> batches = new IdentityHashMap<>();
     private final List<SingleQuadParticle.Layer> order = new ArrayList<>();
@@ -68,14 +87,24 @@ public class QuadParticleRenderState implements ParticleGroupRenderState {
 
     @Override
     public void submit(SubmitNodeCollector collector, CameraRenderState camera) {
+        DrawHook hook = drawHook;
         for (int pass = 0; pass < 2; pass++) {
             for (SingleQuadParticle.Layer layer : order) {
                 if (layer.translucent() != (pass == 1)) continue;
                 Batch b = batches.get(layer);
                 if (b.count == 0) continue;
+                RenderType type = hook == null ? layer.renderType() : hook.renderType(layer);
                 collector.submitCustomGeometry(
-                        new PoseStack(), layer.renderType(), (pose, buffer) -> b.emit(buffer, pose.pose()));
+                        new PoseStack(), type, (pose, buffer) -> b.emit(buffer, pose.pose()));
             }
+        }
+        RenderType after = hook == null ? null : hook.afterLayers();
+        if (after == null) return;
+        for (SingleQuadParticle.Layer layer : order) {
+            Batch b = batches.get(layer);
+            if (b.count == 0 || !hook.drawnAfterLayers(layer)) continue;
+            collector.submitCustomGeometry(
+                    new PoseStack(), after, (pose, buffer) -> b.emit(buffer, pose.pose()));
         }
     }
 

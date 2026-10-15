@@ -30,7 +30,6 @@ public class BlockLayering extends SnowLayerBlockCompat {
     @Override
     protected boolean canBeReplaced(BlockState state, BlockPlaceContext context) {
         if (alwaysReplaceable) return true;
-
         if (!context.getItemInHand().is(this.asItem())) return false;
         return super.canBeReplaced(state, context);
     }

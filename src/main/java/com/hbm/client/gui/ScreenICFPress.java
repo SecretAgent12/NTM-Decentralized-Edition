@@ -3,9 +3,9 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.machine.BlockEntityICFPress;
 import com.hbm.inventory.container.MenuICFPress;
 import com.hbm.lib.Library;
-import com.hbm.tileentity.machine.BlockEntityICFPress;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;

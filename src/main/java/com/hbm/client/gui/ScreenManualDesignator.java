@@ -7,8 +7,8 @@ import com.hbm.api.item.IDesignatorItem;
 import com.hbm.items.ModDataComponents;
 import com.hbm.items.tool.ItemDesignatorManual;
 import com.hbm.lib.Library;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toserver.DesignatorCoordPayload;
-import com.hbm.platform.Services;
 import java.util.ArrayList;
 import java.util.List;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
@@ -164,7 +164,7 @@ public class ScreenManualDesignator extends ScreenCompat {
             minecraft
                     .getSoundManager()
                     .play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
-            Services.NETWORK.sendToServer(
+            PacketWire.sendToServer(
                     new DesignatorCoordPayload(
                             hand, button.operator, button.value, button.reference));
             shown =

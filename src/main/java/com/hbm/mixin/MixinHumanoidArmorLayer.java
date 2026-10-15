@@ -10,6 +10,9 @@ import com.hbm.client.render.ArmorHeadRenderer;
 import com.hbm.client.render.ArmorSocketRenderer;
 import com.hbm.client.render.ArmorWorldRenderer;
 import com.hbm.items.armor.ModArmorItem;
+import com.hbm.render.util.InnerArmorModel;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -19,10 +22,14 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
@@ -32,9 +39,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * head pieces, bare jetpacks/wings, skin-hiding suits) becomes the {@link #hbm$shouldRender}
  * filter of the stack the HEAD hook sees; the 26.x HumanoidRenderState is extracted from the
  * entity and the submissions go straight into the 1.21.1 buffers.
+ *
+ * <p>backport: 26.x InnerArmorModel swaps the model to getArmorModel(state, LEGS) inside
+ * renderArmorPiece; in 1.21.1 render() picks the model before renderArmorPiece, so the swap replaces
+ * the model parameter with the inner model, its part visibility uses LEGS (26.x leggings model) and
+ * usesInnerModel selects the inner texture layer.
  */
 @Mixin(HumanoidArmorLayer.class)
 public abstract class MixinHumanoidArmorLayer {
+
+    @Shadow @Final private HumanoidModel<?> innerModel;
 
     @Unique
     private static boolean hbm$shouldRender(ItemStack stack, EquipmentSlot slot) {
@@ -99,5 +113,60 @@ public abstract class MixinHumanoidArmorLayer {
                 || !ArmorWorldRenderer.hidesSkin(stack)) return;
         ArmorWorldRenderer.submit(pose, collector, light, model, state, slot, armor.suit(), stack);
         ci.cancel();
+    }
+
+    @Unique
+    private static boolean hbm$inner(LivingEntity entity, EquipmentSlot slot) {
+        return InnerArmorModel.POINT.get().test(entity.getItemBySlot(slot));
+    }
+
+    @ModifyVariable(
+            method =
+                    "renderArmorPiece(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;"
+                            + "Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/EquipmentSlot;I"
+                            + "Lnet/minecraft/client/model/HumanoidModel;FFFFFF)V",
+            at = @At("HEAD"),
+            argsOnly = true)
+    private HumanoidModel<?> hbm$innerModel(
+            HumanoidModel<?> model,
+            @Local(argsOnly = true) LivingEntity entity,
+            @Local(argsOnly = true) EquipmentSlot slot) {
+        return hbm$inner(entity, slot) ? this.innerModel : model;
+    }
+
+    @ModifyArg(
+            method =
+                    "renderArmorPiece(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;"
+                            + "Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/EquipmentSlot;I"
+                            + "Lnet/minecraft/client/model/HumanoidModel;FFFFFF)V",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/renderer/entity/layers/HumanoidArmorLayer;"
+                                            + "setPartVisibility(Lnet/minecraft/client/model/HumanoidModel;"
+                                            + "Lnet/minecraft/world/entity/EquipmentSlot;)V"),
+            index = 1)
+    private EquipmentSlot hbm$innerVisibility(
+            EquipmentSlot slot, @Local(argsOnly = true) LivingEntity entity) {
+        return hbm$inner(entity, slot) ? EquipmentSlot.LEGS : slot;
+    }
+
+    @ModifyExpressionValue(
+            method =
+                    "renderArmorPiece(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;"
+                            + "Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/EquipmentSlot;I"
+                            + "Lnet/minecraft/client/model/HumanoidModel;FFFFFF)V",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/renderer/entity/layers/HumanoidArmorLayer;"
+                                            + "usesInnerModel(Lnet/minecraft/world/entity/EquipmentSlot;)Z"))
+    private boolean hbm$innerLayer(
+            boolean inner,
+            @Local(argsOnly = true) LivingEntity entity,
+            @Local(argsOnly = true) EquipmentSlot slot) {
+        return inner || hbm$inner(entity, slot);
     }
 }

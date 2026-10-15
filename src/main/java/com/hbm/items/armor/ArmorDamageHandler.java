@@ -5,6 +5,7 @@ package com.hbm.items.armor;
 
 import com.hbm.extprop.HbmPlayerProps;
 import com.hbm.items.ModItems;
+import com.hbm.sound.EntitySounds;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.DamageTypeTags;
@@ -16,7 +17,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 public final class ArmorDamageHandler {
-
     private static final float DNS_EXPLOSION_MULT = 0.001F;
 
     private ArmorDamageHandler() {}
@@ -27,16 +27,15 @@ public final class ArmorDamageHandler {
         if (!source.is(DamageTypeTags.BYPASSES_ARMOR)
                 && is(player, EquipmentSlot.HEAD, ModItems.NOSSY_HAT.get())
                 && amount <= ItemHat.DAMAGE_THRESHOLD) {
-            player.level()
-                    .playSound(
-                            null,
-                            player.getX(),
-                            player.getY(),
-                            player.getZ(),
-                            SoundEvents.ITEM_BREAK,
-                            SoundSource.PLAYERS,
-                            5F,
-                            1.0F + player.getRandom().nextFloat() * 0.5F);
+            EntitySounds.play(
+                    player,
+                    player.getX(),
+                    player.getY(),
+                    player.getZ(),
+                    SoundEvents.ITEM_BREAK,
+                    SoundSource.PLAYERS,
+                    5F,
+                    1.0F + player.getRandom().nextFloat() * 0.5F);
             return 0F;
         }
 

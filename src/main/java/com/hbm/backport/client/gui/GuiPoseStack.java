@@ -144,6 +144,16 @@ public class GuiPoseStack extends PoseStack {
     }
 
     /** The 2D part (x/y rows) of the current pose, as 26.x hands out {@code new Matrix3x2f(pose())}. */
+    /**
+     * 26.x {@code Matrix3x2fStack.set}: replaces the 2D part (rotation/scale/shear and x/y
+     * translation) of the current pose; its z stays as it is.
+     */
+    public GuiPoseStack set(Matrix3x2fc m) {
+        Matrix4f p = base.last().pose();
+        p.m00(m.m00()).m01(m.m01()).m10(m.m10()).m11(m.m11()).m30(m.m20()).m31(m.m21());
+        return this;
+    }
+
     public Matrix3x2f matrix2d() {
         Matrix4f m = base.last().pose();
         return new Matrix3x2f(m.m00(), m.m01(), m.m10(), m.m11(), m.m30(), m.m31());

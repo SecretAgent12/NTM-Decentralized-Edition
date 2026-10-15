@@ -16,7 +16,6 @@ import com.hbm.backport.client.rendertype.RenderPipelines;
 import net.minecraft.resources.ResourceLocation;
 
 public final class HbmRenderPipelines {
-
     public static final RenderPipeline GUI_TEXTURED_ADDITIVE =
             RenderPipeline.builder(RenderPipelines.GUI_TEXTURED_SNIPPET)
                     .withLocation("pipeline/ntm_gui_textured_additive")
@@ -71,6 +70,8 @@ public final class HbmRenderPipelines {
                     ParticleLayers.ADDITIVE_NO_FOG_PIPELINE,
                     ParticleLayers.ADDITIVE_PIPELINE,
                     ParticleLayers.TRANSLUCENT_PIPELINE,
+                    ParticleLayers.TRANSLUCENT_COMPOSITE_PIPELINE,
+                    ParticleLayers.TRANSLUCENT_DEPTH_PIPELINE,
                     ParticleLayers.TRANSLUCENT_SEPARATE_PIPELINE,
                     ParticleRenderTypes.AMAT_FLASH_PIPELINE,
                     ParticleRenderTypes.FLASH_NO_FOG_CULL_PIPELINE,

@@ -52,6 +52,7 @@ import com.hbm.backport.client.core.LivingEntityRenderState;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import org.jspecify.annotations.Nullable;
@@ -397,6 +398,11 @@ public final class MobVisuals {
                                 LivingEntityRenderState::new)
                         .asFullBright()
                         .shadow(0.5F, 1F);
+    }
+
+    public static <T extends EntityCreeperBase> void creeper(
+            EntityType<T> type, Supplier<ResourceLocation> texture, float swellMod) {
+        model(SimpleEntityVisualizer.builder(type), creeper(texture, swellMod), uncharged());
     }
 
     public static void register() {

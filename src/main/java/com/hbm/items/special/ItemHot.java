@@ -61,7 +61,6 @@ public class ItemHot extends ItemCompat {
         Integer duration = stack.get(ModDataComponents.HOT_ITEM_HEAT.get());
         if (duration != null) {
             stack.remove(ModDataComponents.HOT_ITEM_HEAT.get());
-
             if (duration > 0)
                 stack.set(ModDataComponents.HOT_UNTIL.get(), level.getGameTime() + duration - 1);
             else stack.remove(ModDataComponents.HOT_UNTIL.get());

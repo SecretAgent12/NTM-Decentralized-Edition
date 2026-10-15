@@ -3,6 +3,7 @@
 
 package com.hbm.client.particle;
 
+import com.hbm.particle.RocketFlameColor;
 import dev.engine_room.flywheel.api.visualization.VisualizationManager;
 import dev.engine_room.flywheel.lib.visualization.VisualizationHelper;
 import java.util.ArrayList;
@@ -26,9 +27,11 @@ public final class RocketFlameVisuals {
             double mX,
             double mY,
             double mZ,
-            int maxAge) {
+            int maxAge,
+            RocketFlameColor color) {
         if (!VisualizationManager.supportsVisualization(level)) return false;
-        RocketFlameEffect effect = new RocketFlameEffect(level, x, y, z, scale, mX, mY, mZ, maxAge);
+        RocketFlameEffect effect =
+                new RocketFlameEffect(level, x, y, z, scale, mX, mY, mZ, maxAge, color);
         VisualizationHelper.queueAdd(effect);
         ACTIVE.add(effect);
         return true;
@@ -36,16 +39,18 @@ public final class RocketFlameVisuals {
 
     public static void tick() {
         if (ACTIVE.isEmpty()) return;
-        Level current = Minecraft.getInstance().level;
+        Minecraft mc = Minecraft.getInstance();
+        Level current = mc.level;
+        boolean advance =
+                current != null && !mc.isPaused() && current.tickRateManager().runsNormally();
         Iterator<RocketFlameEffect> it = ACTIVE.iterator();
         while (it.hasNext()) {
             RocketFlameEffect e = it.next();
-
             if (e.level() != current) {
                 it.remove();
                 continue;
             }
-            e.tick();
+            if (advance) e.tick();
             if (e.expired()) {
                 VisualizationHelper.queueRemove(e);
                 it.remove();

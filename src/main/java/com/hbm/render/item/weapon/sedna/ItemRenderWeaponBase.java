@@ -9,7 +9,6 @@ import com.hbm.client.render.WeaponRenderTypes;
 import com.hbm.config.GunVisualConfig;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT.SmokeNode;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
-import com.hbm.platform.Services;
 import com.hbm.render.loader.HFRWavefrontObject;
 import com.hbm.render.loader.UnitQuad;
 import com.hbm.render.util.Vertices;

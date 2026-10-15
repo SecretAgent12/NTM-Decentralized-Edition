@@ -45,9 +45,7 @@ public class BlockOreNetherFire extends BlockCompat {
                         ? 0
                         : EnchantmentHelper.getItemEnchantmentLevel(
                                 enchantments.getOrThrow(Enchantments.FORTUNE), tool);
-
         int count = fortune > 0 ? Math.max(0, random.nextInt(fortune + 2) - 1) + 1 : 1;
-
         Float radius = params.getOptionalParameter(LootContextParams.EXPLOSION_RADIUS);
 
         int fire = 0;

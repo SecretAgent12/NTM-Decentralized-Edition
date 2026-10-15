@@ -6,6 +6,7 @@ package com.hbm.blocks.generic;
 import com.hbm.advancement.HbmCriteria;
 import com.hbm.items.ModItems;
 import com.hbm.lib.Library;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import com.hbm.world.NtmWorldgenFields;
 import com.hbm.world.WorldgenHash;
@@ -66,8 +67,8 @@ public class BlockKeyhole extends BlockCompat {
         if (cracked) stack.shrink(1);
         if (level instanceof ServerLevel server) {
             RedRoom.open(server, pos, side, black, NtmWorldgenFields.get(server).random(ROOM, pos));
-            level.playSound(
-                    null,
+            EntitySounds.play(
+                    player,
                     player.getX(),
                     player.getY(),
                     player.getZ(),

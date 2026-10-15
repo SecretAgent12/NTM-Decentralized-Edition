@@ -7,6 +7,7 @@ import com.hbm.api.energymk2.IBatteryItem;
 import com.hbm.handler.ArmorUtil;
 import com.hbm.items.armor.ArmorSuitEffects;
 import com.hbm.items.armor.ModArmorItem;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import com.hbm.util.BobMathUtil;
 import java.util.function.Consumer;
@@ -52,8 +53,8 @@ public class ItemFusionCore extends ItemCompat {
             }
             stack.shrink(1);
         }
-        level.playSound(
-                null,
+        EntitySounds.play(
+                player,
                 player.getX(),
                 player.getY(),
                 player.getZ(),
@@ -71,7 +72,6 @@ public class ItemFusionCore extends ItemCompat {
             TooltipDisplay display,
             Consumer<Component> lines,
             TooltipFlag flag) {
-
         lines.accept(
                 Component.translatable(
                                 "desc.item.fusionCore.charges", BobMathUtil.getShortNumber(charge))

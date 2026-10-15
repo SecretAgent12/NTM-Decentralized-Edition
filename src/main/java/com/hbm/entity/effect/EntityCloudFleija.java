@@ -17,7 +17,6 @@ import com.hbm.backport.storage.ValueOutput;
 import com.hbm.backport.compat.EntityCompat;
 
 public class EntityCloudFleija extends EntityCompat {
-
     private static final EntityDataAccessor<Integer> MAX_AGE =
             SynchedEntityData.defineId(EntityCloudFleija.class, EntityDataSerializers.INT);
 
@@ -45,7 +44,6 @@ public class EntityCloudFleija extends EntityCompat {
     @Override
     public void tick() {
         this.age++;
-
         level().setSkyFlashTime(2);
 
         if (!level().isClientSide() && this.age >= this.getMaxAge()) {

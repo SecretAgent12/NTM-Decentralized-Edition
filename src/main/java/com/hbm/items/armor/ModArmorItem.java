@@ -6,11 +6,13 @@ package com.hbm.items.armor;
 import com.hbm.handler.ArmorModHandler;
 import com.hbm.items.ModDataComponents;
 import com.hbm.items.ModItems;
+import com.hbm.lib.Library;
+import com.hbm.registration.OverridePoint;
 import com.hbm.util.BobMathUtil;
-import com.hbm.util.DamageResistanceHandler;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -27,7 +29,6 @@ public class ModArmorItem extends com.hbm.backport.item.armor.ArmorItem26 implem
 
     private final Suit suit;
     private final boolean powered;
-
     private final long maxPower;
     private final long consumption;
 
@@ -68,7 +69,7 @@ public class ModArmorItem extends com.hbm.backport.item.armor.ArmorItem26 implem
     }
 
     public long maxPower(ItemStack stack) {
-        return ArmorModHandler.pryMod(stack, ArmorModHandler.BATTERY).getItem()
+        return ArmorModHandler.modItem(stack, ArmorModHandler.BATTERY)
                         instanceof ItemModBattery battery
                 ? (long) (maxPower * battery.mod)
                 : maxPower;
@@ -113,6 +114,9 @@ public class ModArmorItem extends com.hbm.backport.item.armor.ArmorItem26 implem
                 : super.getBarColor(stack);
     }
 
+    public static final OverridePoint<BiConsumer<ItemStack, Consumer<Component>>> EXTRA_LINES =
+            OverridePoint.of(Library.id("armor_extra_lines"), (stack, adder) -> {});
+
     @Override
     public void appendHoverText(
             ItemStack stack,
@@ -130,6 +134,7 @@ public class ModArmorItem extends com.hbm.backport.item.armor.ArmorItem26 implem
                             .withStyle(ChatFormatting.GOLD));
         }
 
+        EXTRA_LINES.get().accept(stack, adder);
         fullSetBonus(stack, adder);
     }
 

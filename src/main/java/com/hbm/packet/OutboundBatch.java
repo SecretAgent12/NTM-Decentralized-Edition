@@ -6,7 +6,7 @@ package com.hbm.packet;
 import com.hbm.packet.threading.ThreadedPayload;
 import com.hbm.packet.toclient.BlobPayload;
 import com.hbm.packet.toclient.UnitPayload;
-import com.hbm.platform.Services;
+import com.hbm.platform.NeoForgeNetwork;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -22,7 +22,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 
 final class OutboundBatch implements Runnable {
-
     private static final Recycler<OutboundBatch> POOL =
             // backport: Netty 4.1 (Minecraft 1.21.1) has no (capacity, unguarded) constructor
             new Recycler<>(256) {
@@ -51,16 +50,15 @@ final class OutboundBatch implements Runnable {
     }
 
     static OutboundBatch take(ServerPlayer player) {
-        Channel channel = Services.NETWORK.channelOf(player);
+        Channel channel = player.connection.getConnection().channel();
         ChannelHandlerContext framing = PacketWire.framingContext(channel);
         ChannelHandlerContext compression = channel.pipeline().context("compress");
         OutboundBatch batch = POOL.get();
         batch.player = player;
         batch.channel = channel;
-
         batch.connection =
                 PacketWire.managedTransport() && !(channel instanceof EmbeddedChannel)
-                        ? Services.NETWORK.connectionOf(player)
+                        ? player.connection.getConnection()
                         : null;
         batch.framing = framing;
         batch.threshold =
@@ -176,7 +174,7 @@ final class OutboundBatch implements Runnable {
             if (payload == null) continue;
             pending = true;
             if (connection != null)
-                Services.NETWORK.validateClientboundPayload(player, payload.managedPacket());
+                NeoForgeNetwork.validateClientboundPayload(player, payload.managedPacket());
         }
         if (!pending) {
             discard();

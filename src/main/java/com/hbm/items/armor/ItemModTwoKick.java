@@ -9,6 +9,7 @@ import com.hbm.items.ModItems;
 import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.items.weapon.sedna.factory.XFactory12ga;
 import com.hbm.particle.helper.ParticleCreators;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import java.util.List;
 import java.util.function.Consumer;
@@ -34,9 +35,8 @@ public class ItemModTwoKick extends ItemArmorMod {
         if (chest.isEmpty() || !ArmorModHandler.hasMods(chest)) return;
         ItemStack held = player.getMainHandItem();
         if (carriesAttackDamage(held)) return;
-        if (!ArmorModHandler.pryMod(chest, ArmorModHandler.SERVOS)
-                .is(ModItems.BALLISTIC_GAUNTLET.get())) return;
-
+        if (!(ArmorModHandler.modItem(chest, ArmorModHandler.SERVOS)
+                == ModItems.BALLISTIC_GAUNTLET.get())) return;
         BulletConfig[] configs = {
             XFactory12ga.g12_bp,
             XFactory12ga.g12_bp_magnum,
@@ -82,8 +82,8 @@ public class ItemModTwoKick extends ItemArmorMod {
                         0.25F);
             }
         }
-        level.playSound(
-                null,
+        EntitySounds.play(
+                player,
                 player.getX(),
                 player.getY(),
                 player.getZ(),

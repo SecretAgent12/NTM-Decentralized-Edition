@@ -3,10 +3,10 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.BlockEntityMachinePress;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.RefreshesNeighborState;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
-import com.hbm.tileentity.machine.BlockEntityMachinePress;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -15,26 +15,12 @@ import org.jspecify.annotations.Nullable;
 
 // backport: @RefreshesNeighborState(be = BlockEntityMachinePress.class, calling = "refreshPreheater") woven below
 public class MachinePress extends BlockMultiblockCore implements ITickingBlock {
-
-    private static final int[] DIMENSIONS = {2, 0, 0, 0, 0, 0};
-
     public MachinePress(Properties props) {
         super(props);
     }
 
     @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 0;
-    }
-
-    @Override
     protected RenderShape getRenderShape(BlockState state) {
-
         return RenderShape.MODEL;
     }
 

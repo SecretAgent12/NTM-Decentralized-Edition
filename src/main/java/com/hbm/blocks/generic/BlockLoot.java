@@ -3,6 +3,8 @@
 
 package com.hbm.blocks.generic;
 
+import com.hbm.blockentity.GraphResident;
+import com.hbm.blockentity.Synced;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.blocks.ModBlocks;
 import com.hbm.packet.SyncBindings;
@@ -11,9 +13,6 @@ import com.hbm.packet.SyncField;
 import com.hbm.packet.SyncList;
 import com.hbm.packet.SyncSource;
 import com.hbm.packet.SyncUnitSchema;
-import com.hbm.tileentity.FoldedCoreResident;
-import com.hbm.tileentity.GraphResident;
-import com.hbm.tileentity.Synced;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.netty.buffer.ByteBuf;
@@ -51,12 +50,14 @@ import com.hbm.packet.BeSyncTable;
 import com.hbm.packet.BlobSynced;
 import com.hbm.packet.ChunkTrackerIndex;
 import com.hbm.packet.PacketWire;
+import com.hbm.packet.SyncAudience;
 import com.hbm.packet.SyncUnitFrame;
 import com.hbm.packet.SyncUnitState;
 import com.hbm.packet.SyncWire;
 import com.hbm.packet.WireReplayServer;
 import com.hbm.packet.threading.ThreadedPayload;
 import com.hbm.packet.toclient.UnitPayload;
+import com.hbm.util.ChunkUtil;
 import io.netty.buffer.Unpooled;
 import java.nio.ByteBuffer;
 import java.util.Optional;
@@ -79,9 +80,9 @@ public class BlockLoot extends BlockCompat implements EntityBlock {
         super(props);
     }
 
-    public static void place(LevelAccessor level, BlockPos pos, List<TileEntityLoot.Entry> items) {
+    public static void place(LevelAccessor level, BlockPos pos, List<BlockEntityLoot.Entry> items) {
         level.setBlock(pos, ModBlocks.LOOT.get().defaultBlockState(), Block.UPDATE_CLIENTS);
-        if (level.getBlockEntity(pos) instanceof TileEntityLoot pile) {
+        if (level.getBlockEntity(pos) instanceof BlockEntityLoot pile) {
             pile.items.addAll(items);
             pile.setChanged();
         }
@@ -110,18 +111,18 @@ public class BlockLoot extends BlockCompat implements EntityBlock {
 
     @Override
     public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new TileEntityLoot(pos, state);
+        return new BlockEntityLoot(pos, state);
     }
 
-    public static class TileEntityLoot extends BlockEntityCompat
-            implements Synced, SyncUnitSchema, GraphResident, FoldedCoreResident {
+    public static class BlockEntityLoot extends BlockEntityCompat
+            implements Synced, SyncUnitSchema, GraphResident {
 
         private static final String ITEMS = "items";
 
         @SyncField(units = 1L)
         public final List<Entry> items = new SyncList<>();
 
-        public TileEntityLoot(BlockPos pos, BlockState state) {
+        public BlockEntityLoot(BlockPos pos, BlockState state) {
             super(ModBlockEntities.NTM_LOOT.get(), pos, state);
         }
 
@@ -152,7 +153,7 @@ public class BlockLoot extends BlockCompat implements EntityBlock {
             items.clear();
         }
 
-        public TileEntityLoot addItem(ItemStack stack, double x, double y, double z) {
+        public BlockEntityLoot addItem(ItemStack stack, double x, double y, double z) {
             if (stack.isEmpty()) return this;
             items.add(new Entry(stack, x, y, z));
             setChanged();
@@ -317,7 +318,12 @@ public class BlockLoot extends BlockCompat implements EntityBlock {
         ThreadedPayload payload = hbm$syncGated(server);
         if (payload == null) return;
         hbm$syncedOnce = true;
-        BeSyncTable.refresh(payload, server, getBlockPos(), range);
+        BeSyncTable.refresh(
+                payload,
+                server,
+                getBlockPos(),
+                range,
+                (Object) this instanceof SyncAudience audience ? audience : null);
     }
 
     public void networkPackNTTracking() {
@@ -343,8 +349,7 @@ public class BlockLoot extends BlockCompat implements EntityBlock {
     }
 
     public void markChanged() {
-        Level level = getLevel();
-        if (level != null) level.blockEntityChanged(getBlockPos());
+        ChunkUtil.markUnsaved(this);
     }
 
     private UnitPayload hbm$syncUnitSnapshot(SyncUnitSchema schema) {
@@ -415,7 +420,6 @@ public class BlockLoot extends BlockCompat implements EntityBlock {
     public void setRemoved() {
         super.setRemoved();
         hbm$syncRemove();
-            com.hbm.tileentity.FoldedCoreResident.onRemove(this); // backport: hbm-compiler FoldedLifecycle
     }
 
     public final void releaseSync() {
@@ -666,13 +670,6 @@ public class BlockLoot extends BlockCompat implements EntityBlock {
             scratch.release();
         }
         if (changed != 0) syncUnitsChanged(3, changed);
-    }
-
-    // backport: hbm-compiler FoldedLifecycle
-    @Override
-    public void clearRemoved() {
-        super.clearRemoved();
-        com.hbm.tileentity.FoldedCoreResident.onLoad(this);
     }
 }
 }

@@ -33,7 +33,6 @@ public class BlockOreBasalt extends BlockCompat {
                 if (rand.nextInt(10) == 0)
                     server.setBlockAndUpdate(above, gas.get().defaultBlockState());
             } else {
-
                 for (int i = 0; i < 5; i++) {
                     level.addParticle(
                             ParticleTypes.MYCELIUM,

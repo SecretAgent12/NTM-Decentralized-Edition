@@ -4,6 +4,7 @@
 package com.hbm.entity.logic;
 
 import com.hbm.client.ClientEffects;
+import com.hbm.entity.FarVisible;
 import com.hbm.explosion.vanillant.ExplosionVNT;
 import com.hbm.lib.ModDamageTypes;
 import com.hbm.particle.helper.ExplosionSmallCreator;
@@ -24,14 +25,13 @@ import com.hbm.backport.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import com.hbm.backport.compat.EntityCompat;
 
-public abstract class EntityPlaneBase extends EntityCompat {
+public abstract class EntityPlaneBase extends EntityCompat implements FarVisible {
 
     private static final EntityDataAccessor<Float> DATA_HEALTH =
             SynchedEntityData.defineId(EntityPlaneBase.class, EntityDataSerializers.FLOAT);
     private final InterpolationHandler interpolation = new InterpolationHandler(this);
     public float health = getMaxHealth();
     public int timer = getLifetime();
-
     public float renderPitch = -90F;
     public float renderPitchO = -90F;
     public float renderYaw;
@@ -79,7 +79,6 @@ public abstract class EntityPlaneBase extends EntityCompat {
             this.health = this.entityData.get(DATA_HEALTH);
             Vec3 step = position().subtract(prePos);
             updateRenderRotation(step);
-
             if (this.health <= 0) {
                 for (int i = 0; i < 10; i++) {
                     ClientEffects.spawnPlaneFlame(
@@ -182,6 +181,7 @@ public abstract class EntityPlaneBase extends EntityCompat {
     }
 
     public void forceSpawnChunk() {
-        if (level() instanceof ServerLevel server) ChunkUtil.loadForEntity(server, chunkPosition());
+        if (level() instanceof ServerLevel server)
+            ChunkUtil.loadTickingForEntity(server, chunkPosition());
     }
 }

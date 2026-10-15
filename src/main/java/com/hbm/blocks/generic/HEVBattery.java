@@ -28,7 +28,6 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import com.hbm.backport.compat.BlockCompat;
 
 public class HEVBattery extends BlockCompat {
-
     private static final long CHARGE = 150_000L;
 
     public static final MapCodec<HEVBattery> CODEC = simpleCodec(HEVBattery::new);

@@ -40,7 +40,6 @@ public class ItemRBMKLid extends ItemCompat {
         if (RBMKBase.lidOf(coreState).present()) return InteractionResult.PASS;
 
         if (level instanceof ServerLevel server) {
-
             SoundType sound = lid == RBMKBase.Lid.GLASS ? SoundType.GLASS : SoundType.STONE;
             level.playSound(
                     null,

@@ -6,7 +6,8 @@ package com.hbm.items.food;
 
 import com.hbm.entity.effect.EntityVortex;
 import com.hbm.items.ModItems;
-import com.hbm.util.I18nUtil;
+import com.hbm.sound.EntitySounds;
+import com.hbm.util.TooltipStyle;
 import java.util.function.Consumer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -46,8 +47,8 @@ public class ItemConserve extends ItemCompat {
             return rest;
 
         player.getFoodData().eat(type.foodLevel, type.saturation);
-        server.playSound(
-                null,
+        EntitySounds.play(
+                player,
                 player.getX(),
                 player.getY(),
                 player.getZ(),
@@ -80,8 +81,10 @@ public class ItemConserve extends ItemCompat {
             TooltipDisplay display,
             Consumer<Component> adder,
             TooltipFlag flag) {
-        for (String line : I18nUtil.loreLines(getDescriptionId() + ".desc")) {
-            adder.accept(Component.literal(line));
+        for (Component line :
+                TooltipStyle.lines(
+                        Component.translatableWithFallback(getDescriptionId() + ".desc", ""))) {
+            adder.accept(line);
         }
     }
 
@@ -94,7 +97,6 @@ public class ItemConserve extends ItemCompat {
         SLIME(15, 5F),
         MILK(5, 0.25F),
         ASS(6, 0.75F),
-
         PIZZA(8, 75F),
         TUBE(2, 0.25F),
         TOMATO(4, 0.5F),

@@ -4,9 +4,11 @@
 package com.hbm.api.energymk2;
 
 import com.hbm.uninos.graph.IGraphProvider;
+import com.hbm.uninos.graph.LevelNodeGraph;
 import com.hbm.uninos.graph.NodeNetwork;
 import com.mojang.serialization.Codec;
-import net.minecraft.world.level.block.state.BlockState;
+import java.util.List;
+import net.minecraft.server.level.ServerLevel;
 
 public final class PowerGraphProvider implements IGraphProvider<CableData> {
 
@@ -15,22 +17,22 @@ public final class PowerGraphProvider implements IGraphProvider<CableData> {
     private PowerGraphProvider() {}
 
     @Override
-    public CableData createData(BlockState state) {
-        return CableData.INSTANCE;
-    }
-
-    @Override
     public boolean dataCompatible(CableData a, CableData b) {
         return true;
     }
 
     @Override
-    public Codec<CableData> dataCodec() {
-        return CableData.CODEC;
+    public Codec<List<CableData>> dataTableCodec() {
+        return CableData.CODEC.listOf();
     }
 
     @Override
     public void onNetsMerged(NodeNetwork<CableData> keep, NodeNetwork<CableData> drain) {
         PowerNetwork.mergeBridges(keep, drain);
+    }
+
+    @Override
+    public void tick(ServerLevel level, LevelNodeGraph<CableData> graph) {
+        PowerNetwork.tick(level, graph);
     }
 }

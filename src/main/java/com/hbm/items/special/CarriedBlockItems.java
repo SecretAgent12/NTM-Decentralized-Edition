@@ -24,10 +24,8 @@ public final class CarriedBlockItems {
     public static @Nullable BlockEntity load(
             BlockState state, BlockPos pos, CompoundTag data, HolderLookup.Provider registries) {
         String owner = state.getBlock().getClass().getName();
-
         if (!owner.startsWith("net.minecraft.") && !owner.startsWith("com.hbm.")) return null;
         BlockEntity blockEntity = ((EntityBlock) state.getBlock()).newBlockEntity(pos, state);
-
         try (ProblemReporter.ScopedCollector reporter =
                 new ProblemReporter.ScopedCollector(blockEntity.toString(), LOGGER)) {
             BlockEntityCompat.loadWithComponents(blockEntity, TagValueInput.tagOf(TagValueInput.create(reporter, registries, data)));

@@ -15,7 +15,6 @@ import com.hbm.sound.ModSounds;
 import com.hbm.util.ContaminationUtil.ContaminationType;
 import com.hbm.util.ContaminationUtil.HazardType;
 import com.hbm.util.ContaminationUtil;
-import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -73,7 +72,6 @@ public class EntitySpear extends EntityCompat {
                                         Mth.floor(ix),
                                         Mth.floor(iz))
                                 + 2;
-
                 boolean circuit = new Vec3(ix - getX(), 0, iz - getZ()).length() < 20;
                 new ExplosionVNT(server, ix, iy, iz, 7.5F, this)
                         .setBlockAllocator(new BlockAllocatorStandard())
@@ -97,16 +95,10 @@ public class EntitySpear extends EntityCompat {
             ticksInGround++;
 
             if (level() instanceof ServerLevel server && ticksInGround > 100) {
-
-                List<Entity> entities = new ArrayList<>();
-                server.getAllEntities().forEach(entities::add);
-                for (Entity e : entities) {
-                    if (e instanceof LivingEntity living) {
-                        ContaminationUtil.contaminate(
-                                living, HazardType.DIGAMMA, ContaminationType.DIGAMMA2, 10D);
-
-                        living.hurt(server.damageSources().source(ModDamageTypes.DIGAMMA), living.getMaxHealth());
-                    }
+                for (LivingEntity living : List.copyOf(server.hbm$livingTargets())) {
+                    ContaminationUtil.contaminate(
+                            living, HazardType.DIGAMMA, ContaminationType.DIGAMMA2, 10D);
+                    living.hurt(server.damageSources().source(ModDamageTypes.DIGAMMA), living.getMaxHealth());
                 }
                 server.playSound(
                         null,
@@ -119,7 +111,6 @@ public class EntitySpear extends EntityCompat {
                         1.0F);
                 discard();
             } else if (level().isClientSide() && ticksInGround > 100 && !landedFlash) {
-
                 landedFlash = true;
                 ClientEffects.radialDigamma(level(), getX(), getY() + 7, getZ(), 100);
             }

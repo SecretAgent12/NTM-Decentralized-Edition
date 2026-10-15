@@ -3,13 +3,11 @@
 
 package com.hbm.capability;
 
+import com.hbm.blockentity.BlockEntityMachineBase;
 import com.hbm.capability.port.ItemPort;
-import com.hbm.tileentity.BlockEntityMachineBase;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
-import java.util.Map;
-import java.util.WeakHashMap;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 import com.hbm.lib.neotransfer.ResourceHandler;
@@ -19,18 +17,13 @@ import com.hbm.lib.neotransfer.transaction.TransactionContext;
 import org.jspecify.annotations.Nullable;
 
 public final class MachineItemHandler implements ResourceHandler<ItemResource> {
-
-    private static final Map<BlockEntityMachineBase, PerMachine> HANDLERS = new WeakHashMap<>();
-
     private static final int NULL_SIDE = 6;
 
     private static final int MAX_PORTS_PER_SIDE = 8;
-
     private final WeakReference<BlockEntityMachineBase> machineRef;
     private final ResourceHandler<ItemResource> core;
     private final @Nullable Direction side;
     private final boolean[] accessible;
-
     private final @Nullable ItemPort access;
 
     public MachineItemHandler(BlockEntityMachineBase machine, @Nullable Direction side) {
@@ -76,32 +69,30 @@ public final class MachineItemHandler implements ResourceHandler<ItemResource> {
         return handlerFor(machine, side, access);
     }
 
-    private static synchronized MachineItemHandler handlerFor(
+    private static MachineItemHandler handlerFor(
             BlockEntityMachineBase machine, @Nullable Direction side, @Nullable ItemPort access) {
         if (machine.isRemoved()) {
             return access == null
                     ? new MachineItemHandler(machine, side)
                     : new MachineItemHandler(machine, side, access);
         }
-        PerMachine perMachine = HANDLERS.computeIfAbsent(machine, m -> new PerMachine());
+        ForeignBridges bridges = ForeignBridges.of(machine);
+        PerMachine perMachine = bridges.items() instanceof PerMachine held ? held : null;
+        if (perMachine == null) bridges.items(perMachine = new PerMachine());
         int index = side == null ? NULL_SIDE : side.ordinal();
-        Int2ObjectOpenHashMap<WeakReference<MachineItemHandler>> byAccess =
-                perMachine.bySide[index];
+        Int2ObjectOpenHashMap<MachineItemHandler> byAccess = perMachine.bySide[index];
         if (byAccess == null) {
             byAccess = new Int2ObjectOpenHashMap<>();
             perMachine.bySide[index] = byAccess;
         }
         int key = access == null ? 0 : System.identityHashCode(access);
-        WeakReference<MachineItemHandler> ref = byAccess.get(key);
-        MachineItemHandler handler = ref == null ? null : ref.get();
-
+        MachineItemHandler handler = byAccess.get(key);
         if (handler != null && handler.access == access) return handler;
         handler =
                 access == null
                         ? new MachineItemHandler(machine, side)
                         : new MachineItemHandler(machine, side, access);
-        if (access == null || byAccess.size() < MAX_PORTS_PER_SIDE)
-            byAccess.put(key, new WeakReference<>(handler));
+        if (access == null || byAccess.size() < MAX_PORTS_PER_SIDE) byAccess.put(key, handler);
         return handler;
     }
 
@@ -141,7 +132,6 @@ public final class MachineItemHandler implements ResourceHandler<ItemResource> {
         BlockEntityMachineBase machine = live();
         if (machine == null || !accessible[index]) return 0;
         ItemStack incoming = resource.toStack(1);
-
         boolean allowed =
                 access != null
                         ? access.canInsert(index, incoming)
@@ -165,7 +155,7 @@ public final class MachineItemHandler implements ResourceHandler<ItemResource> {
 
     private static final class PerMachine {
         @SuppressWarnings("unchecked")
-        final Int2ObjectOpenHashMap<WeakReference<MachineItemHandler>>[] bySide =
+        final Int2ObjectOpenHashMap<MachineItemHandler>[] bySide =
                 new Int2ObjectOpenHashMap[NULL_SIDE + 1];
     }
 }

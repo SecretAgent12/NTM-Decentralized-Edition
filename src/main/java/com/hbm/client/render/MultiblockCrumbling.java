@@ -95,6 +95,37 @@ public final class MultiblockCrumbling {
                 BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(type).getNamespace());
     }
 
+    public static Long2ObjectMap<SortedSet<BlockDestructionProgress>> owners(
+            ClientLevel level, Long2ObjectMap<SortedSet<BlockDestructionProgress>> mined) {
+        if (CORE_OF.isEmpty()) return mined;
+        Long2ObjectOpenHashMap<SortedSet<BlockDestructionProgress>> owners =
+                new Long2ObjectOpenHashMap<>(mined.size());
+        for (Long2ObjectMap.Entry<SortedSet<BlockDestructionProgress>> entry :
+                Long2ObjectMaps.fastIterable(mined)) {
+            long pos = entry.getLongKey();
+            if (!CORE_OF.containsKey(pos)) {
+                owners.put(pos, entry.getValue());
+                continue;
+            }
+            long key = CORE_OF.get(pos);
+            if (owners.containsKey(key)) continue;
+            SortedSet<BlockDestructionProgress> stages = BY_CORE.get(key);
+            BlockPos core = BlockPos.of(key);
+            BlockState coreState = level.getBlockState(core);
+            if (((BlockMultiblockCore) coreState.getBlock()).usesSharedCells()) {
+                owners.put(key, stages);
+            } else {
+                MultiblockFootprint.visitPresent(
+                        level, core, coreState, (cell, state) -> owners.put(cell.asLong(), stages));
+            }
+        }
+        return owners;
+    }
+
+    // backport: upstream 1.0.3 replaced remaps/extractOwner with owners() (fed to
+    // LevelExtractor.extractBlockDestroyAnimation). DE's 1.21.1 MixinLevelExtractor wraps the
+    // per-position LevelRenderer.renderBreakingTexture call instead, which still needs these two
+    // (and EMITTED); drop them once that mixin is switched to owners().
     public static boolean remaps(BlockBreakingRenderState mined) {
         return CORE_OF.containsKey(mined.blockPos().asLong());
     }

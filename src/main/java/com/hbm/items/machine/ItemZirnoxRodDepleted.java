@@ -7,7 +7,6 @@ import net.minecraft.world.item.Item;
 import com.hbm.backport.compat.ItemCompat;
 
 public class ItemZirnoxRodDepleted extends ItemCompat {
-
     public final float wasteRad;
     public final float blinding;
 

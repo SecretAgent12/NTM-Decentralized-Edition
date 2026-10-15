@@ -3,10 +3,13 @@
 
 package com.hbm.entity.mob;
 
+import com.hbm.backport.TriStates;
+import com.hbm.api.environment.Environment;
+import com.hbm.api.environment.ISuffocationImmune;
 import com.hbm.data.MobData;
 import com.hbm.entity.mob.ai.EntityAIBreaking;
 import com.hbm.items.ModItems;
-import com.hbm.platform.Services;
+import com.hbm.platform.NeoForgePlatform;
 import com.hbm.tags.HbmBlockTags;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -48,7 +51,7 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.MonsterCompat;
 import com.hbm.backport.entity.Entities26;
 
-public class EntityFBI extends MonsterCompat implements RangedAttackMob {
+public class EntityFBI extends MonsterCompat implements RangedAttackMob, ISuffocationImmune {
 
     public EntityFBI(EntityType<? extends EntityFBI> type, Level level) {
         super(type, level);
@@ -66,7 +69,6 @@ public class EntityFBI extends MonsterCompat implements RangedAttackMob {
     protected void registerGoals() {
         goalSelector.addGoal(0, new FloatGoal(this));
         goalSelector.addGoal(1, new EntityAIBreaking(this));
-
         goalSelector.addGoal(2, new RangedAttackGoal(this, 1.0D, 20, 25, 15.0F));
         goalSelector.addGoal(3, new MeleeAttackGoal(this, 1.0D, true));
         goalSelector.addGoal(5, new MoveTowardsRestrictionGoal(this, 1.0D));
@@ -79,7 +81,6 @@ public class EntityFBI extends MonsterCompat implements RangedAttackMob {
 
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
-
         if (source.getDirectEntity() != null
                 && source.getEntity() instanceof EntityFBI
                 && source.getDirectEntity() != source.getEntity()) {
@@ -118,7 +119,7 @@ public class EntityFBI extends MonsterCompat implements RangedAttackMob {
             setItemSlot(EquipmentSlot.FEET, ModItems.SECURITY_BOOTS.get().getDefaultInstance());
         }
 
-        if (level().dimension() != Level.OVERWORLD) {
+        if (!TriStates.toBoolean(Environment.canBreathe(this), level().dimension() == Level.OVERWORLD)) {
             setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.GLASS));
             setItemSlot(EquipmentSlot.CHEST, ModItems.PAA_PLATE.get().getDefaultInstance());
             setItemSlot(EquipmentSlot.LEGS, ModItems.PAA_LEGS.get().getDefaultInstance());
@@ -224,8 +225,7 @@ public class EntityFBI extends MonsterCompat implements RangedAttackMob {
             return;
         BlockState state = server.getBlockState(hit.getBlockPos());
         if (state.is(HbmBlockTags.FBI_BREAKABLE)
-                && Services.PLATFORM.canEntityDestroyBlock(
-                        server, hit.getBlockPos(), state, this)) {
+                && NeoForgePlatform.canEntityDestroyBlock(server, hit.getBlockPos(), state, this)) {
             level().destroyBlock(hit.getBlockPos(), false);
         }
     }

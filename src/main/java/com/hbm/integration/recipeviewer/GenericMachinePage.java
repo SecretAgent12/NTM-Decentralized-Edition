@@ -12,9 +12,9 @@ import com.hbm.inventory.recipes.PlasmaForgeRecipe;
 import com.hbm.inventory.recipes.ingredient.CountIngredient;
 import com.hbm.inventory.recipes.loader.GenericRecipe;
 import com.hbm.inventory.recipes.loader.GenericRecipes;
+import com.hbm.inventory.recipes.loader.Outputs;
 import com.hbm.items.ModItems;
 import com.hbm.items.machine.ItemBlueprints;
-import com.hbm.platform.Services;
 import com.hbm.util.BobMathUtil;
 import com.hbm.util.GameTime;
 import java.util.ArrayList;
@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import net.minecraft.ChatFormatting;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -100,7 +101,7 @@ public final class GenericMachinePage<T extends GenericRecipe> extends TablePage
         return positions;
     }
 
-    static int[][] universalInputPositions(int count) {
+    public static int[][] universalInputPositions(int count) {
         if (count == 1) return new int[][] {{48, 24}};
         if (count == 2) return new int[][] {{48, 24}, {30, 24}};
         if (count == 3) return new int[][] {{48, 24}, {30, 24}, {12, 24}};
@@ -132,7 +133,7 @@ public final class GenericMachinePage<T extends GenericRecipe> extends TablePage
         return positions;
     }
 
-    static int[][] outputPositions(int count) {
+    public static int[][] outputPositions(int count) {
         return switch (count) {
             case 0 -> new int[0][2];
             case 1 -> new int[][] {{102, 24}};
@@ -150,15 +151,35 @@ public final class GenericMachinePage<T extends GenericRecipe> extends TablePage
                         {102, 6}, {120, 6}, {102, 24}, {120, 24}, {102, 42}, {120, 42}, {138, 24},
                         {138, 42}
                     };
-
             default -> grid(count, 102, 6, 4);
         };
     }
 
-    private static List<ItemStack> outputStacks(WeightedList<ItemStack> output) {
+    static List<ItemStack> outputStacks(WeightedList<ItemStack> output) {
         List<ItemStack> stacks = new ArrayList<>();
         for (Weighted<ItemStack> entry : output.unwrap()) stacks.add(entry.value().copy());
         return stacks;
+    }
+
+    static void outputSlot(PageSlot slot, WeightedList<ItemStack> output) {
+        ItemStack single = Outputs.single(output);
+        if (single == null || single.isEmpty() || output.unwrap().size() == 1) {
+            slot.items(outputStacks(output));
+            return;
+        }
+        int total = 0;
+        int present = 0;
+        for (Weighted<ItemStack> entry : output.unwrap()) {
+            total += entry.weight();
+            if (!entry.value().isEmpty()) present += entry.weight();
+        }
+        double percent = (int) ((long) present * Outputs.RESOLUTION / total) / 10D;
+        slot.item(single.copy())
+                .tooltip(
+                        (shown, lines) ->
+                                lines.accept(
+                                        Component.translatable("unit.percent", percent)
+                                                .withStyle(ChatFormatting.RED)));
     }
 
     private static List<ItemStack> blueprintStacks(String[] pools) {
@@ -202,7 +223,6 @@ public final class GenericMachinePage<T extends GenericRecipe> extends TablePage
                 if (pool.startsWith(GenericRecipes.POOL_PREFIX_SECRET)) return true;
             }
         }
-
         Set<Item> excluded = new HashSet<>();
         for (var member : ModItems.ITEM_SECRET) excluded.add(member.get());
         var ladder = ModItems.METEORITE_SWORDS;
@@ -246,7 +266,6 @@ public final class GenericMachinePage<T extends GenericRecipe> extends TablePage
 
     @Override
     public boolean hidden(T row) {
-
         return secretRows && InteractionConfig.recipeViewerHidesSecrets && isSecret(row);
     }
 
@@ -280,7 +299,6 @@ public final class GenericMachinePage<T extends GenericRecipe> extends TablePage
             List<ItemStack> blueprints = blueprintStacks(recipe.getPools());
             if (!blueprints.isEmpty()) page.catalyst(75 + machineOffset, 10).items(blueprints);
         }
-
         page.catalyst(75 + machineOffset, hasBlueprint ? 38 : 31).item(machine);
     }
 
@@ -314,9 +332,8 @@ public final class GenericMachinePage<T extends GenericRecipe> extends TablePage
     private int outputItems(PageLayout page, T recipe, int[][] outputs, int offset, int slot) {
         if (recipe.outputItems() == null) return slot;
         for (WeightedList<ItemStack> output : recipe.outputItems()) {
-            page.output(outputs[slot][0] + offset, outputs[slot][1])
-                    .background()
-                    .items(outputStacks(output));
+            outputSlot(
+                    page.output(outputs[slot][0] + offset, outputs[slot][1]).background(), output);
             slot++;
         }
         return slot;
@@ -497,7 +514,6 @@ public final class GenericMachinePage<T extends GenericRecipe> extends TablePage
             @Override
             void draw(GuiGraphicsExtractor graphics, GenericRecipe recipe) {
                 RecipePanel.rightAligned(graphics, ticks(recipe.duration), 45, RecipePanel.TEXT);
-
                 if (GameTime.now() % 2000 < 1000) {
                     RecipePanel.rightAligned(
                             graphics, consumption(recipe.power), 57, RecipePanel.TEXT);
@@ -521,7 +537,6 @@ public final class GenericMachinePage<T extends GenericRecipe> extends TablePage
             void draw(GuiGraphicsExtractor graphics, GenericRecipe recipe) {
                 float productivity = ((CrystallizerRecipe) recipe).productivity;
                 if (productivity <= 0F) return;
-
                 RecipePanel.leftAligned(
                         graphics,
                         Component.translatable(

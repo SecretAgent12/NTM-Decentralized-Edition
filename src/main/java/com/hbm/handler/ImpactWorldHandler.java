@@ -5,8 +5,11 @@ package com.hbm.handler;
 
 import com.hbm.blocks.ModBlocks;
 import com.hbm.interfaces.injected.IClientImpactState;
+import com.hbm.lib.Library;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toclient.ImpactSyncPayload;
-import com.hbm.platform.Services;
+import com.hbm.platform.NeoForgeServerEvents;
+import com.hbm.registration.OverridePoint;
 import com.hbm.saveddata.TomSaveData;
 import com.hbm.util.ChunkUtil;
 import java.util.ArrayList;
@@ -14,17 +17,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Predicate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.WaterAnimal;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
@@ -39,6 +43,10 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 public final class ImpactWorldHandler {
+    public static final OverridePoint<Predicate<ServerLevel>> EXTINCTION_LEVELS =
+            OverridePoint.of(
+                    Library.id("impact_extinction_levels"),
+                    level -> level.dimension() == Level.OVERWORLD);
 
     private static final float SETTLE = 1F / 14400000F;
     private static final float COOL = 1F / 24000F;
@@ -49,24 +57,21 @@ public final class ImpactWorldHandler {
     private ImpactWorldHandler() {}
 
     public static void init() {
-        Services.SERVER.onServerTickPre(ImpactWorldHandler::onServerTick);
-        Services.SERVER.onPlayerJoin(player -> SENT.remove(player.getUUID()));
-        Services.SERVER.onPlayerRespawn(player -> SENT.remove(player.getUUID()));
-        Services.SERVER.onPlayerChangeLevel(
+        NeoForgeServerEvents.onServerTickPre(ImpactWorldHandler::onServerTick);
+        NeoForgeServerEvents.onPlayerJoin(player -> SENT.remove(player.getUUID()));
+        NeoForgeServerEvents.onPlayerRespawn(player -> SENT.remove(player.getUUID()));
+        NeoForgeServerEvents.onPlayerChangeLevel(
                 (player, origin, destination) -> SENT.remove(player.getUUID()));
-        Services.SERVER.onPlayerDisconnect(player -> SENT.remove(player.getUUID()));
-        Services.SERVER.onServerStopping(server -> SENT.clear());
+        NeoForgeServerEvents.onPlayerDisconnect(player -> SENT.remove(player.getUUID()));
+        NeoForgeServerEvents.onServerStopping(server -> SENT.clear());
     }
 
     private static void onServerTick(MinecraftServer server) {
-
         for (ServerLevel level : server.getAllLevels()) {
             TomSaveData data = TomSaveData.getExisting(level);
             if (data == null) continue;
             impactEffects(level, data);
             settle(data);
-            if (level.dimension() == Level.OVERWORLD && data.fire > 0 && data.dust < 0.75F)
-                burnExposed(level);
         }
 
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
@@ -74,7 +79,7 @@ public final class ImpactWorldHandler {
             Snapshot current =
                     data == null ? new Snapshot(0F, 0F) : new Snapshot(data.fire, data.dust);
             if (current.equals(SENT.put(player.getUUID(), current))) continue;
-            Services.NETWORK.sendTo(new ImpactSyncPayload(current.fire, current.dust), player);
+            PacketWire.sendTo(new ImpactSyncPayload(current.fire, current.dust), player);
         }
     }
 
@@ -91,12 +96,10 @@ public final class ImpactWorldHandler {
         }
     }
 
-    private static void burnExposed(ServerLevel level) {
-        List<LivingEntity> living = new ArrayList<>();
-        for (Entity entity : level.getAllEntities()) {
-            if (entity instanceof LivingEntity alive) living.add(alive);
-        }
-        for (LivingEntity entity : living) burnIfExposed(level, entity);
+    public static void livingTick(ServerLevel level, LivingEntity entity) {
+        if (!EXTINCTION_LEVELS.get().test(level)) return;
+        TomSaveData data = TomSaveData.published(level);
+        if (data != null && data.fire > 0 && data.dust < 0.75F) burnIfExposed(level, entity);
     }
 
     public static void burnIfExposed(ServerLevel level, LivingEntity entity) {
@@ -126,7 +129,6 @@ public final class ImpactWorldHandler {
                         int blockZ = coord.getMinBlockZ() + z;
                         int height =
                                 level.getHeight(Heightmap.Types.MOTION_BLOCKING, blockX, blockZ);
-
                         int blockY = height - rand.nextInt(Math.max(1, height - level.getMinBuildHeight()));
                         BlockPos pos = new BlockPos(blockX, blockY, blockZ);
 
@@ -165,14 +167,13 @@ public final class ImpactWorldHandler {
         BlockPos above = pos.above();
         boolean exposed = level.getBrightness(LightLayer.SKY, above) >= 7;
 
-        if (Services.PLATFORM.isFlammable(level, pos, state, Direction.UP)
+        if (state.isFlammable((BlockGetter) level, pos, Direction.UP)
                 && level.getBlockState(above).isAir()
                 && exposed) {
             if (block instanceof LeavesBlock || block instanceof BushBlock) {
                 level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
             }
             level.setBlockAndUpdate(above, BaseFireBlock.getState(level, above));
-
         } else if ((state.is(Blocks.GRASS_BLOCK)
                         || state.is(Blocks.MYCELIUM)
                         || state.is(ModBlocks.WASTE_EARTH.get())
@@ -190,11 +191,9 @@ public final class ImpactWorldHandler {
     public static boolean deniesSpawn(ServerLevel level, Mob mob) {
         TomSaveData data = TomSaveData.getExisting(level);
         if (data == null || !data.impact) return false;
-
         // backport: 1.21.1 has no AgeableWaterCreature; squid and dolphins are WaterAnimals
         boolean water = mob instanceof WaterAnimal;
-
-        if (level.dimension() == Level.OVERWORLD
+        if (EXTINCTION_LEVELS.get().test(level)
                 && (mob.getBbHeight() >= 0.85F
                         || mob.getBbWidth() >= 0.85F && !water && !mob.isBaby())) {
             return true;

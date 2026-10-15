@@ -3,23 +3,27 @@
 
 package com.hbm.inventory.recipes.crafting;
 
+import com.hbm.inventory.recipes.ingredient.RecipeInputState;
 import com.hbm.items.ModDataComponents;
 import com.hbm.items.ModItems;
 import com.hbm.items.weapon.ItemAmmoArty;
-import com.hbm.platform.Services;
+import com.hbm.platform.SophisticatedCoreNesting;
+import com.hbm.tags.HbmItemTags;
 import com.mojang.serialization.MapCodec;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
 import com.hbm.backport.ItemStackTemplate;
 import net.minecraft.world.item.crafting.CraftingInput;
-import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
-import com.hbm.backport.recipe.CustomRecipeCompat;
+import net.neoforged.fml.ModList;
+import com.hbm.backport.transfer.Capabilities;
+import com.hbm.lib.neotransfer.access.ItemAccess;
 import com.hbm.backport.RecipeSerializers;
 
-public final class CargoShellRecipe extends CustomRecipeCompat {
+public final class CargoShellRecipe extends HbmCustomRecipe {
 
     public static final CargoShellRecipe INSTANCE = new CargoShellRecipe();
     public static final MapCodec<CargoShellRecipe> MAP_CODEC = MapCodec.unit(INSTANCE);
@@ -34,20 +38,38 @@ public final class CargoShellRecipe extends CustomRecipeCompat {
     }
 
     @Override
-    public boolean matches(CraftingInput input, Level level) {
+    protected boolean matchesInput(CraftingInput input, Level level) {
         int itemCount = 0;
         int shellCount = 0;
         for (int slot = 0; slot < input.size(); slot++) {
             ItemStack stack = input.getItem(slot);
             if (stack.isEmpty()) continue;
-
             if (ItemStackTemplate.remainderOf(stack) != null) return false;
             itemCount++;
             if (isEmptyShell(stack)) shellCount++;
-            else if (!Services.PLATFORM.canFitInsideContainerItems(stack)
+            else if (!(stack.canFitInsideContainerItems()
+                            && !stack.is(HbmItemTags.NO_CONTAINER_NESTING)
+                            && !stack.has(DataComponents.CONTAINER)
+                            && !stack.has(DataComponents.BUNDLE_CONTENTS)
+                            && (stack.isEmpty()
+                                    || stack.getCapability(
+                                                    Capabilities.Item.ITEM,
+                                                    ItemAccess.forStack(stack))
+                                            == null)
+                            && (!ModList.get().isLoaded("sophisticatedcore")
+                                    || !SophisticatedCoreNesting.hasStorage(stack)))
                     || stack.has(ModDataComponents.ARTY_CARGO.get())) return false;
         }
         return itemCount == 2 && shellCount == 1;
+    }
+
+    @Override
+    public boolean acceptsInputState(CraftingInput input, int slot, ItemStack output) {
+        if (isEmptyShell(input.getItem(slot)))
+            return RecipeInputState.preservesComponents(input.getItem(slot), output);
+        ItemStackTemplate cargo = output.get(ModDataComponents.ARTY_CARGO.get());
+        return cargo != null
+                && ItemStack.isSameItemSameComponents(input.getItem(slot), cargo.create());
     }
 
     @Override

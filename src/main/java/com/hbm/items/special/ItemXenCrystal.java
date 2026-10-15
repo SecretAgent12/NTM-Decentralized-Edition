@@ -6,7 +6,6 @@ package com.hbm.items.special;
 import com.hbm.data.ItemData;
 import com.hbm.explosion.ExplosionChaos;
 import com.hbm.interfaces.IItemEntityUpdate;
-import com.hbm.platform.Services;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -19,7 +18,6 @@ import com.hbm.backport.TooltipDisplay;
 import com.hbm.backport.compat.ItemCompat;
 
 public class ItemXenCrystal extends ItemCompat implements IItemEntityUpdate {
-
     private static final int RADIUS = 25, LIFT = 75;
 
     public ItemXenCrystal(Properties properties) {
@@ -31,7 +29,6 @@ public class ItemXenCrystal extends ItemCompat implements IItemEntityUpdate {
         if (!entity.onGround()) return false;
 
         if (ItemData.DROP_XEN_CRYSTAL.get()) {
-
             BlockPos at =
                     new BlockPos((int) entity.getX(), (int) entity.getY(), (int) entity.getZ());
             ExplosionChaos.floater(entity.level(), at, RADIUS, LIFT);

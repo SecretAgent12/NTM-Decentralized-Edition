@@ -3,10 +3,10 @@
 
 package com.hbm.entity.missile;
 
+import com.hbm.blockentity.machine.storage.BlockEntitySoyuzCapsule;
 import com.hbm.blocks.ModBlocks;
 import com.hbm.interfaces.StoredItems;
 import com.hbm.items.ModItems;
-import com.hbm.tileentity.machine.storage.BlockEntitySoyuzCapsule;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.ArrayList;
@@ -27,7 +27,6 @@ import com.hbm.backport.compat.EntityCompat;
 public class EntitySoyuzCapsule extends EntityCompat implements StoredItems {
 
     public int soyuz;
-
     public ItemStack[] payload = new ItemStack[18];
 
     @Override

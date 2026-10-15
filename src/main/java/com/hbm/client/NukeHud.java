@@ -5,7 +5,6 @@ package com.hbm.client;
 
 import com.hbm.client.render.HbmRenderPipelines;
 import com.hbm.config.HudConfig;
-import com.hbm.platform.Services;
 import com.hbm.util.GameTime;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.ARGB;

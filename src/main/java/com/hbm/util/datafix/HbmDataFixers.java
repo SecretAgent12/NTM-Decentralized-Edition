@@ -15,8 +15,7 @@ import com.hbm.backport.Nbt;
 public final class HbmDataFixers {
 
     public static final String VERSION_KEY = "hbm_data_version";
-
-    public static final int CURRENT = 1;
+    public static final int CURRENT = 7;
     static final DSL.TypeReference CHUNK = () -> "hbm:chunk";
     private static final DataFixer FIXER = build();
 
@@ -27,6 +26,19 @@ public final class HbmDataFixers {
         builder.addSchema(0, (version, parent) -> new HbmRootSchema(version));
         Schema v1 = builder.addSchema(1, Schema::new);
         builder.addFixer(new CoreIndexWideningFix(v1));
+        Schema v2 = builder.addSchema(2, Schema::new);
+        builder.addFixer(new PowerLockInteractionFix(v2));
+        Schema v3 = builder.addSchema(3, Schema::new);
+        builder.addFixer(new PendingFallerIntroductionFix(v3));
+        Schema v4 = builder.addSchema(4, Schema::new);
+        builder.addFixer(new GlyphidSpawnerDelayFix(v4));
+        Schema v5 = builder.addSchema(5, Schema::new);
+        builder.addFixer(new GlyphidSpawnerInitialSpawnFix(v5));
+        Schema v6 = builder.addSchema(6, Schema::new);
+        builder.addFixer(new TrinketTypeNameFix(v6));
+        builder.addFixer(new PadSizeNameFix(v6));
+        Schema v7 = builder.addSchema(7, Schema::new);
+        builder.addFixer(new CoreIndexPopulationFix(v7));
         return builder.build().fixer();
     }
 

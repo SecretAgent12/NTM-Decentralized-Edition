@@ -3,8 +3,8 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.machine.storage.CrateType;
 import com.hbm.inventory.container.MenuCrate;
-import com.hbm.tileentity.machine.storage.CrateType;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import com.hbm.backport.client.rendertype.RenderPipelines;

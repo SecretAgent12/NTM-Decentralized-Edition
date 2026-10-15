@@ -3,9 +3,9 @@
 
 package com.hbm.items.machine;
 
+import com.hbm.blockentity.machine.BlockEntityMachinePWRController;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toclient.PwrPrintPayload;
-import com.hbm.platform.Services;
-import com.hbm.tileentity.machine.BlockEntityMachinePWRController;
 import com.hbm.util.ChunkUtil;
 import java.util.function.Consumer;
 import net.minecraft.network.chat.Component;
@@ -36,7 +36,7 @@ public final class ItemPWRPrinter extends ItemCompat {
                 player.sendSystemMessage(Component.translatable("argument.pos.unloaded"));
                 return InteractionResult.FAIL;
             }
-            Services.NETWORK.sendTo(new PwrPrintPayload(data), player);
+            PacketWire.sendTo(new PwrPrintPayload(data), player);
         }
         return InteractionResult.SUCCESS;
     }

@@ -3,8 +3,8 @@
 
 package com.hbm.client.render;
 
+import com.hbm.blockentity.machine.BlockEntitySolarBoiler;
 import com.hbm.render.util.Vertices;
-import com.hbm.tileentity.machine.BlockEntitySolarBoiler;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
@@ -106,7 +106,6 @@ public class RenderSolarBoiler
         BlockEntityRenderer.super.extractRenderState(
                 be, state, partialTicks, cameraPosition, breakProgress);
         state.mirrors.clear();
-
         if (Minecraft.getInstance().options.graphicsMode().get() == net.minecraft.client.GraphicsStatus.FAST) return;
         BlockPos pos = be.getBlockPos();
         int count = 0;
@@ -123,7 +122,6 @@ public class RenderSolarBoiler
         ps.translate(0.5, 0.0, 0.5);
 
         for (Vec3i rel : s.mirrors) {
-
             double dx = -rel.getX(), dy = -rel.getY(), dz = -rel.getZ();
             double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
             if (dist < 1e-4) continue;

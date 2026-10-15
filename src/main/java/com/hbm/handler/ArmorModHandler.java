@@ -3,38 +3,31 @@
 
 package com.hbm.handler;
 
-import com.hbm.extprop.HbmLivingProps;
-import com.hbm.hazard.HazardSystem;
+import com.hbm.entity.mob.EntityCyberCrab;
+import com.hbm.interfaces.injected.ArmorModWearer;
 import com.hbm.inventory.material.Mats;
 import com.hbm.items.ModDataComponents;
 import com.hbm.items.ModItems;
+import com.hbm.items.armor.ArmorMods;
 import com.hbm.items.armor.ItemArmorMod;
-import com.hbm.items.armor.ItemModDefuser;
+import com.hbm.items.armor.ItemModCloud;
 import com.hbm.items.armor.ItemModObsidian;
 import com.hbm.items.armor.ItemModRevive;
 import com.hbm.lib.Library;
-import com.hbm.platform.Services;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.IdentityHashMap;
+import com.hbm.util.KeyHints;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import java.util.List;
-import java.util.Map;
 import net.minecraft.ChatFormatting;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -43,17 +36,16 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.CaveSpider;
 import net.minecraft.world.entity.monster.Spider;
+import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
+import com.hbm.backport.ItemInstance;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.GameRules;
-import com.hbm.backport.Nbt;
 
 public final class ArmorModHandler {
     public static final int HELMET_ONLY = 0;
@@ -66,9 +58,6 @@ public final class ArmorModHandler {
     public static final int EXTRA = 7;
     public static final int BATTERY = 8;
     public static final int MOD_SLOTS = 9;
-
-    public static final String MOD_COMPOUND_KEY = "ntm_armor_mods";
-    public static final String MOD_SLOT_KEY = "mod_slot_";
 
     private static final ResourceLocation[] PIECE_MODIFIERS = {
         Library.id("armor_mod_feet"),
@@ -84,53 +73,22 @@ public final class ArmorModHandler {
                     Attributes.ATTACK_DAMAGE,
                     Attributes.KNOCKBACK_RESISTANCE);
 
-    /**
-     * backport: items of other mods that can sit in an armor mod slot (Create's Engineer's Goggles,
-     * see com.hbm.integration.create.CreateGogglesCompat). They only occupy the slot; NTM runs no mod
-     * logic for them, the other mod reads them back with {@link #pryMods}.
-     */
-    private static final Map<Item, ForeignMod> FOREIGN_MODS = new IdentityHashMap<>();
+    private static final Reference2ObjectOpenHashMap<Item, ForeignMod> FOREIGN_MODS =
+            new Reference2ObjectOpenHashMap<>();
 
-    /** Slots a foreign mod fits ({@code 1 << slot} bits) and the armor pieces it goes on. */
-    public record ForeignMod(
-            int slotMask, boolean helmet, boolean chestplate, boolean leggings, boolean boots) {
-        public boolean fits(int slot) {
-            return (slotMask & (1 << slot)) != 0;
-        }
-    }
+    private record ForeignMod(int sockets, EquipmentSlot piece) {}
 
     private ArmorModHandler() {}
 
-    public static void registerForeignMod(Item item, ForeignMod mod) {
-        FOREIGN_MODS.put(item, mod);
-    }
-
-    /** An NTM armor mod or a registered foreign one. */
-    public static boolean isMod(ItemStack stack) {
-        return !stack.isEmpty()
-                && (stack.getItem() instanceof ItemArmorMod
-                        || FOREIGN_MODS.containsKey(stack.getItem()));
-    }
-
-    public static boolean fitsSlot(ItemStack mod, int slot) {
-        if (mod.getItem() instanceof ItemArmorMod armorMod) return armorMod.type == slot;
-        ForeignMod foreign = FOREIGN_MODS.get(mod.getItem());
-        return foreign != null && foreign.fits(slot);
-    }
-
-    private static int defaultSlot(ItemStack mod) {
-        if (mod.getItem() instanceof ItemArmorMod armorMod) return armorMod.type;
-        ForeignMod foreign = FOREIGN_MODS.get(mod.getItem());
-        return foreign == null ? -1 : Integer.numberOfTrailingZeros(foreign.slotMask());
-    }
-
-    public static void init() {
-        Services.SERVER.onServerTickPost(ArmorModHandler::onServerTick);
+    public static void registerForeignMod(Item item, int sockets, EquipmentSlot piece) {
+        FOREIGN_MODS.put(item, new ForeignMod(sockets, piece));
     }
 
     public static boolean isArmor(ItemStack stack) {
-
-        if (stack.isEmpty() || isMod(stack)) return false;
+        if (stack.isEmpty()
+                || stack.getItem() instanceof ItemArmorMod
+                || EquipmentProtections.isCladding(stack)
+                || FOREIGN_MODS.containsKey(stack.getItem())) return false;
         var equippable = com.hbm.backport.item.armor.Equippable.get(stack);
         return equippable != null
                 && switch (equippable.slot()) {
@@ -139,18 +97,26 @@ public final class ArmorModHandler {
                 };
     }
 
+    public static int modSlot(ItemStack stack) {
+        if (EquipmentProtections.isCladding(stack)) return CLADDING;
+        if (stack.getItem() instanceof ItemArmorMod mod && mod.type != CLADDING) return mod.type;
+        return -1;
+    }
+
+    public static boolean fits(ItemStack mod, int socket) {
+        ForeignMod foreign = FOREIGN_MODS.get(mod.getItem());
+        return foreign == null ? modSlot(mod) == socket : (foreign.sockets & 1 << socket) != 0;
+    }
+
     public static boolean isApplicable(ItemStack armor, ItemStack mod) {
-        if (!isArmor(armor) || !isMod(mod)) return false;
-        if (!(mod.getItem() instanceof ItemArmorMod armorMod)) {
-            ForeignMod foreign = FOREIGN_MODS.get(mod.getItem());
-            return switch (com.hbm.backport.item.armor.Equippable.get(armor).slot()) {
-                case HEAD -> foreign.helmet();
-                case CHEST -> foreign.chestplate();
-                case LEGS -> foreign.leggings();
-                case FEET -> foreign.boots();
-                default -> false;
-            };
-        }
+        if (!isArmor(armor)) return false;
+        ForeignMod foreign = FOREIGN_MODS.get(mod.getItem());
+        if (foreign != null) return com.hbm.backport.item.armor.Equippable.get(armor).slot() == foreign.piece;
+        if (EquipmentProtections.isCladding(mod))
+            return EquipmentProtections.claddingAllows(
+                    mod, com.hbm.backport.item.armor.Equippable.get(armor).slot());
+        if (!(mod.getItem() instanceof ItemArmorMod armorMod) || armorMod.type == CLADDING)
+            return false;
         return switch (com.hbm.backport.item.armor.Equippable.get(armor).slot()) {
             case HEAD -> armorMod.helmet;
             case CHEST -> armorMod.chestplate;
@@ -160,116 +126,70 @@ public final class ArmorModHandler {
         };
     }
 
-    public static boolean hasMods(ItemStack armor) {
-        CustomData data = armor.get(ModDataComponents.PERSISTENT_DATA.get());
-        return data != null && data.copyTag().contains(MOD_COMPOUND_KEY);
+    public static ArmorMods mods(ItemInstance armor) {
+        // backport-fix: BF-093 armor mods from DE beta.1–10 (NEXT 1.0.0 layout) migrate to the
+        // 1.0.1 hbm:armor_mods component. Every read (tick, reconcile, tooltip, table) comes here.
+        if ((Object) armor instanceof ItemStack stack) LegacyArmorMods.migrate(stack);
+        return armor.getOrDefault(ModDataComponents.ARMOR_MODS.get(), ArmorMods.EMPTY);
+    }
+
+    public static boolean hasMods(ItemInstance armor) {
+        return mods(armor).occupied() != 0;
+    }
+
+    public static Item modItem(ItemStack armor, int slot) {
+        return mods(armor).item(slot);
     }
 
     public static void applyMod(ItemStack armor, ItemStack mod) {
-        applyMod(armor, mod, defaultSlot(mod));
+        applyMod(armor, mod, modSlot(mod));
     }
 
-    // backport: explicit slot, for mods that fit more than one (foreign mods)
     public static void applyMod(ItemStack armor, ItemStack mod, int slot) {
-        if (slot < 0) return;
-        Tag encoded =
-                ItemStack.CODEC.encodeStart(NbtOps.INSTANCE, mod.copyWithCount(1)).getOrThrow();
-        CustomData.update(
-                ModDataComponents.PERSISTENT_DATA.get(),
-                armor,
-                root -> {
-                    CompoundTag mods = Nbt.getCompoundOrEmpty(root, MOD_COMPOUND_KEY);
-                    mods.put(MOD_SLOT_KEY + slot, encoded);
-                    root.put(MOD_COMPOUND_KEY, mods);
-                });
+        assert slot >= 0;
+        ArmorMods current = mods(armor);
+        ArmorMods next = current.with(slot, mod);
+        if (next != current) armor.set(ModDataComponents.ARMOR_MODS.get(), next);
     }
 
     public static void removeMod(ItemStack armor, int slot) {
-        CustomData data = armor.get(ModDataComponents.PERSISTENT_DATA.get());
-        if (data == null) return;
-        CustomData.update(
-                ModDataComponents.PERSISTENT_DATA.get(),
-                armor,
-                root -> {
-                    CompoundTag mods = Nbt.getCompoundOrEmpty(root, MOD_COMPOUND_KEY);
-                    mods.remove(MOD_SLOT_KEY + slot);
-                    if (mods.isEmpty()) root.remove(MOD_COMPOUND_KEY);
-                    else root.put(MOD_COMPOUND_KEY, mods);
-                });
+        ArmorMods current = mods(armor);
+        ArmorMods next = current.with(slot, ItemStack.EMPTY);
+        if (next == current) return;
+        if (next == ArmorMods.EMPTY) armor.remove(ModDataComponents.ARMOR_MODS.get());
+        else armor.set(ModDataComponents.ARMOR_MODS.get(), next);
     }
 
     public static void clearMods(ItemStack armor) {
-        if (armor.get(ModDataComponents.PERSISTENT_DATA.get()) != null) {
-            CustomData.update(
-                    ModDataComponents.PERSISTENT_DATA.get(),
-                    armor,
-                    root -> root.remove(MOD_COMPOUND_KEY));
-        }
+        // backport-fix: BF-093 drop beta.1–10 mods too, or the next read would bring them back
+        LegacyArmorMods.migrate(armor);
+        armor.remove(ModDataComponents.ARMOR_MODS.get());
     }
 
     public static ItemStack[] pryMods(ItemStack armor) {
-        ItemStack[] slots = new ItemStack[MOD_SLOTS];
-        Arrays.fill(slots, ItemStack.EMPTY);
-        CustomData data = armor.get(ModDataComponents.PERSISTENT_DATA.get());
-        if (data == null) return slots;
-
-        CompoundTag root = data.copyTag();
-        CompoundTag mods = Nbt.getCompoundOrEmpty(root, MOD_COMPOUND_KEY);
-        boolean dirty = false;
-        for (int i = 0; i < MOD_SLOTS; i++) {
-            String key = MOD_SLOT_KEY + i;
-            Tag encoded = mods.get(key);
-            if (encoded == null) continue;
-            ItemStack mod =
-                    ItemStack.CODEC
-                            .parse(NbtOps.INSTANCE, encoded)
-                            .result()
-                            .filter(ArmorModHandler::isMod)
-                            .orElse(ItemStack.EMPTY);
-            if (mod.isEmpty()) {
-                mods.remove(key);
-                dirty = true;
-            } else {
-                slots[i] = mod;
-            }
-        }
-        if (dirty) {
-            if (mods.isEmpty()) root.remove(MOD_COMPOUND_KEY);
-            else root.put(MOD_COMPOUND_KEY, mods);
-            CustomData.set(ModDataComponents.PERSISTENT_DATA.get(), armor, root);
-        }
-        return slots;
-    }
-
-    public static void setFlag(ItemStack armor, String key) {
-        CustomData.update(
-                ModDataComponents.PERSISTENT_DATA.get(), armor, root -> root.putBoolean(key, true));
-    }
-
-    public static boolean hasFlag(ItemStack armor, String key) {
-        CustomData data = armor.get(ModDataComponents.PERSISTENT_DATA.get());
-        return data != null && Nbt.getBooleanOr(data.copyTag(), key, false);
-    }
-
-    public static void clearFlag(ItemStack armor, String key) {
-        if (armor.get(ModDataComponents.PERSISTENT_DATA.get()) != null)
-            CustomData.update(
-                    ModDataComponents.PERSISTENT_DATA.get(), armor, root -> root.remove(key));
+        ArmorMods mods = mods(armor);
+        ItemStack[] copies = new ItemStack[MOD_SLOTS];
+        for (int i = 0; i < copies.length; i++) copies[i] = mods.copy(i);
+        return copies;
     }
 
     public static ItemStack pryMod(ItemStack armor, int slot) {
-        return pryMods(armor)[slot];
+        return mods(armor).copy(slot);
     }
 
     public static void addInstalledModTooltip(
             ItemStack armor, List<Component> tooltip, boolean expanded) {
         if (!isArmor(armor) || !hasMods(armor)) return;
         if (!expanded) {
-
             tooltip.add(
                     Component.translatable(
-                                    "desc.misc.lshift",
-                                    Component.translatable("desc.item.armorMod.display"))
+                                    "tooltip.hbm.armor.mods_hint",
+                                    KeyHints.key(
+                                                    "key.hbm.tooltipDetails",
+                                                    "key.keyboard.left.shift")
+                                            .copy()
+                                            .withStyle(
+                                                    ChatFormatting.YELLOW, ChatFormatting.ITALIC))
                             .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
             return;
         }
@@ -277,9 +197,17 @@ public final class ArmorModHandler {
                 Component.translatable("desc.item.armorMod.mods").withStyle(ChatFormatting.YELLOW));
         ItemStack[] mods = pryMods(armor);
         for (int i = 0; i < EXTRA + 1; i++) {
-            if (mods[i].getItem() instanceof ItemArmorMod mod)
+            if (EquipmentProtections.claddingTooltip(mods[i])) {
+                tooltip.add(
+                        Component.translatable(
+                                        "desc.item.armorMod.cladding.installed",
+                                        mods[i].getHoverName(),
+                                        EquipmentProtections.claddingResistance(mods[i]))
+                                .withStyle(ChatFormatting.YELLOW));
+            } else if (mods[i].getItem() instanceof ItemArmorMod mod)
                 mod.addDescription(tooltip, mods[i], armor);
-            else if (isMod(mods[i]))
+            // backport: foreign mods (Create's goggles) listed like NTM's own mod lines
+            else if (FOREIGN_MODS.containsKey(mods[i].getItem()))
                 tooltip.add(
                         Component.literal("  ")
                                 .append(mods[i].getHoverName())
@@ -291,9 +219,11 @@ public final class ArmorModHandler {
         for (EquipmentSlot armorSlot : ArmorUtil.ARMOR_SLOTS) {
             ItemStack armor = entity.getItemBySlot(armorSlot);
             if (!isArmor(armor)) continue;
-            for (ItemStack mod : pryMods(armor)) {
-                if (mod.getItem() instanceof ItemArmorMod armorMod) {
+            for (int socket = 0; socket < MOD_SLOTS; socket++) {
+                ArmorMods before = mods(armor);
+                if (before.item(socket) instanceof ItemArmorMod armorMod) {
                     amount = armorMod.modDamage(entity, source, amount, armor);
+                    if (mods(armor) != before) equipmentChanged(entity);
                 }
             }
         }
@@ -304,12 +234,13 @@ public final class ArmorModHandler {
         for (EquipmentSlot armorSlot : ArmorUtil.ARMOR_SLOTS) {
             ItemStack armor = entity.getItemBySlot(armorSlot);
             if (!isArmor(armor)) continue;
+            if (!(modItem(armor, EXTRA) instanceof ItemModRevive)) continue;
             ItemStack mod = pryMod(armor, EXTRA);
-            if (!(mod.getItem() instanceof ItemModRevive)) continue;
 
             mod.setDamageValue(mod.getDamageValue() + 1);
             if (mod.getDamageValue() >= mod.getMaxDamage()) removeMod(armor, EXTRA);
             else applyMod(armor, mod);
+            equipmentChanged(entity);
             entity.setHealth(entity.getMaxHealth());
             entity.addEffect(
                     new MobEffectInstance(
@@ -320,19 +251,12 @@ public final class ArmorModHandler {
     }
 
     public static void clientTick(LivingEntity entity) {
-        for (EquipmentSlot armorSlot : ArmorUtil.ARMOR_SLOTS) {
-            ItemStack armor = entity.getItemBySlot(armorSlot);
-            if (!isArmor(armor)) continue;
-            for (ItemStack mod : pryMods(armor)) {
-                if (mod.getItem() instanceof ItemArmorMod armorMod)
-                    armorMod.modUpdateClient(entity, armor);
-            }
-        }
+        ((ArmorModWearer) entity).hbm$tickClientArmorMods();
     }
 
     public static void onItemTossed(ItemEntity entity) {
         ItemStack stack = entity.getItem();
-        if (isArmor(stack) && pryMod(stack, CLADDING).getItem() instanceof ItemModObsidian)
+        if (isArmor(stack) && modItem(stack, CLADDING) instanceof ItemModObsidian)
             entity.setInvulnerable(true);
     }
 
@@ -346,8 +270,18 @@ public final class ArmorModHandler {
             drop(killed, level, ModItems.SERUM.get());
         if (killed instanceof Animal && random.nextInt(500) == 0)
             drop(killed, level, ModItems.BANDAID.get());
-        if (killed instanceof Enemy && random.nextInt(1000) == 0)
-            drop(killed, level, ModItems.HEART_PIECE.get());
+        if (killed instanceof Enemy) {
+            if (random.nextInt(1000) == 0) drop(killed, level, ModItems.HEART_PIECE.get());
+            if (random.nextInt(250) == 0) drop(killed, level, ModItems.KEY_RED_CRACKED.get());
+            if (random.nextInt(250) == 0) drop(killed, level, ModItems.LAUNCH_CODE_PIECE.get());
+        }
+        if (killed instanceof EntityCyberCrab && random.nextInt(500) == 0)
+            drop(killed, level, ModItems.WD40.get());
+        if (killed instanceof Zombie) {
+            if (random.nextInt(200) == 0) drop(killed, level, Items.COPPER_INGOT);
+            if (random.nextInt(200) == 0) drop(killed, level, ModItems.ingot(Mats.MAT_ALUMINIUM));
+            if (random.nextInt(200) == 0) drop(killed, level, ModItems.ingot(Mats.MAT_TITANIUM));
+        }
     }
 
     public static void onItemSmelted(Player player, ItemStack smelted) {
@@ -363,72 +297,55 @@ public final class ArmorModHandler {
         player.getInventory().placeItemBackInInventory(stack);
     }
 
-    private static void onServerTick(MinecraftServer server) {
-        for (ServerLevel level : server.getAllLevels()) {
-            List<LivingEntity> living = new ArrayList<>();
-            for (Entity entity : level.getAllEntities()) {
-                if (entity instanceof LivingEntity target) living.add(target);
-            }
-            for (LivingEntity entity : living) {
-                if (!entity.isRemoved()) update(entity);
-            }
-        }
+    public static void equipmentChanged(LivingEntity entity) {
+        ((ArmorModWearer) entity).hbm$reconcileArmorMods();
     }
 
-    public static void update(LivingEntity entity) {
-        if (entity instanceof Creeper creeper && HbmLivingProps.isDefused(creeper)) {
-            ItemModDefuser.castrateCreeper(creeper, null, false);
+    public static void tick(LivingEntity entity) {
+        ((ArmorModWearer) entity).hbm$tickArmorMods();
+    }
+
+    public static boolean reconcileAttributes(
+            LivingEntity entity,
+            ArmorMods previousMods,
+            ArmorMods mods,
+            EquipmentSlot declaredSlot,
+            int piece) {
+        AttributeModifier[] next = new AttributeModifier[MODIFIABLE.size() + 1];
+        for (int socket = 0; socket < MOD_SLOTS; socket++) {
+            if (!(mods.item(socket) instanceof ItemArmorMod mod) || !mod.hasAttributes()) continue;
+            mod.collectModifiers(
+                    declaredSlot,
+                    PIECE_MODIFIERS[piece],
+                    (attribute, modifier) -> {
+                        int index = MODIFIABLE.indexOf(attribute);
+                        assert index >= 0;
+                        if (modifier.id().equals(ItemModCloud.SPEED_ID)) {
+                            assert attribute.equals(Attributes.MOVEMENT_SPEED);
+                            index = MODIFIABLE.size();
+                        } else {
+                            assert modifier.id().equals(PIECE_MODIFIERS[piece]);
+                        }
+                        next[index] = modifier;
+                    });
         }
-        // backport-fix: BF-083 the modifiers used to be removed from every attribute and added
-        // back while the mods ran. A mod that gives an effect each tick (servos: haste, jump
-        // boost) made 1.21.1 refresh the dirty attributes right then (LivingEntity
-        // .onEffectUpdated -> refreshDirtyAttributes), with the health mod's MAX_HEALTH bonus
-        // removed for that moment, so health was clamped to 20 every tick: natural regeneration
-        // used up food and never got past 20. Now the wanted modifiers are worked out first and
-        // only changed ones are touched; the mods' own updates run afterwards.
-        ItemStack[][] installed = new ItemStack[ArmorUtil.ARMOR_SLOTS.length][];
-        Map<Holder<Attribute>, Map<ResourceLocation, AttributeModifier>> wanted =
-                new IdentityHashMap<>();
-        for (int i = 0; i < ArmorUtil.ARMOR_SLOTS.length; i++) {
-            ItemStack armor = entity.getItemBySlot(ArmorUtil.ARMOR_SLOTS[i]);
-            if (!isArmor(armor)) continue;
-            ResourceLocation id = PIECE_MODIFIERS[i];
-            installed[i] = pryMods(armor);
-            for (ItemStack mod : installed[i]) {
-                if (!(mod.getItem() instanceof ItemArmorMod armorMod)) continue;
-                armorMod.collectModifiers(
-                        armor,
-                        id,
-                        (attribute, modifier) -> {
-                            assert MODIFIABLE.contains(attribute);
-                            // a later mod of the same piece replaces an earlier one, as before
-                            wanted.computeIfAbsent(attribute, a -> new java.util.HashMap<>())
-                                    .put(modifier.id(), modifier);
-                        });
-            }
-        }
-        for (Holder<Attribute> attribute : MODIFIABLE) {
-            AttributeInstance instance = entity.getAttribute(attribute);
+        boolean healthChanged = false;
+        for (int i = 0; i < next.length; i++) {
+            boolean cloud = i == MODIFIABLE.size();
+            if (cloud
+                    && next[i] == null
+                    && !(previousMods.item(PLATE_ONLY) instanceof ItemModCloud)) continue;
+            AttributeInstance instance =
+                    entity.getAttribute(cloud ? Attributes.MOVEMENT_SPEED : MODIFIABLE.get(i));
             if (instance == null) continue;
-            Map<ResourceLocation, AttributeModifier> forAttribute =
-                    wanted.getOrDefault(attribute, Map.of());
-            for (ResourceLocation id : PIECE_MODIFIERS) {
-                AttributeModifier modifier = forAttribute.get(id);
-                if (modifier == null) instance.removeModifier(id);
-                else if (!modifier.equals(instance.getModifier(id)))
-                    instance.addOrUpdateTransientModifier(modifier);
-            }
+            AttributeModifier previous =
+                    instance.getModifier(cloud ? ItemModCloud.SPEED_ID : PIECE_MODIFIERS[piece]);
+            if (java.util.Objects.equals(previous, next[i])) continue;
+            if (previous != null) instance.removeModifier(previous);
+            if (next[i] != null) instance.addTransientModifier(next[i]);
+            if (i == 0) healthChanged = true;
         }
-        for (int i = 0; i < ArmorUtil.ARMOR_SLOTS.length; i++) {
-            if (installed[i] == null) continue;
-            ItemStack armor = entity.getItemBySlot(ArmorUtil.ARMOR_SLOTS[i]);
-            for (ItemStack mod : installed[i]) {
-                if (!(mod.getItem() instanceof ItemArmorMod armorMod)) continue;
-                armorMod.modUpdate(entity, armor);
-                HazardSystem.applyHazards(mod, entity);
-            }
-        }
-        if (entity.getHealth() > entity.getMaxHealth()) entity.setHealth(entity.getMaxHealth());
+        return healthChanged;
     }
 
     private static void drop(LivingEntity entity, ServerLevel level, Item item) {

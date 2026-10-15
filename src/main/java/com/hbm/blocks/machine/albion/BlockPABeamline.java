@@ -3,10 +3,10 @@
 
 package com.hbm.blocks.machine.albion;
 
+import com.hbm.blockentity.machine.albion.BlockEntityPABeamline;
 import com.hbm.blocks.multiblock.BlockMultiblockCell;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.interfaces.IToolable;
-import com.hbm.tileentity.machine.albion.BlockEntityPABeamline;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Player;
@@ -24,8 +24,6 @@ public class BlockPABeamline extends BlockMultiblockCore implements EntityBlock,
 
     public static final BooleanProperty WINDOW = BooleanProperty.create("window");
 
-    private static final int[] DIMENSIONS = {0, 0, 0, 0, 1, 1};
-
     public BlockPABeamline(Properties props) {
         super(props);
         registerDefaultState(defaultBlockState().setValue(WINDOW, false));
@@ -35,16 +33,6 @@ public class BlockPABeamline extends BlockMultiblockCore implements EntityBlock,
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         super.createBlockStateDefinition(builder);
         builder.add(WINDOW);
-    }
-
-    @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 0;
     }
 
     @Override

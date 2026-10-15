@@ -3,9 +3,9 @@
 
 package com.hbm.client.render;
 
+import com.hbm.blockentity.machine.BlockEntityFoundryTank;
 import com.hbm.blocks.machine.FoundryTank;
 import com.hbm.main.ResourceManager;
-import com.hbm.tileentity.machine.BlockEntityFoundryTank;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.hbm.lib.crankshaft.ConcurrentRenderStateExtraction;
 import com.hbm.backport.client.core.SubmitNodeCollector;
@@ -16,8 +16,6 @@ import net.minecraft.client.renderer.RenderType;
 import com.hbm.backport.client.core.CameraRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.world.level.block.PipeBlock;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;

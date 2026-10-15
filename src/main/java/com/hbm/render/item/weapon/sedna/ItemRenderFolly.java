@@ -4,11 +4,9 @@
 
 package com.hbm.render.item.weapon.sedna;
 
-import com.hbm.items.ModItems;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
 import com.hbm.main.ResourceManager;
-import com.hbm.registration.RegistryHandle;
 import com.hbm.render.anim.HbmAnimations;
 import com.hbm.sound.ModSounds;
 import com.hbm.util.EntityDamageUtil;
@@ -28,7 +26,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.sounds.SoundSource;
 import com.hbm.backport.ARGB;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
@@ -193,16 +190,13 @@ public class ItemRenderFolly extends ItemRenderWeaponBase {
             if (!jingle && splash != null) {
                 player.level()
                         .playLocalSound(
-                                player.getX(),
-                                player.getY(),
-                                player.getZ(),
+                                player,
                                 ModSounds
                                         .GUN_VYLET_PONY_CUTIEMARKS_AND_THE_THINGS_THAT_BIND_US_INTRO_JINGLE
                                         .get(),
                                 SoundSource.PLAYERS,
                                 0.5F,
-                                1F,
-                                false);
+                                1F);
                 jingle = true;
             }
 

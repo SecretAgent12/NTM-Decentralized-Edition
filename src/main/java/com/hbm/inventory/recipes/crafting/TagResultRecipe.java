@@ -3,6 +3,7 @@
 
 package com.hbm.inventory.recipes.crafting;
 
+import com.hbm.inventory.recipes.ingredient.CountIngredient;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -34,7 +35,7 @@ import net.minecraft.world.level.Level;
 import com.hbm.backport.RecipeSerializers;
 import com.hbm.backport.Codecs;
 
-public final class TagResultRecipe extends NormalCraftingRecipe {
+public final class TagResultRecipe extends HbmNormalCraftingRecipe {
 
     public static final MapCodec<TagResultRecipe> MAP_CODEC =
             RecordCodecBuilder.mapCodec(
@@ -66,6 +67,7 @@ public final class TagResultRecipe extends NormalCraftingRecipe {
 
     private final Result result;
     private final List<Ingredient> ingredients;
+    private final List<CountIngredient> matchingInputs;
 
     public TagResultRecipe(
             NormalCraftingRecipe.CommonInfo commonInfo,
@@ -75,6 +77,8 @@ public final class TagResultRecipe extends NormalCraftingRecipe {
         super(commonInfo, bookInfo);
         this.result = result;
         this.ingredients = ingredients;
+        matchingInputs =
+                ingredients.stream().map(ingredient -> new CountIngredient(ingredient, 1)).toList();
     }
 
     public Result result() {
@@ -88,12 +92,18 @@ public final class TagResultRecipe extends NormalCraftingRecipe {
     }
 
     @Override
-    public boolean matches(CraftingInput input, Level level) {
+    protected boolean matchesInput(CraftingInput input, Level level) {
         if (input.ingredientCount() != ingredients.size() || resolve().isEmpty()) return false;
-
-        return input.size() == 1 && ingredients.size() == 1
-                ? ingredients.getFirst().test(input.getItem(0))
-                : input.stackedContents().canCraft(this, null);
+        // backport: 26.x picks with the generic StackedContents<ItemStack> (account/tryPick);
+        // 1.21.1's StackedContents only counts item ids, so NeoForge's RecipeMatcher does the
+        // same one-stack-per-ingredient matching
+        List<ItemStack> contents = new java.util.ArrayList<>();
+        for (ItemStack stack : input.items()) if (!stack.isEmpty()) contents.add(stack);
+        List<java.util.function.Predicate<ItemStack>> picks =
+                matchingInputs.stream()
+                        .<java.util.function.Predicate<ItemStack>>map(i -> i::acceptsItem)
+                        .toList();
+        return net.neoforged.neoforge.common.util.RecipeMatcher.findMatches(contents, picks) != null;
     }
 
     @Override

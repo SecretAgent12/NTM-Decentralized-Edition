@@ -5,8 +5,8 @@ package com.hbm.blocks.network;
 
 import com.hbm.api.energymk2.CableData;
 import com.hbm.api.energymk2.PowerGraph;
-import com.hbm.api.energymk2.PowerGraphProvider;
-import com.hbm.tileentity.network.BlockEntityPylonBase;
+import com.hbm.blockentity.network.BlockEntityPylonBase;
+import com.hbm.capability.PhysicalConnector;
 import com.hbm.uninos.graph.GraphNode;
 import com.hbm.uninos.graph.LevelNodeGraph;
 import net.minecraft.core.BlockPos;
@@ -19,7 +19,7 @@ import com.hbm.backport.Orientation;
 import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.BlockCompat;
 
-public abstract class CableConductorBlockBase extends BlockCompat {
+public abstract class CableConductorBlockBase extends BlockCompat implements PhysicalConnector {
 
     public static final int OPEN_ALL = 0x3F;
 
@@ -31,13 +31,19 @@ public abstract class CableConductorBlockBase extends BlockCompat {
         return OPEN_ALL;
     }
 
-    public boolean canConnectCable(BlockState state, Direction side) {
+    @Override
+    public boolean hasPowerContact(Level level, BlockPos pos, BlockState state, Direction side) {
         return (nodeMask(state) & (1 << side.ordinal())) != 0;
     }
 
     public static void mintNode(ServerLevel level, BlockPos pos, BlockState state, int mask) {
-        PowerGraph.get(level)
-                .addNode(pos.asLong(), PowerGraphProvider.INSTANCE.createData(state), mask);
+        PowerGraph.get(level).addNode(pos.asLong(), CableData.INSTANCE, mask);
+    }
+
+    public static void restoreNode(ServerLevel level, BlockPos pos, BlockState state) {
+        if (state.getBlock() instanceof CableConductorBlockBase conductor) {
+            mintNode(level, pos, state, conductor.nodeMask(state));
+        }
     }
 
     public static void dropNode(ServerLevel level, BlockPos pos) {
@@ -48,7 +54,6 @@ public abstract class CableConductorBlockBase extends BlockCompat {
                         ? node.remoteLinks.toLongArray()
                         : new long[0];
         graph.removeNode(pos.asLong());
-
         for (long peer : peers) BlockEntityPylonBase.refreshIfLoaded(level, peer);
     }
 

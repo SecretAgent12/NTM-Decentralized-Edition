@@ -3,11 +3,11 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.machine.BlockEntityMicrowave;
 import com.hbm.inventory.container.MenuMachineMicrowave;
 import com.hbm.lib.Library;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toserver.NbtControlPayload;
-import com.hbm.platform.Services;
-import com.hbm.tileentity.machine.BlockEntityMicrowave;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.client.gui.input.MouseButtonEvent;
 import com.hbm.backport.client.rendertype.RenderPipelines;
@@ -74,7 +74,7 @@ public class ScreenMachineMicrowave extends ScreenInfoContainer<MenuMachineMicro
             if (button >= 0) {
                 CompoundTag data = new CompoundTag();
                 data.putInt("button", button);
-                Services.NETWORK.sendToServer(
+                PacketWire.sendToServer(
                         new NbtControlPayload(menu.blockEntity().getBlockPos(), data));
                 playClick();
                 return true;
