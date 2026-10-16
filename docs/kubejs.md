@@ -223,6 +223,54 @@ Example: `kubejs/data/hbm/fluid_property/sulfuric_acid.json` with `"temperature"
 square in tooltips and JEI and the tanks in machine GUIs use per-fluid textures instead, which you change
 with a resource pack (or `kubejs/assets/hbm/textures/gui/fluids/<fluid>.png`).
 
+## Suit protection and medicine
+
+What armor protects against and what medicine does are data files as well, so datapacks and KubeJS can change
+them or add new ones. They live under `data/hbm/hbm/`:
+
+| Folder | What it controls |
+|---|---|
+| `suit_protection/` | full armor sets and what wearing the whole set protects against (`protections`) |
+| `hazmat_protection/` | how much radiation a single armor piece keeps out (`resistance`) |
+| `equipment_protection/` | which hazards a single piece blocks: gases, particles, bright light and so on (`hazards`) |
+| `consumable_treatment/` | what an item does when it's used or eaten |
+
+A treatment, `consumable_treatment/radaway.json`:
+
+```json
+{
+  "targets": "hbm:radaway",
+  "trigger": "use",
+  "actions": [
+    { "type": "effect", "effect": "hbm:radaway", "duration": 140, "extend": true }
+  ],
+  "sound": "hbm:item.radaway",
+  "remainder": "hbm:iv_empty"
+}
+```
+
+- `trigger`: `use` (right click) or `consume` (eaten or drunk).
+- `actions`: `effect` (`effect`, `duration` in ticks, optional `amplifier`, `extend` to add to the time left),
+  `remove_effects`, `damage`, `counter` (`radiation`, `digamma`, `asbestos` or `black_lung`) and `potion_sickness`.
+- `remainder`: the item left after use, if any.
+
+Each item can have only one treatment: two files that target the same item stop the game at start-up. To
+change a built-in one, replace its file (same path) instead of adding a second.
+
+An armor set, `suit_protection/asbestos.json`:
+
+```json
+{
+  "armor": {
+    "head": "hbm:asbestos_helmet",
+    "chest": "hbm:asbestos_plate",
+    "legs": "hbm:asbestos_legs",
+    "feet": "hbm:asbestos_boots"
+  },
+  "protections": ["asbestos"]
+}
+```
+
 ## Limitations
 
 - `replaceInput` / `replaceOutput` don't touch recipes that scripts add themselves (even when called after
