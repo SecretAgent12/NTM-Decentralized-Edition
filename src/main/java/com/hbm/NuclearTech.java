@@ -217,7 +217,8 @@ public final class NuclearTech {
         ArmorSuitEffects.init();
         ChunkUtil.init();
         ChunkPublication.init();
-        com.hbm.backport.ChunkFullSafetyNet.init(); // backport-fix: BF-037 safety net behind ChunkPublication
+        com.hbm.backport.ChunkFullSafetyNet.init();
+        com.hbm.uninos.graph.PhysicalGraph.init(); // backport-fix: BF-097 redraws deferred out of chunk loading // backport-fix: BF-037 safety net behind ChunkPublication
         AssembledMembers.init();
         com.hbm.backport.SubLevelChunks.init(); // backport-fix: BF-075 contraption chunk hooks
         ResolvedCapCache.init();

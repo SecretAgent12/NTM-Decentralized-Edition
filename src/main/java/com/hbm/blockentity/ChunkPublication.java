@@ -101,6 +101,12 @@ public final class ChunkPublication {
         return chunk != null && entry(chunk) != null ? chunk : null;
     }
 
+    // backport-fix: BF-097 whether any chunk of this level is inside its load-time publication (its FULL task)
+    public static boolean loadingAny(ServerLevel level) {
+        for (int i = LOADING.size() - 1; i >= 0; i--) if (LOADING.get(i).level == level) return true;
+        return false;
+    }
+
     public static boolean publishing(ServerLevel level, BlockPos pos) {
         Loading entry = entry(level, pos);
         return entry != null && !entry.registering;

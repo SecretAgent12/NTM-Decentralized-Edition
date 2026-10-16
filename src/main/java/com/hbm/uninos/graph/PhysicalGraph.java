@@ -15,7 +15,13 @@ import com.hbm.blocks.CapabilityDependentShape;
 import com.hbm.capability.NtmCapabilities;
 import com.hbm.capability.PhysicalConnector;
 import com.hbm.util.ChunkUtil;
+import com.hbm.blockentity.ChunkPublication;
+import com.hbm.platform.NeoForgeServerEvents;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import java.util.Map;
+import java.util.WeakHashMap;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -202,9 +208,45 @@ public final class PhysicalGraph {
         }
     }
 
+    /**
+     * backport-fix: BF-097 a chunk's block entities are published inside its FULL task (registerTickContainerInLevel),
+     * and a multiblock there redraws the connectors around it. Level.setBlock in that task let Lithium's hopper
+     * update hook (updateHopperOnUpdateSuppression -> getLoadedExistingBlockEntity -> Level.getChunk) wait for a
+     * chunk whose loading was the very task running it: the server thread parked forever. Redraws asked for while a
+     * chunk of the level is loading wait for the end of the server tick and are redrawn from the then current
+     * neighbours; nothing else changes.
+     */
+    private static final Map<ServerLevel, LongOpenHashSet> DEFERRED = new WeakHashMap<>();
+
+    public static void init() {
+        NeoForgeServerEvents.onServerTickPost(PhysicalGraph::flushDeferred);
+        NeoForgeServerEvents.onServerStopping(server -> DEFERRED.clear());
+    }
+
+    private static void flushDeferred(MinecraftServer server) {
+        if (DEFERRED.isEmpty()) return;
+        for (Map.Entry<ServerLevel, LongOpenHashSet> entry : DEFERRED.entrySet()) {
+            ServerLevel level = entry.getKey();
+            LongOpenHashSet pending = entry.getValue();
+            if (pending.isEmpty() || ChunkPublication.loadingAny(level)) continue;
+            long[] keys = pending.toLongArray();
+            pending.clear();
+            for (long key : keys) {
+                BlockPos pos = BlockPos.of(key);
+                BlockState state = ChunkUtil.blockStateIfLoaded(level, pos);
+                if (state != null && state.getBlock() instanceof CapabilityDependentShape)
+                    redraw(state, level, pos);
+            }
+        }
+    }
+
     private static void publish(
             ServerLevel level, BlockPos pos, BlockState state, BlockState drawn) {
-        if (drawn != state)
-            level.setBlock(pos, drawn, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
+        if (drawn == state) return;
+        if (ChunkPublication.loadingAny(level)) {
+            DEFERRED.computeIfAbsent(level, l -> new LongOpenHashSet()).add(pos.asLong());
+            return;
+        }
+        level.setBlock(pos, drawn, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
     }
 }
