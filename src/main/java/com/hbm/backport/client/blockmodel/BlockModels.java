@@ -139,7 +139,8 @@ public final class BlockModels {
         // every HBM block's model (26.x: the BlockStateModelSet the mixin saw) for masks/sections
         Map<BlockState, BlockStateModel> all = new IdentityHashMap<>(baked);
         for (Block block : BuiltInRegistries.BLOCK) {
-            if (!com.hbm.NuclearTech.MOD_ID.equals(BuiltInRegistries.BLOCK.getKey(block).getNamespace())) continue;
+            // backport-fix: BF-094 NTM addons' blocks too
+            if (!com.hbm.registration.Reg.isNtmNamespace(BuiltInRegistries.BLOCK.getKey(block).getNamespace())) continue;
             for (BlockState state : block.getStateDefinition().getPossibleStates()) {
                 if (all.containsKey(state)) continue;
                 BakedModel vanilla = models.get(BlockModelShaper.stateToModelLocation(state));

@@ -51,7 +51,6 @@ import org.slf4j.Logger;
  */
 public final class ClientItems {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final Set<String> NAMESPACES = Set.of("hbm");
     private static final FileToIdConverter LISTER = FileToIdConverter.json("items");
 
     /** 26.x {@code ClientItem}: the top of an item definition file. */
@@ -108,7 +107,8 @@ public final class ClientItems {
         var resources = Minecraft.getInstance().getResourceManager();
         for (Map.Entry<ResourceLocation, Resource> entry : LISTER.listMatchingResources(resources).entrySet()) {
             ResourceLocation id = LISTER.fileToId(entry.getKey());
-            if (!NAMESPACES.contains(id.getNamespace())) continue;
+            // backport-fix: BF-094 NTM addons' item definitions too (26.x reads every namespace)
+            if (!com.hbm.registration.Reg.isNtmNamespace(id.getNamespace())) continue;
             try (Reader reader = entry.getValue().openAsReader()) {
                 JsonElement json = JsonParser.parseReader(reader);
                 Definition definition =

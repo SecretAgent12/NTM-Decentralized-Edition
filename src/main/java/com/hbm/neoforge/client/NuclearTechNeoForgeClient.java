@@ -348,7 +348,10 @@ public final class NuclearTechNeoForgeClient {
                                         net.neoforged.neoforge.registries.NeoForgeRegistries
                                                 .FLUID_TYPES
                                                 .getKey(type);
-                                if (key == null || !"hbm".equals(key.getNamespace())) return;
+                                // backport-fix: BF-094 NTM addons' fluid types too
+                                if (key == null
+                                        || !com.hbm.registration.Reg.isNtmNamespace(
+                                                key.getNamespace())) return;
                                 if (!event.isFluidTypeRegistered(type))
                                     event.registerFluidType(extensions, type);
                             });
