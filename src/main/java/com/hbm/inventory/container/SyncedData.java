@@ -137,9 +137,15 @@ public final class SyncedData implements ContainerData {
         return INDEXES.computeIfAbsent(owner.getPackageName(), pkg -> read(owner));
     }
 
+    // backport-fix: BF-096 NEXT 1.0.3 reads one index per package (next to the block entity class, as its
+    // hbm-compiler writes them); DE's pipeline writes a single index for all packages at DE_INDEX, as NEXT 1.0.0
+    // read it. Without the fallback every machine GUI found no synced fields and crashed on open.
+    private static final String DE_INDEX = "/com/hbm/inventory/" + INDEX;
+
     private static Map<String, List<String[]>> read(Class<?> owner) {
         Map<String, List<String[]>> built = new LinkedHashMap<>();
-        try (InputStream in = owner.getResourceAsStream(INDEX)) {
+        InputStream own = owner.getResourceAsStream(INDEX);
+        try (InputStream in = own != null ? own : SyncedData.class.getResourceAsStream(DE_INDEX)) {
             if (in == null) return built;
             try (BufferedReader reader =
                     new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
