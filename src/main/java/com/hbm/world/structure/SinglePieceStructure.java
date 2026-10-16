@@ -101,6 +101,9 @@ public final class SinglePieceStructure extends JigsawStructure implements Colum
     @Override
     public Optional<GenerationStub> findGenerationPoint(GenerationContext context) {
         return super.findGenerationPoint(context)
+                // backport-fix: BF-011 (DE 2026-09-29, commit e7f8730d) DE gated starts on the biome at the start
+                // position. NEXT 1.0.3 (2026-10-12) gates on the biome column (ColumnBiome) and an aquatic flag;
+                // NEXT's gate kept, DE's flooded-footprint check below stays.
                 .filter(stub -> ColumnBiome.valid(stub, context))
                 .flatMap(
                         stub -> {

@@ -60,6 +60,10 @@ public final class NeoForgeNetwork {
     public static void onDatapackSync(OnDatapackSyncEvent event) {
         List<ServerPlayer> remote =
                 event.getRelevantPlayers()
+                        // backport-fix: BF-055 a scripted "player" without a real connection (The Broken
+                        // Script's Null) has none to sync to (the same check as PacketWire.reachable)
+                        .filter(player -> player.connection != null
+                                && player.connection.getConnection() != null)
                         .filter(player -> !player.connection.getConnection().isMemoryConnection())
                         .toList();
         if (remote.isEmpty()) return;

@@ -217,6 +217,7 @@ public final class NuclearTech {
         ArmorSuitEffects.init();
         ChunkUtil.init();
         ChunkPublication.init();
+        com.hbm.backport.ChunkFullSafetyNet.init(); // backport-fix: BF-037 safety net behind ChunkPublication
         AssembledMembers.init();
         com.hbm.backport.SubLevelChunks.init(); // backport-fix: BF-075 contraption chunk hooks
         ResolvedCapCache.init();

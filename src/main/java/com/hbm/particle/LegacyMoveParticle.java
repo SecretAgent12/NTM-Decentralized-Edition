@@ -22,6 +22,10 @@ public abstract class LegacyMoveParticle extends ParticleCompat {
         super(level, x, y, z, xa, ya, za);
     }
 
+    // backport-fix: BF-005 (DE 2026-09-29, commit 20b7ed09) DE reset vanilla's stoppedByCollision latch and
+    // zeroed the resting fall speed in ParticleGiblet/Skeleton/Ashes (gibs, bones and ashes froze in mid-air).
+    // NEXT 1.0.1 (2026-10-05) fixed the same bug here for all legacy particles (collide every tick, zero the
+    // blocked axis, as 1.7.10 moveEntity); NEXT's code kept.
     @Override
     public void move(double xa, double ya, double za) {
         double originalXa = xa;

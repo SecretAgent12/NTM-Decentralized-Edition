@@ -99,6 +99,10 @@ public final class DataCodecs {
     }
 
     public static <A> MapCodec<A> recipe(MapCodec<A> codec) {
+        // backport-fix: BF-038 (DE 2026-10-04, commit deff40fb) KubeJS leaves "_kubejs_changed_marker" in every
+        // recipe it adds or edits while vanilla parses them, and the strict check turned all such NTM recipes
+        // into "Unknown fields" errors; the marker is tolerated like the condition envelopes. NEXT 1.0.2
+        // (2026-10-08) has the same change.
         return strict(
                 codec,
                 "type",

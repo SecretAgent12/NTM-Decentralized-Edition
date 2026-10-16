@@ -38,6 +38,10 @@ public final class FoundryChannelGraph implements IGraphProvider<@Nullable NTMMa
         return true;
     }
 
+    // backport-fix: BF-052 (DE 2026-10-05, commit b6365845) the graph's data list allowed no null ("no material"),
+    // DFU built it with List.copyOf and the foundry channel graph failed to load; DE made the generic graph data
+    // list null-tolerant. NEXT 1.0.1 (2026-10-05) moved data encoding into each provider and stores null as -1
+    // here (same save format); NEXT's code kept.
     @Override
     public Codec<List<@Nullable NTMMaterial>> dataTableCodec() {
         return Codec.INT

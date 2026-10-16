@@ -184,6 +184,9 @@ public class BlockEntityMachineCompressor extends BlockEntityMachineBase
         if (pistonDir) {
             piston -= randSpeed;
             if (piston <= 0) {
+                // backport-fix: BF-062 (DE 2026-10-05, commit 2fd0c45b) this runs on the client, where
+                // playSound(null, ...) was silent; DE played it with level.playLocalSound. NEXT 1.0.3 (2026-10-12)
+                // plays it through AudioSystem (respects the machine volume settings); NEXT's code kept.
                 AudioSystem.playMachineSound(
                         level,
                         worldPosition,

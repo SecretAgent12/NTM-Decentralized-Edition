@@ -133,6 +133,9 @@ public class EntityMissileAntiBallistic extends EntityThrowableInterp
 
             if (vec.length() < dist) {
                 closest = e;
+                // backport-fix: BF-023 (DE 2026-10-01, commit 6d7649de) remember the distance, otherwise this
+                // picks the last missile within 1000 blocks instead of the closest one (same slip in 1.7.10 and
+                // NEXT 1.0.0). NEXT 1.0.1 (2026-10-05) has the same change.
                 dist = vec.length();
             }
         }

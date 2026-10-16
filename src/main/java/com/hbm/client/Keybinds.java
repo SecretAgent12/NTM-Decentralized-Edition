@@ -357,6 +357,9 @@ public final class Keybinds {
             super.setKey(key);
         }
 
+        // backport-fix: BF-071 (DE 2026-10-07, commit 5282e6f8) the tool ability key read the default key, so
+        // rebinding did nothing; DE's KeyOverlap.isDown read mapping.getKey(). NEXT 1.0.1 (2026-10-05, before DE)
+        // rewrote key handling around the bound key (GameplayKey); NEXT's code kept.
         private void refresh() {
             if (!downKey.equals(((KeyMapping) this).getKey())) super.setDown(false);
             Minecraft mc = Minecraft.getInstance();

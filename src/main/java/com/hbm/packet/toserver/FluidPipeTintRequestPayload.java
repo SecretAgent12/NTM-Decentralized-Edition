@@ -57,6 +57,9 @@ public final class FluidPipeTintRequestPayload extends ThreadedPayload {
         ServerLevel level = player.serverLevel();
         Reference2ObjectOpenHashMap<Fluid, LongArrayList> byFluid =
                 new Reference2ObjectOpenHashMap<>();
+        // backport-fix: BF-029 (DE 2026-10-02, commit 4a19c959) DE skipped keys beyond the view distance (+1 chunk)
+        // and in unloaded chunks, so a forged packet could no longer load chunks on the main thread. NEXT 1.0.1
+        // (2026-10-05) fixed it with the player's tracked chunks and blockStateIfLoaded; NEXT's code kept.
         ChunkTrackingView view = player.getChunkTrackingView();
         for (long key : payload.posKeys) {
             BlockPos pos = BlockPos.of(key);

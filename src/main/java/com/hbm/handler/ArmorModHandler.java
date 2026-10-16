@@ -305,6 +305,10 @@ public final class ArmorModHandler {
         ((ArmorModWearer) entity).hbm$tickArmorMods();
     }
 
+    // backport-fix: BF-083 (DE 2026-10-10, commit fd71212e) removing and re-adding every modifier while servo
+    // mods applied effects let 1.21.1 refresh attributes with the health bonus missing, so health was clamped to
+    // 20 every tick; DE changed only the modifiers that differ. NEXT 1.0.1 (2026-10-05, before DE) reconciles
+    // the same way here; NEXT's code kept.
     public static boolean reconcileAttributes(
             LivingEntity entity,
             ArmorMods previousMods,
