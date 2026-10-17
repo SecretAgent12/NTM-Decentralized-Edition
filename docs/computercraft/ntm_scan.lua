@@ -1,3 +1,7 @@
+-- SPDX-FileCopyrightText: 2026 SecretAgent12
+-- SPDX-License-Identifier: LGPL-3.0-only
+-- Additional terms under GPL-3.0 section 7 apply: see NOTICE.md
+
 -- ntm_scan: smoke test of HBM's Nuclear Tech Mod (hbm) CC: Tweaked peripherals.
 -- Usage:  ntm_scan            -- every attached peripheral
 --         ntm_scan <name>     -- only that one (a side like "back" or a modem name like "ntm_turbine_0")

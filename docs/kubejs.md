@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 SecretAgent12
+SPDX-License-Identifier: LGPL-3.0-only
+Additional terms under GPL-3.0 section 7 apply: see NOTICE.md
+-->
+
 # KubeJS and datapacks
 
 NTM: DE works with [KubeJS](https://kubejs.com) 2101.7+ (NeoForge 1.21.1) from **1.0.0-beta.5**.

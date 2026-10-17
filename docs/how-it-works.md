@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 SecretAgent12
+SPDX-License-Identifier: LGPL-3.0-only
+Additional terms under GPL-3.0 section 7 apply: see NOTICE.md
+-->
+
 # How the backport works
 
 *or: how to fit a 26.2 mod into 1.21.1 and not lose your mind (much)*

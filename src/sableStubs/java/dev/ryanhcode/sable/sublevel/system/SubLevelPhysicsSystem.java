@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: 2026 SecretAgent12
-// SPDX-License-Identifier: LGPL-3.0-only
-
 package dev.ryanhcode.sable.sublevel.system;
 
 import net.minecraft.server.level.ServerLevel;

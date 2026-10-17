@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 SecretAgent12
+SPDX-License-Identifier: LGPL-3.0-only
+Additional terms under GPL-3.0 section 7 apply: see NOTICE.md
+-->
+
 # Differences from NTM: NEXT
 
 The goal is simple: the same mod, just on 1.21.1. Every machine, item, recipe and mechanic of NTM: NEXT is

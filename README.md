@@ -171,4 +171,14 @@ from other projects and keep their own licenses:
 
 See [`NOTICE.md`](NOTICE.md) and [`THIRD_PARTY_NOTICES`](THIRD_PARTY_NOTICES) for details.
 
+**Forks and redistribution.** You are free to fork NTM: DE, use it in modpacks and build on it under
+the LGPL-3.0. My own code comes with a few additional terms (section 7 of the GPL v3, see
+[NOTICE.md](NOTICE.md)): keep the copyright headers, show "Based on NTM: Decentralized Edition by
+SecretAgent12" in your mod's metadata and at the beginning of your project page, and use your own
+name for your fork. Modpacks, server packs and mods that bundle the unmodified jar don't need to do
+anything. Addons that don't contain my code may use "NTM: DE" in their name, as described in NOTICE.md.
+
+**Contributions** are accepted under the LGPL-3.0. The additional terms in NOTICE.md apply only to
+SecretAgent12's own files, not to contributions by others.
+
 This is an unofficial build, not affiliated with or endorsed by HbmMods or Warfactory.

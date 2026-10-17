@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 SecretAgent12
+SPDX-License-Identifier: LGPL-3.0-only
+Additional terms under GPL-3.0 section 7 apply: see NOTICE.md
+-->
+
 # Compatibility
 
 All of these are optional. NTM: DE runs fine on its own, and every integration switches on by itself when

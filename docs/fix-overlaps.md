@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 SecretAgent12
+SPDX-License-Identifier: LGPL-3.0-only
+Additional terms under GPL-3.0 section 7 apply: see NOTICE.md
+-->
+
 # Bug fixes shared with NTM: NEXT
 
 NTM: DE is a backport of NTM: NEXT, so the two mods share most of their code and, naturally, most of their bugs.

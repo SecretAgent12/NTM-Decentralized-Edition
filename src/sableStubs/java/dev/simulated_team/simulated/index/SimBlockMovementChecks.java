@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: 2026 SecretAgent12
-// SPDX-License-Identifier: LGPL-3.0-only
-
 package dev.simulated_team.simulated.index;
 
 import java.util.Set;
