@@ -5,6 +5,7 @@
 package com.hbm.entity.mob.glyphid;
 
 import com.hbm.api.entity.IResistanceProvider;
+import com.hbm.api.environment.ISuffocationImmune;
 import com.hbm.blocks.ModBlocks;
 import com.hbm.data.MobData;
 import com.hbm.entity.logic.EntityWaypoint;
@@ -18,22 +19,18 @@ import com.hbm.explosion.vanillant.standard.BlockAllocatorGlyphidDig;
 import com.hbm.explosion.vanillant.standard.BlockProcessorStandard;
 import com.hbm.handler.pollution.PollutionHandler;
 import com.hbm.handler.pollution.PollutionType;
-import com.hbm.handler.threading.TargetPoint;
-import com.hbm.items.ModItems;
 import com.hbm.lib.Library;
 import com.hbm.lib.ModDamageTypes;
 import com.hbm.main.ResourceManager;
 import com.hbm.particle.ParticleGiblet;
 import com.hbm.particle.helper.ParticleCreators;
-import com.hbm.platform.Services;
+import com.hbm.platform.NeoForgePlatform;
 import com.hbm.util.MobUtil;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -55,11 +52,6 @@ import net.minecraft.world.entity.ai.goal.FloatGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -75,7 +67,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.MonsterCompat;
 
-public class EntityGlyphid extends MonsterCompat implements IResistanceProvider {
+public class EntityGlyphid extends MonsterCompat implements IResistanceProvider, ISuffocationImmune {
 
     public static final int TASK_IDLE = 0;
     public static final int TASK_RETREAT_FOR_REINFORCEMENTS = 1;
@@ -288,26 +280,6 @@ public class EntityGlyphid extends MonsterCompat implements IResistanceProvider 
         if (path != null) getNavigation().moveTo(path, 1.0D);
     }
 
-    @Override
-    protected void dropCustomDeathLoot(
-            ServerLevel level, DamageSource source, boolean killedByPlayer) {
-        super.dropCustomDeathLoot(level, source, killedByPlayer);
-
-        int looting = 0;
-        if (source.getEntity() instanceof LivingEntity attacker) {
-            Holder<Enchantment> lootingEnchant =
-                    level.registryAccess()
-                            .lookupOrThrow(Registries.ENCHANTMENT)
-                            .getOrThrow(Enchantments.LOOTING);
-            looting = EnchantmentHelper.getEnchantmentLevel(lootingEnchant, attacker);
-        }
-
-        Item drop = isOnFire() ? ModItems.GLYPHID_MEAT_GRILLED.get() : ModItems.GLYPHID_MEAT.get();
-        if (random.nextInt(2) == 0) {
-            spawnAtLocation(new ItemStack(drop, ((int) getGlyphidScale() * 2) + looting));
-        }
-    }
-
     public @Nullable Player findTargetCandidate() {
         if (hasEffect(MobEffects.BLINDNESS)) return null;
         double radius = useExtendedTargeting() ? 128D : 16D;
@@ -355,9 +327,8 @@ public class EntityGlyphid extends MonsterCompat implements IResistanceProvider 
 
                         if (isLanternBlock(block)
                                 && level() instanceof ServerLevel server
-                                && Services.PLATFORM.canEntityDestroyBlock(
+                                && NeoForgePlatform.canEntityDestroyBlock(
                                         server, pos, server.getBlockState(pos), this)) {
-
                             setYRot(360F / 16 * i);
                             yBodyRot = getYRot();
                             swing(InteractionHand.MAIN_HAND);
@@ -517,7 +488,6 @@ public class EntityGlyphid extends MonsterCompat implements IResistanceProvider 
 
     @Override
     public boolean doHurtTarget(ServerLevel level, Entity target) {
-
         if (swinging) return false;
         swing(InteractionHand.MAIN_HAND);
 

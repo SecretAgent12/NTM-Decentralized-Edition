@@ -6,8 +6,9 @@ package com.hbm.items.armor;
 import com.hbm.advancement.HbmCriteria;
 import com.hbm.handler.ArmorModHandler;
 import com.hbm.lib.Library;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toclient.ProperJoltPayload;
-import com.hbm.platform.Services;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import java.util.List;
 import java.util.function.Consumer;
@@ -47,21 +48,25 @@ public class ItemModKnife extends ItemArmorMod {
     }
 
     @Override
+    public boolean ticksServer() {
+        return true;
+    }
+
+    @Override
     public void modUpdate(LivingEntity entity, ItemStack armor) {
         if (entity.level().isClientSide()
                 || entity.tickCount % 50 != 0
                 || entity.getMaxHealth() <= 2F) return;
 
-        entity.level()
-                .playSound(
-                        null,
-                        entity.getX(),
-                        entity.getY(),
-                        entity.getZ(),
-                        ModSounds.SLICER.get(),
-                        entity.getSoundSource(),
-                        1.0F,
-                        1.0F);
+        EntitySounds.play(
+                entity,
+                entity.getX(),
+                entity.getY(),
+                entity.getZ(),
+                ModSounds.SLICER.get(),
+                entity.getSoundSource(),
+                1.0F,
+                1.0F);
 
         AttributeInstance maxHealth = entity.getAttribute(Attributes.MAX_HEALTH);
         float health = entity.getMaxHealth();
@@ -73,7 +78,6 @@ public class ItemModKnife extends ItemArmorMod {
                         AttributeModifier.Operation.ADD_VALUE));
 
         if (entity instanceof ServerPlayer player) {
-
             if (player.getHealth() > player.getMaxHealth()) {
                 player.setHealth(player.getMaxHealth());
                 player.connection.send(
@@ -83,12 +87,12 @@ public class ItemModKnife extends ItemArmorMod {
                                 player.getFoodData().getSaturationLevel()));
             }
             if (player.getMaxHealth() > 2F) {
-                Services.NETWORK.sendTo(
+                PacketWire.sendTo(
                         new ProperJoltPayload(10000 + player.getRandom().nextInt(10000), 10000),
                         player);
             } else {
                 HbmCriteria.bledOut(player);
-                Services.NETWORK.sendTo(new ProperJoltPayload(0, 0), player);
+                PacketWire.sendTo(new ProperJoltPayload(0, 0), player);
             }
         }
     }

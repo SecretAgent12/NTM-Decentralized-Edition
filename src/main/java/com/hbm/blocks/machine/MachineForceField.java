@@ -3,12 +3,12 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.BlockEntityForceField;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.capability.ICapabilityBlock;
 import com.hbm.capability.MachineCaps;
 import com.hbm.inventory.IGUIProvider;
-import com.hbm.tileentity.machine.BlockEntityForceField;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -27,7 +27,6 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.BlockCompat;
 
 public class MachineForceField extends BlockCompat implements ITickingBlock, ICapabilityBlock {
-
     private static final float EMITTER_HEIGHT = 2F;
     private static final int MOTES = 4;
 

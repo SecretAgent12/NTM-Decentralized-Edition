@@ -5,7 +5,6 @@ package com.hbm.client.gui;
 
 import com.hbm.items.tool.ItemGuideBook.BookType;
 import com.hbm.lib.Library;
-import com.hbm.util.I18nUtil;
 import java.util.List;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -55,22 +54,22 @@ public final class ScreenGuide extends ScreenCompat {
                 page < 0 ? COVER : PAPER,
                 left,
                 top,
-                0F,
-                0F,
+                0.0F,
+                0.0F,
                 WIDTH,
                 HEIGHT,
                 512,
                 512);
         if (page < 0) {
             float scale = type.titleScale;
-            String[] lines = I18nUtil.resolveKeyArray(type.title);
+            var lines = font.split(Component.translatable(type.title), Integer.MAX_VALUE);
             graphics.pose().pushMatrix();
             graphics.pose().scale(scale, scale);
-            for (int i = 0; i < lines.length; i++) {
+            for (int i = 0; i < lines.size(); i++) {
                 graphics.text(
                         font,
-                        lines[i],
-                        (int) ((left + WIDTH / 2 - font.width(lines[i]) / 2 * scale) / scale),
+                        lines.get(i),
+                        (int) ((left + WIDTH / 2 - font.width(lines.get(i)) / 2 * scale) / scale),
                         (int) ((top + 50 + i * 10 * scale) / scale),
                         0xFFFECE00,
                         false);
@@ -86,8 +85,8 @@ public final class ScreenGuide extends ScreenCompat {
                     PAPER,
                     left + 24,
                     top + 155,
-                    hover ? 26F : 3F,
-                    207F,
+                    hover ? 26.0F : 3.0F,
+                    207.0F,
                     18,
                     10,
                     512,
@@ -100,8 +99,8 @@ public final class ScreenGuide extends ScreenCompat {
                     PAPER,
                     left + 230,
                     top + 155,
-                    hover ? 26F : 3F,
-                    194F,
+                    hover ? 26.0F : 3.0F,
+                    194.0F,
                     18,
                     10,
                     512,
@@ -121,7 +120,7 @@ public final class ScreenGuide extends ScreenCompat {
                 var lines =
                         font.split(Component.translatable(text.text), (int) (text.width * scale));
                 graphics.pose().pushMatrix();
-                graphics.pose().scale(1F / scale, 1F / scale);
+                graphics.pose().scale(1.0F / scale, 1.0F / scale);
                 for (int line = 0; line < lines.size(); line++) {
                     graphics.text(
                             font,
@@ -137,7 +136,7 @@ public final class ScreenGuide extends ScreenCompat {
                 float scale = sheet.titleScale;
                 Component title = Component.translatable(sheet.title);
                 graphics.pose().pushMatrix();
-                graphics.pose().scale(1F / scale, 1F / scale);
+                graphics.pose().scale(1.0F / scale, 1.0F / scale);
                 graphics.text(
                         font,
                         title,
@@ -156,8 +155,8 @@ public final class ScreenGuide extends ScreenCompat {
                         image.image,
                         left + 20 + x + 130 * side,
                         top + image.y,
-                        0F,
-                        0F,
+                        0.0F,
+                        0.0F,
                         image.sizeX,
                         image.sizeY,
                         image.sizeX,
@@ -175,8 +174,8 @@ public final class ScreenGuide extends ScreenCompat {
     }
 
     private static float overrideScale(float fallback, String key) {
-        String value = I18nUtil.resolveKey(key);
-        return NumberUtils.isCreatable(value) ? 1F / NumberUtils.toFloat(value) : fallback;
+        String value = Component.translatable(key).getString();
+        return NumberUtils.isCreatable(value) ? 1.0F / NumberUtils.toFloat(value) : fallback;
     }
 
     @Override
@@ -198,7 +197,7 @@ public final class ScreenGuide extends ScreenCompat {
         }
         minecraft
                 .getSoundManager()
-                .play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1F));
+                .play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
         return true;
     }
 

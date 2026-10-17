@@ -3,14 +3,13 @@
 
 package com.hbm.blocks.machine.rbmk;
 
+import com.hbm.blockentity.machine.rbmk.BlockEntityRBMKBase;
+import com.hbm.blockentity.machine.rbmk.BlockEntityRBMKStorage;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.capability.ICapabilityBlock;
 import com.hbm.capability.MachineCaps;
 import com.hbm.handler.BossSpawnHandler;
-import com.hbm.tileentity.machine.rbmk.BlockEntityRBMKBase;
-import com.hbm.tileentity.machine.rbmk.BlockEntityRBMKStorage;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
 import com.hbm.backport.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -40,8 +39,8 @@ public class RBMKStorage extends RBMKBase implements ICapabilityBlock {
     }
 
     @Override
-    protected void visitPassiveCells(BlockPos core, Direction facing, PassiveCellVisitor visitor) {
-        passiveEverywhere(core, facing, visitor, PASSIVE_ITEMS);
+    protected int columnPassive() {
+        return PASSIVE_ITEMS;
     }
 
     @Override

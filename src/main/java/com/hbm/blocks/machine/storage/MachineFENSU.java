@@ -4,6 +4,9 @@
 
 package com.hbm.blocks.machine.storage;
 
+import com.hbm.blockentity.machine.storage.BatteryCharge;
+import com.hbm.blockentity.machine.storage.BlockEntityMachineBattery;
+import com.hbm.blockentity.machine.storage.BlockEntityMachineFENSU;
 import com.hbm.blocks.IPersistentInfoProvider;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.ModBlockEntities;
@@ -12,9 +15,6 @@ import com.hbm.capability.ICapabilityBlock;
 import com.hbm.capability.MachineCaps;
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.items.ModDataComponents;
-import com.hbm.tileentity.machine.storage.BatteryCharge;
-import com.hbm.tileentity.machine.storage.BlockEntityMachineBattery;
-import com.hbm.tileentity.machine.storage.BlockEntityMachineFENSU;
 import com.hbm.util.BobMathUtil;
 import com.mojang.serialization.MapCodec;
 import java.util.function.Consumer;
@@ -38,8 +38,6 @@ public class MachineFENSU extends BlockMultiblockCore
 
     public static final MapCodec<MachineFENSU> CODEC = simpleCodec(MachineFENSU::new);
 
-    private static final int[] DIMENSIONS = {4, 0, 1, 1, 2, 2};
-
     public MachineFENSU(Properties props) {
         super(props);
     }
@@ -47,21 +45,6 @@ public class MachineFENSU extends BlockMultiblockCore
     @Override
     protected MapCodec<? extends Block> codec() {
         return CODEC;
-    }
-
-    @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 1;
-    }
-
-    @Override
-    public int coreMask() {
-        return MASK_DOWN;
     }
 
     @Override
@@ -94,19 +77,10 @@ public class MachineFENSU extends BlockMultiblockCore
 
     @Override
     public void buildLookOverlay(Level level, BlockPos pos, ILookOverlay.LookInfo info) {
-        info.title(getName().getString(), 0xffff00, 0x404000);
-        if (!(level.getBlockEntity(pos) instanceof BlockEntityMachineBattery battery)) return;
-
-        info.line(
-                BobMathUtil.getShortNumber(battery.getPower())
-                        + " / "
-                        + BobMathUtil.getShortNumber(battery.getMaxPower())
-                        + "HE");
-
-        double percent = (double) battery.getPower() / (double) battery.getMaxPower();
-        int charge = (int) Math.floor(percent * 10_000D);
-        int color = ((int) (0xFF - 0xFF * percent)) << 16 | ((int) (0xFF * percent) << 8);
-        info.line((charge / 100D) + "%", color);
+        info.title(getName(), 0xffff00, 0x404000);
+        if (level.getBlockEntity(pos) instanceof BlockEntityMachineBattery battery) {
+            info.charge(battery.getPower(), battery.getMaxPower());
+        }
     }
 
     @Override

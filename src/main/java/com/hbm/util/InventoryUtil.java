@@ -3,25 +3,21 @@
 
 package com.hbm.util;
 
-import com.hbm.blocks.network.CraneInserter;
 import com.hbm.capability.NtmContracts;
 import com.hbm.inventory.recipes.anvil.AnvilConstructionRecipe.AnvilOutput;
 import com.hbm.inventory.recipes.ingredient.CountIngredient;
-import com.hbm.tileentity.machine.BlockEntityFurnaceBrick;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Container;
-import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.WorldlyContainerHolder;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.ChestBlock;
-import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
@@ -31,17 +27,27 @@ public final class InventoryUtil {
     private InventoryUtil() {}
 
     public static @Nullable Container containerAt(Level level, BlockPos pos) {
+        return whole(level, pos, anchorAt(level, pos));
+    }
+
+    public static @Nullable Container anchorAt(Level level, BlockPos pos) {
         Container declared = NtmContracts.INVENTORY.at(level, pos);
         if (declared != null) return declared;
 
         BlockState state = level.getBlockState(pos);
         if (state.getBlock() instanceof WorldlyContainerHolder holder)
             return holder.getContainer(state, level, pos);
-        if (!state.hasBlockEntity() || !(level.getBlockEntity(pos) instanceof Container container))
-            return null;
-        return container instanceof ChestBlockEntity && state.getBlock() instanceof ChestBlock chest
+        return state.hasBlockEntity() && level.getBlockEntity(pos) instanceof Container container
+                ? container
+                : null;
+    }
+
+    public static @Nullable Container whole(Level level, BlockPos pos, @Nullable Container anchor) {
+        if (!(anchor instanceof ChestBlockEntity)) return anchor;
+        BlockState state = level.getBlockState(pos);
+        return state.getBlock() instanceof ChestBlock chest
                 ? ChestBlock.getContainer(chest, state, level, pos, true)
-                : container;
+                : anchor;
     }
 
     public static boolean inventoryAt(Level level, BlockPos pos, @Nullable Direction face) {
@@ -172,7 +178,6 @@ public final class InventoryUtil {
         RandomSource random = player.getRandom();
         for (AnvilOutput out : outputs) {
             if (out.chance() == 1.0F || random.nextFloat() < out.chance()) {
-
                 player.getInventory().placeItemBackInInventory(out.stack().copy());
             }
         }
@@ -183,6 +188,8 @@ public final class InventoryUtil {
         ItemStack get(int slot);
 
         void set(int slot, ItemStack stack);
+
+        void grown();
     }
 
     private static Slots slotsOf(List<ItemStack> inv) {
@@ -196,6 +203,9 @@ public final class InventoryUtil {
             public void set(int slot, ItemStack stack) {
                 inv.set(slot, stack);
             }
+
+            @Override
+            public void grown() {}
         };
     }
 
@@ -210,11 +220,17 @@ public final class InventoryUtil {
             public void set(int slot, ItemStack stack) {
                 inv.setItem(slot, stack);
             }
+
+            @Override
+            public void grown() {
+                inv.setChanged();
+            }
         };
     }
 
     private static ItemStack topUp(Slots inv, int start, int end, ItemStack stack) {
         if (stack.isEmpty()) return ItemStack.EMPTY;
+        boolean grown = false;
 
         for (int i = start; i <= end; i++) {
             ItemStack slot = inv.get(i);
@@ -225,12 +241,14 @@ public final class InventoryUtil {
             if (transfer > 0) {
                 slot.grow(transfer);
                 stack.shrink(transfer);
+                grown = true;
 
-                if (stack.isEmpty()) return ItemStack.EMPTY;
+                if (stack.isEmpty()) break;
             }
         }
 
-        return stack;
+        if (grown) inv.grown();
+        return stack.isEmpty() ? ItemStack.EMPTY : stack;
     }
 
     private static boolean fillFreeSlot(Slots inv, int start, int end, ItemStack stack) {
@@ -238,7 +256,6 @@ public final class InventoryUtil {
 
         for (int i = start; i <= end; i++) {
             if (inv.get(i).isEmpty()) {
-
                 inv.set(i, stack.copy());
                 stack.setCount(0);
                 return true;

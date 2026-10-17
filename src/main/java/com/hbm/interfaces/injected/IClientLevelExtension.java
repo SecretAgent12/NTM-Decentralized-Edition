@@ -17,13 +17,9 @@ public interface IClientLevelExtension extends IClientCoreHint {
         throw new AssertionError("backport: implemented by mixin");
     }
     default MultiblockOutline hbm$multiblockOutline() {
-
         throw new AssertionError("backport: implemented by mixin");
-
     }
     default @Nullable BlockEntity hbm$retainedBlockEntity(BlockPos pos) {
-
         throw new AssertionError("backport: implemented by mixin");
-
     }
 }

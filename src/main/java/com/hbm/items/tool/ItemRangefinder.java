@@ -4,8 +4,8 @@
 package com.hbm.items.tool;
 
 import com.hbm.items.ModDataComponents;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toclient.PlayerInformPayload;
-import com.hbm.platform.Services;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -58,7 +58,7 @@ public class ItemRangefinder extends ItemCompat {
                             String.valueOf(((int) (dist * 10D)) / 10D));
             if (isPolarized(player.getItemInHand(hand)))
                 message.withStyle(ChatFormatting.LIGHT_PURPLE);
-            Services.NETWORK.sendTo(
+            PacketWire.sendTo(
                     new PlayerInformPayload(message, PlayerInformPayload.ID_DETONATOR, 5_000),
                     serverPlayer);
         }

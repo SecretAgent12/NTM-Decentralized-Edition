@@ -4,13 +4,12 @@
 package com.hbm.client.gui;
 
 import com.hbm.backport.SubLevelAnchor;
+import com.hbm.blockentity.machine.BlockEntityMachineExcavator;
 import com.hbm.inventory.container.MenuMachineExcavator;
 import com.hbm.lib.Library;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toserver.NbtControlPayload;
-import com.hbm.platform.Services;
 import com.hbm.sound.ModSounds;
-import com.hbm.tileentity.machine.BlockEntityMachineExcavator;
-import com.hbm.util.I18nUtil;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
@@ -42,8 +41,8 @@ public class ScreenMachineExcavator extends ScreenInfoContainer<MenuMachineExcav
 
     public ScreenMachineExcavator(MenuMachineExcavator menu, Inventory inventory, Component title) {
         super(menu, inventory, title, 242, 204);
-        this.inventoryLabelX = 8 + 33;
-        this.inventoryLabelY = this.imageHeight - 96 + 2;
+        inventoryLabelX = 8 + 33;
+        inventoryLabelY = imageHeight - 96 + 2;
     }
 
     @Override
@@ -53,7 +52,6 @@ public class ScreenMachineExcavator extends ScreenInfoContainer<MenuMachineExcav
 
     @Override
     protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
-
         graphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, 0, 0, 0.0F, 0.0F, 242, 96, 256, 256);
         graphics.blit(
                 RenderPipelines.GUI_TEXTURED, TEXTURE, 33, 104, 33.0F, 104.0F, 176, 100, 256, 256);
@@ -117,7 +115,7 @@ public class ScreenMachineExcavator extends ScreenInfoContainer<MenuMachineExcav
                     TOGGLE_Y,
                     TOGGLE_W,
                     TOGGLE_H,
-                    List.of(Component.literal(I18nUtil.resolveKey(toggle.key))));
+                    List.of(Component.translatable(toggle.key)));
         }
 
         drawElectricityInfo(
@@ -213,7 +211,7 @@ public class ScreenMachineExcavator extends ScreenInfoContainer<MenuMachineExcav
                     .play(SimpleSoundInstance.forUI(ModSounds.LEVER_LARGE.get(), 1.0F));
             CompoundTag data = new CompoundTag();
             data.putBoolean(toggle.packetKey, true);
-            Services.NETWORK.sendToServer(new NbtControlPayload(excavator().getBlockPos(), data));
+            PacketWire.sendToServer(new NbtControlPayload(excavator().getBlockPos(), data));
             return true;
         }
 

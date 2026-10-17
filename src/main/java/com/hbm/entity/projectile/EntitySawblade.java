@@ -3,13 +3,13 @@
 
 package com.hbm.entity.projectile;
 
+import com.hbm.entity.FarVisible;
 import com.hbm.entity.ModEntities;
-import com.hbm.handler.threading.TargetPoint;
 import com.hbm.items.ModItems;
 import com.hbm.lib.ModDamageTypes;
 import com.hbm.particle.ParticleGiblet;
 import com.hbm.particle.helper.ParticleCreators;
-import com.hbm.platform.Services;
+import com.hbm.sound.EntitySounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -35,11 +35,10 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
-public class EntitySawblade extends EntityThrowableInterp {
+public class EntitySawblade extends EntityThrowableInterp implements FarVisible {
 
     private static final EntityDataAccessor<Integer> ORIENTATION =
             SynchedEntityData.defineId(EntitySawblade.class, EntityDataSerializers.INT);
-
     private static final EntityDataAccessor<Integer> META =
             SynchedEntityData.defineId(EntitySawblade.class, EntityDataSerializers.INT);
 
@@ -99,21 +98,20 @@ public class EntitySawblade extends EntityThrowableInterp {
         if (mop instanceof EntityHitResult hit && hit.getEntity().isAlive()) {
             Entity e = hit.getEntity();
             if (level() instanceof ServerLevel server) {
-
                 e.hurt(damageSources().source(ModDamageTypes.RUBBLE), 1000F);
 
                 if (!e.isAlive() && e instanceof LivingEntity living) {
                     ParticleCreators.giblets(server, living, ParticleGiblet.TYPE_MEAT, 5);
 
-                    level().playSound(
-                                    null,
-                                    living.getX(),
-                                    living.getY(),
-                                    living.getZ(),
-                                    SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR,
-                                    SoundSource.HOSTILE,
-                                    2.0F,
-                                    0.95F + level().getRandom().nextFloat() * 0.2F);
+                    EntitySounds.play(
+                            living,
+                            living.getX(),
+                            living.getY(),
+                            living.getZ(),
+                            SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR,
+                            SoundSource.HOSTILE,
+                            2.0F,
+                            0.95F + level().getRandom().nextFloat() * 0.2F);
                 }
             }
         }
@@ -128,7 +126,6 @@ public class EntitySawblade extends EntityThrowableInterp {
                     orientation += 6;
                     setOrientation(orientation);
                 } else {
-
                     Direction side = hit.getDirection();
                     Vec3 motion = getDeltaMovement();
                     setDeltaMovement(
@@ -145,7 +142,6 @@ public class EntitySawblade extends EntityThrowableInterp {
                                     Level.ExplosionInteraction.NONE);
 
                     BlockPos pos = hit.getBlockPos();
-
                     if (level().getBlockState(pos).getBlock().getExplosionResistance() < 50) {
                         if (level() instanceof ServerLevel server) {
                             server.destroyBlock(pos, false);

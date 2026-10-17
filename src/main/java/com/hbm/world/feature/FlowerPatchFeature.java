@@ -33,7 +33,6 @@ public final class FlowerPatchFeature extends Feature<NoneFeatureConfiguration> 
         if (TomSaveData.impact(level.getLevel()) || random.nextInt(odds) != 0) return false;
 
         BlockPos chunkOrigin = context.origin();
-
         int x = (chunkOrigin.getX() & ~15) + random.nextInt(16);
         int z = (chunkOrigin.getZ() & ~15) + random.nextInt(16);
         int y = WorldgenHeight.lightBlocking(level, x, z);
@@ -46,9 +45,7 @@ public final class FlowerPatchFeature extends Feature<NoneFeatureConfiguration> 
                     x + random.nextInt(8) - random.nextInt(8),
                     y + random.nextInt(4) - random.nextInt(4),
                     z + random.nextInt(8) - random.nextInt(8));
-            if (level.isEmptyBlock(pos)
-                    && (level.getLevel().dimensionType().hasSkyLight() || pos.getY() < 255)
-                    && flower.canSurvive(level, pos)) {
+            if (level.isEmptyBlock(pos) && flower.canSurvive(level, pos)) {
                 level.setBlock(pos, flower, 2);
                 placed = true;
             }

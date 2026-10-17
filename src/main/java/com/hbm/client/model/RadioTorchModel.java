@@ -6,6 +6,7 @@ package com.hbm.client.model;
 import com.hbm.blocks.network.RadioTorchBlock;
 import com.hbm.lib.Library;
 import com.hbm.render.loader.HFRWavefrontObject;
+import com.hbm.util.Facing;
 import com.mojang.math.OctahedralGroup;
 import java.util.List;
 import com.hbm.backport.client.blockmodel.BlockModelRotation;
@@ -46,12 +47,14 @@ public record RadioTorchModel() implements BlockModel<HFRWavefrontObject> {
 
     static OctahedralGroup rotationFor(Direction facing) {
         return switch (facing) {
-            case DOWN -> com.hbm.backport.Octahedral.blockRot('z', 180);
+            case DOWN -> Facing.rz(-180);
             case UP -> OctahedralGroup.IDENTITY;
             // backport-fix: BF-080 on the north and south walls ntm-next's rotation came out turned
             // 90 degrees anticlockwise on 1.21.1 (seen in game, like BF-079): a quarter turn
             // clockwise seen from above is added - ry 270 here (ry 90 turned it the wrong way in
             // game), multiplied out in Octahedral.product. West, east, floor and ceiling were right
+            // backport: ntm-next 1.0.3 swapped its own north/south values (Y_90 <-> Y_270); kept the
+            // in-game-verified BF-080 values for 1.21.1 instead - recheck the radio torch in game
             case NORTH ->
                     com.hbm.backport.Octahedral.product(
                             com.hbm.util.Facing.ry(270),
@@ -60,8 +63,8 @@ public record RadioTorchModel() implements BlockModel<HFRWavefrontObject> {
                     com.hbm.backport.Octahedral.product(
                             com.hbm.util.Facing.ry(270),
                             com.hbm.backport.Octahedral.blockRot('y', 270).compose(com.hbm.backport.Octahedral.blockRot('z', 90)));
-            case WEST -> com.hbm.backport.Octahedral.blockRot('y', 180).compose(com.hbm.backport.Octahedral.blockRot('z', 90));
-            case EAST -> com.hbm.backport.Octahedral.blockRot('z', 90);
+            case WEST -> Facing.ry(180).compose(Facing.rz(-90));
+            case EAST -> Facing.rz(-90);
         };
     }
 
@@ -87,7 +90,6 @@ public record RadioTorchModel() implements BlockModel<HFRWavefrontObject> {
                 TextureSlots slots) {
             Material.Baked material =
                     BlockModel.slot(baker, carrier, slots, ObjUnbakedGeometry.SINGLE_SLOT);
-
             return ObjUnbakedGeometry.bakeGroups(
                     obj,
                     null,

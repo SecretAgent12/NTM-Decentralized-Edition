@@ -30,7 +30,6 @@ public class EntityEMP extends EntityCompat {
 
     List<int[]> machines;
     int life = 10 * 60 * 20;
-
     private final BlockPos.MutableBlockPos scratch = new BlockPos.MutableBlockPos();
 
     public EntityEMP(EntityType<? extends EntityEMP> type, Level level) {
@@ -58,7 +57,6 @@ public class EntityEMP extends EntityCompat {
 
         int originX = (int) getX(), originY = (int) getY(), originZ = (int) getZ();
         ChunkSource chunks = level().getChunkSource();
-
         boolean[] chunkLoadedAtZ = new boolean[radius * 2 + 1];
 
         for (int x = -radius; x <= radius; x++) {
@@ -99,7 +97,6 @@ public class EntityEMP extends EntityCompat {
     }
 
     private void add(BlockPos pos) {
-
         if (ExplosionNukeGeneric.hasDrainableEnergy(level(), pos)) {
             machines.add(new int[] {pos.getX(), pos.getY(), pos.getZ()});
         }
@@ -108,20 +105,20 @@ public class EntityEMP extends EntityCompat {
     private void emp(int x, int y, int z) {
 
         BlockPos pos = this.scratch.set(x, y, z);
-        BlockEntity te = level().getBlockEntity(pos);
+        BlockEntity be = level().getBlockEntity(pos);
 
         boolean flag = false;
 
-        if (te instanceof IEnergyHandlerMK2 handler) {
+        if (be instanceof IEnergyHandlerMK2 handler) {
 
             handler.setPower(0);
+            level().blockEntityChanged(pos);
             flag = true;
         }
 
         if (ExplosionNukeGeneric.drainForeignEnergy(level(), pos)) flag = true;
 
         if (flag && random.nextInt(20) == 0) {
-
             if (level() instanceof ServerLevel server) {
                 server.sendParticles(
                         new BlockParticleOption(
@@ -141,7 +138,6 @@ public class EntityEMP extends EntityCompat {
 
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
-
         return false;
     }
 

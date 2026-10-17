@@ -12,7 +12,7 @@ import com.hbm.uninos.graph.GraphNode;
 import com.hbm.uninos.graph.LevelNodeGraph;
 import com.hbm.uninos.graph.NetCensus;
 import com.hbm.uninos.graph.NodeNetwork;
-import com.hbm.util.I18nUtil;
+import com.hbm.util.TooltipStyle;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -29,7 +29,6 @@ import net.minecraft.world.level.Level;
 import com.hbm.backport.compat.ItemCompat;
 
 public class ItemPowerNetTool extends ItemCompat {
-
     private static final int RADIUS = 20;
     private static final int LABEL_COLOR = 0xFFFF00;
     private static final float LABEL_SCALE = 0.5F;
@@ -103,8 +102,10 @@ public class ItemPowerNetTool extends ItemCompat {
             TooltipDisplay display,
             Consumer<Component> adder,
             TooltipFlag flag) {
-        for (String line : I18nUtil.loreLines("desc.powerNetTool.info", RADIUS)) {
-            adder.accept(Component.literal(line).withStyle(ChatFormatting.RED));
+        for (Component line :
+                TooltipStyle.lines(
+                        Component.translatableWithFallback("desc.powerNetTool.info", "", RADIUS))) {
+            adder.accept(line.copy().withStyle(ChatFormatting.RED));
         }
     }
 }

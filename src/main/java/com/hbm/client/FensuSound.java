@@ -4,7 +4,7 @@
 package com.hbm.client;
 
 import com.hbm.backport.SubLevelSpace;
-import com.hbm.tileentity.machine.storage.BlockEntityBatteryREDD;
+import com.hbm.blockentity.machine.storage.BlockEntityBatteryREDD;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
@@ -17,7 +17,6 @@ public final class FensuSound {
     public static void tick(BlockEntityBatteryREDD be) {
         LocalPlayer me = Minecraft.getInstance().player;
         BlockPos pos = be.getBlockPos();
-
         be.audioLoop(
                 be.getSpeed() > 0F
                         && me != null

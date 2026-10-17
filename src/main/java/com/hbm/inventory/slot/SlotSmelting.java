@@ -4,7 +4,7 @@
 package com.hbm.inventory.slot;
 
 import com.hbm.advancement.HbmCriteria;
-import com.hbm.tileentity.BlockEntitySmeltingFurnace;
+import com.hbm.blockentity.BlockEntitySmeltingFurnace;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
@@ -53,9 +53,7 @@ public class SlotSmelting extends FurnaceResultSlot {
         if (server == null) return;
         float experience = 0.0F;
         for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
-
             if (!(holder.value() instanceof SmeltingRecipe smelting)) continue;
-
             if (ItemStack.isSameItem(
                     Recipes.assemble(smelting, new SingleRecipeInput(ItemStack.EMPTY)), carried)) {
                 experience = smelting.getExperience();
@@ -66,7 +64,6 @@ public class SlotSmelting extends FurnaceResultSlot {
 
         int count = taken;
         if (experience < 1.0F) {
-
             int floor = Mth.floor((float) count * experience);
             if (floor < Mth.ceil((float) count * experience)
                     && (float) Math.random() < (float) count * experience - (float) floor) {
@@ -74,7 +71,6 @@ public class SlotSmelting extends FurnaceResultSlot {
             }
             count = floor;
         }
-
         if (count > 0) {
             ExperienceOrb.award(
                     player.serverLevel(),
@@ -98,7 +94,6 @@ public class SlotSmelting extends FurnaceResultSlot {
     @Override
     protected void checkTakeAchievements(ItemStack carried) {
         if (player instanceof ServerPlayer serverPlayer) {
-
             HbmCriteria.itemCrafted(serverPlayer, carried);
             if (furnace != null)
                 furnace.awardUsedRecipesAndPopExperience(serverPlayer, getContainerSlot());

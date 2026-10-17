@@ -11,7 +11,6 @@ import net.minecraft.world.item.TooltipFlag;
 import com.hbm.backport.TooltipDisplay;
 
 public class ItemHotDusted extends ItemHot {
-
     public static final int FOLDS = 10;
     private static final int HEAT_PER_FOLD = 10;
 

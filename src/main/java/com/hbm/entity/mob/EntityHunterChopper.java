@@ -3,21 +3,20 @@
 
 package com.hbm.entity.mob;
 
+import com.hbm.backport.entity.Entities26;
+import com.hbm.api.environment.ISuffocationImmune;
 import com.hbm.entity.ModEntities;
 import com.hbm.entity.projectile.EntityBullet;
 import com.hbm.entity.projectile.EntityChopperMine;
-import com.hbm.interfaces.IRadiationImmune;
-import com.hbm.inventory.material.Mats;
-import com.hbm.items.ModItems;
 import com.hbm.lib.ModDamageTypes;
 import com.hbm.particle.HbmParticles;
 import com.hbm.sound.AudioSystem;
 import com.hbm.sound.AudioWrapper;
 import com.hbm.sound.ModSounds;
+import com.hbm.util.MobUtil;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -41,7 +40,6 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -50,11 +48,13 @@ import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.MobCompat;
 
-public class EntityHunterChopper extends MobCompat implements Enemy, IRadiationImmune {
+public class EntityHunterChopper extends MobCompat implements Enemy, ISuffocationImmune {
+
+    public static final String HIT_LOOT = "hit";
+    public static final String CRASH_LOOT = "crash";
 
     private static final EntityDataAccessor<Byte> ATTACKING =
             SynchedEntityData.defineId(EntityHunterChopper.class, EntityDataSerializers.BYTE);
-
     private static final EntityDataAccessor<Byte> DYING =
             SynchedEntityData.defineId(EntityHunterChopper.class, EntityDataSerializers.BYTE);
 
@@ -98,7 +98,6 @@ public class EntityHunterChopper extends MobCompat implements Enemy, IRadiationI
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
-
         builder.define(ATTACKING, (byte) 0);
         builder.define(DYING, (byte) 0);
     }
@@ -108,7 +107,6 @@ public class EntityHunterChopper extends MobCompat implements Enemy, IRadiationI
 
     @Override
     public void travel(Vec3 input) {
-
         move(MoverType.SELF, getDeltaMovement());
         setDeltaMovement(getDeltaMovement().scale(0.91D));
     }
@@ -121,6 +119,12 @@ public class EntityHunterChopper extends MobCompat implements Enemy, IRadiationI
     @Override
     public boolean removeWhenFarAway(double distance) {
         return false;
+    }
+
+    // backport: 26.x EntityType.Builder.notInPeaceful() (ModEntities); 1.21.1 asks the entity
+    @Override
+    protected boolean shouldDespawnInPeaceful() {
+        return true;
     }
 
     public boolean isDying() {
@@ -157,7 +161,12 @@ public class EntityHunterChopper extends MobCompat implements Enemy, IRadiationI
 
         if (!isDying() && random.nextInt(15) == 0) {
             level.explode(this, getX(), getY(), getZ(), 5F, Level.ExplosionInteraction.BLOCK);
-            dropDamageItem(level);
+            // backport: 26.x LivingEntity.dropFromGiftLootTable -> Entities26
+            Entities26.dropFromGiftLootTable(
+                    this,
+                    level,
+                    MobUtil.lootVariant(getType(), HIT_LOOT),
+                    (l, stack) -> spawnAtLocation(stack));
         }
 
         for (int i = 0; i < 8; i++) {
@@ -242,7 +251,6 @@ public class EntityHunterChopper extends MobCompat implements Enemy, IRadiationI
         }
 
         if (this.attackCounter >= 120 && this.attackCounter % 2 == 0) {
-
             Vec3 heading =
                     new Vec3(
                                     target.getX() - startX - 1 + random.nextInt(3),
@@ -304,7 +312,11 @@ public class EntityHunterChopper extends MobCompat implements Enemy, IRadiationI
 
         if (onGround()) {
             level.explode(this, getX(), getY(), getZ(), 15F, Level.ExplosionInteraction.BLOCK);
-            dropItems(level);
+            Entities26.dropFromGiftLootTable(
+                    this,
+                    level,
+                    MobUtil.lootVariant(getType(), CRASH_LOOT),
+                    (l, stack) -> spawnAtLocation(stack));
             discard();
         }
     }
@@ -369,7 +381,6 @@ public class EntityHunterChopper extends MobCompat implements Enemy, IRadiationI
         float delta = getYRot() - wanted;
 
         this.yRotO = getYRot();
-
         if (delta >= 10F) setYRot(getYRot() - 10F);
         else if (delta <= -10F) setYRot(getYRot() + 10F);
         this.yRotO = getYRot();
@@ -387,18 +398,6 @@ public class EntityHunterChopper extends MobCompat implements Enemy, IRadiationI
             level.playSound(
                     null, this, ModSounds.CHOPPER_DAMAGE.get(), SoundSource.HOSTILE, 10.0F, 1.0F);
         }
-    }
-
-    private void dropDamageItem(ServerLevel level) {
-        spawnAtLocation(new ItemStack(
-                        random.nextInt(10) < 6
-                                ? ModItems.COMBINE_SCRAP.get()
-                                : ModItems.plate(Mats.MAT_CMB)));
-    }
-
-    private void dropItems(ServerLevel level) {
-        spawnAtLocation(new ItemStack(ModItems.COMBINE_SCRAP.get(), random.nextInt(8) + 1));
-        spawnAtLocation(new ItemStack(ModItems.plate(Mats.MAT_CMB), random.nextInt(5) + 1));
     }
 
     @Override

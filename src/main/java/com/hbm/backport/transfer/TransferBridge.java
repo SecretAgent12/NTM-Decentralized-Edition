@@ -233,6 +233,24 @@ public final class TransferBridge {
                 : new ImportedEnergyItemHandler(access);
     }
 
+    /**
+     * The mod's item-storage view of a foreign item with a 1.21.1 {@code IItemHandler} item capability; {@code null}
+     * if it has none. The foreign handler works on the stack itself ({@code access} is not used); the mod only uses
+     * this capability for presence checks (container nesting).
+     */
+    public static @Nullable ResourceHandler<ItemResource> fromItemItem(ItemStack stack, ItemAccess access) {
+        IItemHandler handler =
+                stack.getCapability(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.ITEM);
+        return handler == null ? null : fromItemHandler(handler);
+    }
+
+    /** 1.21.1 {@code IItemHandler} for one of the mod's item-storage items; {@code null} if it answers none. */
+    public static @Nullable IItemHandler toItemItem(ItemStack stack) {
+        ResourceHandler<ItemResource> handler =
+                Capabilities.Item.ITEM.getCapability(stack, containerAccess(stack));
+        return handler == null ? null : toItemHandler(handler);
+    }
+
     /** 1.21.1 {@code IFluidHandlerItem} for one of the mod's fluid items; {@code null} if it answers none. */
     public static @Nullable IFluidHandlerItem toFluidItem(ItemStack stack) {
         ContainerItemAccess access = containerAccess(stack);
@@ -293,6 +311,12 @@ public final class TransferBridge {
                 TransferBridge::toEnergyStorage,
                 TransferBridge::importEnergy);
 
+        bridgeItems(
+                event,
+                Capabilities.Item.ITEM,
+                net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.ITEM,
+                TransferBridge::toItemItem,
+                TransferBridge::fromItemItem);
         bridgeItems(
                 event,
                 Capabilities.Fluid.ITEM,

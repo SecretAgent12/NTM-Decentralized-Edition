@@ -59,11 +59,6 @@ public abstract class EntityBeamBase extends EntityCompat {
     }
 
     @Override
-    public boolean shouldRenderAtSqrDistance(double distSq) {
-        return true;
-    }
-
-    @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
         return false;
     }

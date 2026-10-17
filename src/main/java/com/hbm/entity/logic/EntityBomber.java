@@ -3,17 +3,21 @@
 
 package com.hbm.entity.logic;
 
+import com.hbm.config.NeoForgeHbmConfig;
 import com.hbm.entity.ModEntities;
 import com.hbm.entity.projectile.EntityBombletZeta;
 import com.hbm.entity.projectile.EntityBoxcar;
 import com.hbm.explosion.ExplosionChaos;
-import com.hbm.platform.Services;
 import com.hbm.sound.AudioSystem;
 import com.hbm.sound.AudioWrapper;
 import com.hbm.sound.ModSounds;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Supplier;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
@@ -28,6 +32,7 @@ public class EntityBomber extends EntityPlaneBase {
 
     private static final EntityDataAccessor<Byte> STYLE =
             SynchedEntityData.defineId(EntityBomber.class, EntityDataSerializers.BYTE);
+    private static final Map<Integer, Supplier<SoundEvent>> ADDON_LOOPS = new HashMap<>();
 
     private int bombStart = 75;
     private int bombStop = 125;
@@ -86,6 +91,27 @@ public class EntityBomber extends EntityPlaneBase {
         return bomber;
     }
 
+    public static EntityBomber variant(
+            Level level,
+            double x,
+            double y,
+            double z,
+            int start,
+            int stop,
+            int rate,
+            int type,
+            int style) {
+        EntityBomber bomber = create(level, x, y, z, start, stop, rate, type);
+        bomber.entityData.set(STYLE, (byte) style);
+        return bomber;
+    }
+
+    public static void addonLoop(int style, Supplier<SoundEvent> sound) {
+        if (ADDON_LOOPS.putIfAbsent(style, sound) != null) {
+            throw new IllegalStateException("duplicate bomber loop for style " + style);
+        }
+    }
+
     private static EntityBomber create(
             Level level, double x, double y, double z, int start, int stop, int rate, int type) {
         EntityBomber bomber = new EntityBomber(ModEntities.BOMBER.get(), level);
@@ -123,12 +149,15 @@ public class EntityBomber extends EntityPlaneBase {
     private void tickClientAudio() {
         if (health > 0) {
             if (audio == null || !audio.isPlaying()) {
+                Supplier<SoundEvent> addon = ADDON_LOOPS.get(getStyle());
                 audio =
                         AudioSystem.getLoopedSound(
-                                getStyle() <= 4
-                                        ? ModSounds.ENTITY_BOMBER_SMALL_LOOP.get()
-                                        : ModSounds.ENTITY_BOMBER_LOOP.get(),
-                                SoundSource.AMBIENT,
+                                addon != null
+                                        ? addon.get()
+                                        : getStyle() <= 4
+                                                ? ModSounds.ENTITY_BOMBER_SMALL_LOOP.get()
+                                                : ModSounds.ENTITY_BOMBER_LOOP.get(),
+                                SoundSource.PLAYERS,
                                 (float) getX(),
                                 (float) getY(),
                                 (float) getZ(),
@@ -153,7 +182,6 @@ public class EntityBomber extends EntityPlaneBase {
             fizz(getX(), getY(), getZ());
             ExplosionChaos.spawnPoisonCloud(level(), getX(), getY() - 1F, getZ(), 10, 0.5D, 3);
         } else if (type == 5) {
-
         } else if (type == 6) {
             level().playSound(
                             null,
@@ -195,7 +223,6 @@ public class EntityBomber extends EntityPlaneBase {
                             10F,
                             0.9F + random.nextFloat() * 0.2F);
             EntityBombletZeta zeta = new EntityBombletZeta(ModEntities.BOMBLET_ZETA.get(), level());
-
             zeta.rotation();
             zeta.setType(type);
             zeta.setPos(
@@ -226,7 +253,7 @@ public class EntityBomber extends EntityPlaneBase {
     private void fac(double x, double y, double z) {
         Vec3 vector =
                 new Vec3(random.nextDouble() - 0.5D, 0D, random.nextDouble() - 0.5D).normalize();
-        vector = vector.scale(Services.CONFIG.runtime().enableBomberShortMode() ? 1D : 2D);
+        vector = vector.scale(NeoForgeHbmConfig.runtime().enableBomberShortMode() ? 1D : 2D);
         setPos(x - vector.x * 100D, y + 50D, z - vector.z * 100D);
         setDeltaMovement(vector.x, 0D, vector.z);
         rotation();

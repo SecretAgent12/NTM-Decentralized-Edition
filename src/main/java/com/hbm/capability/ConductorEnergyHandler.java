@@ -5,9 +5,6 @@ package com.hbm.capability;
 
 import com.hbm.api.energymk2.ForeignEnergyBridge;
 import com.hbm.api.energymk2.PowerNetwork;
-import java.lang.ref.WeakReference;
-import java.util.Map;
-import java.util.WeakHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -19,9 +16,6 @@ import org.jspecify.annotations.Nullable;
 
 public final class ConductorEnergyHandler implements EnergyHandler {
 
-    private static final Map<ForeignEnergyBridge, WeakReference<Journal>> JOURNALS =
-            new WeakHashMap<>();
-
     private final ServerLevel level;
     private final BlockPos pos;
 
@@ -31,15 +25,12 @@ public final class ConductorEnergyHandler implements EnergyHandler {
         this.level = level;
         this.pos = pos.immutable();
         this.peerKey = side == null ? this.pos.asLong() : this.pos.relative(side).asLong();
-
         PowerNetwork.bridgeAt(level, this.pos);
     }
 
-    private static synchronized Journal journalFor(ForeignEnergyBridge bridge) {
-        WeakReference<Journal> ref = JOURNALS.get(bridge);
-        Journal journal = ref == null ? null : ref.get();
-        if (journal == null)
-            JOURNALS.put(bridge, new WeakReference<>(journal = new Journal(bridge)));
+    private static Journal journalFor(ForeignEnergyBridge bridge) {
+        Journal journal = bridge.loaderStaging instanceof Journal held ? held : null;
+        if (journal == null) bridge.loaderStaging = journal = new Journal(bridge);
         return journal;
     }
 

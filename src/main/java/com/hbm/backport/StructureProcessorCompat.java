@@ -53,6 +53,15 @@ public abstract class StructureProcessorCompat extends StructureProcessor {
         return processBlock(level, offset, pos, raw.pos(), processed, settings);
     }
 
+    /**
+     * 26.x StructureProcessor.evaluatesEntirePieceState(): whether finalizeProcessing needs the whole piece, not
+     * only the part inside the chunk being placed. 1.21.1's StructureTemplate always processes the whole piece,
+     * so the answer changes nothing here.
+     */
+    public boolean evaluatesEntirePieceState() {
+        return false;
+    }
+
     /** 26.x form: templateRelativePos is the block's position inside the template. */
     public @Nullable StructureBlockInfo processBlock(
             LevelReader level, BlockPos targetPosition, BlockPos referencePos, BlockPos templateRelativePos,

@@ -4,9 +4,9 @@
 package com.hbm.client.render;
 
 import com.hbm.animloader.AnimatedModel;
+import com.hbm.blockentity.BlockEntityDoorGeneric;
+import com.hbm.blockentity.DoorDecl;
 import com.hbm.render.loader.HFRWavefrontObject;
-import com.hbm.tileentity.BlockEntityDoorGeneric;
-import com.hbm.tileentity.DoorDecl;
 import com.hbm.backport.client.rendertype.BlendFunction;
 import com.hbm.backport.client.rendertype.ColorTargetState;
 import com.hbm.backport.client.rendertype.RenderPipeline;

@@ -6,8 +6,8 @@ package com.hbm.backport;
 import com.hbm.blocks.multiblock.AssembledMembers;
 import com.hbm.blocks.multiblock.BlockMultiblockCell;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
-import com.hbm.platform.Services;
-import com.hbm.tileentity.network.BlockEntityPylonBase;
+import com.hbm.platform.NeoForgeCaps;
+import com.hbm.blockentity.network.BlockEntityPylonBase;
 import com.hbm.uninos.graph.GraphNode;
 import com.hbm.uninos.graph.LevelNodeGraph;
 import java.util.List;
@@ -55,9 +55,10 @@ public final class SubLevelMoves {
         BlockState moved = resulting.getBlockState(to);
         int turns = quarterTurns(state, moved);
 
-        List<LevelNodeGraph<?>> graphs = origin.hbm$graphs();
-        for (int i = 0; i < graphs.size(); i++)
-            moveNode(graphs.get(i), origin, from.asLong(), to.asLong(), turns, origin == resulting);
+        // 1.0.3: hbm$graphs() is an array indexed by graph kind; unloaded kinds are null slots
+        for (LevelNodeGraph<?> graph : origin.hbm$graphs())
+            if (graph != null)
+                moveNode(graph, origin, from.asLong(), to.asLong(), turns, origin == resulting);
 
         if (state.getBlock() instanceof BlockMultiblockCell || state.getBlock() instanceof BlockMultiblockCore)
             BlockMultiblockCore.unindexCell(origin, from);
@@ -66,8 +67,8 @@ public final class SubLevelMoves {
         if (state.getBlock() instanceof AssembledMembers.Member)
             AssembledMembers.release(origin, from);
 
-        Services.CAPS.invalidateCaps(origin, from);
-        Services.CAPS.invalidateCaps(resulting, to);
+        NeoForgeCaps.invalidateCaps(origin, from);
+        NeoForgeCaps.invalidateCaps(resulting, to);
         LevelNodeGraph.invalidateEndpointsAround(origin, from);
         LevelNodeGraph.invalidateEndpointsAt(resulting, to);
 

@@ -21,9 +21,10 @@ import org.jspecify.annotations.Nullable;
 
 public final class SyncedData implements ContainerData {
 
-    private static final String INDEX = "/com/hbm/inventory/container-sync.idx";
+    private static final String INDEX = "container-sync.idx";
     private static final Map<Class<?>, Layout> LAYOUTS = new ConcurrentHashMap<>();
-    private static volatile Map<String, List<String[]>> index;
+    private static final Map<String, Map<String, List<String[]>>> INDEXES =
+            new ConcurrentHashMap<>();
 
     private final Layout layout;
     private final @Nullable BlockEntity source;
@@ -72,7 +73,6 @@ public final class SyncedData implements ContainerData {
         }
         long raw = 0;
         for (int i = 0; i < entry.slots; i++) raw |= (get(entry.slot + i) & 0xFFFFL) << (16 * i);
-
         return switch (entry.type) {
             case "boolean" -> raw != 0 ? 1 : 0;
             case "enum" -> raw;
@@ -104,7 +104,7 @@ public final class SyncedData implements ContainerData {
         Map<String, Entry> entries = new LinkedHashMap<>();
         int slot = 0;
         for (Class<?> owner : chain) {
-            for (String[] row : index().getOrDefault(owner.getName(), List.of())) {
+            for (String[] row : indexOf(owner).getOrDefault(owner.getName(), List.of())) {
                 Entry entry = new Entry(field(owner, row[0]), row[1], slot);
                 entries.put(row[0], entry);
                 slot += entry.slots;
@@ -133,31 +133,34 @@ public final class SyncedData implements ContainerData {
         }
     }
 
-    private static Map<String, List<String[]>> index() {
-        Map<String, List<String[]>> local = index;
-        if (local != null) return local;
+    private static Map<String, List<String[]>> indexOf(Class<?> owner) {
+        return INDEXES.computeIfAbsent(owner.getPackageName(), pkg -> read(owner));
+    }
+
+    // backport-fix: BF-096 NEXT 1.0.3 reads one index per package (next to the block entity class, as its
+    // hbm-compiler writes them); DE's pipeline writes a single index for all packages at DE_INDEX, as NEXT 1.0.0
+    // read it. Without the fallback every machine GUI found no synced fields and crashed on open.
+    private static final String DE_INDEX = "/com/hbm/inventory/" + INDEX;
+
+    private static Map<String, List<String[]>> read(Class<?> owner) {
         Map<String, List<String[]>> built = new LinkedHashMap<>();
-        try (InputStream in = SyncedData.class.getResourceAsStream(INDEX)) {
-            if (in == null) {
-                throw new IllegalStateException(
-                        "the container-sync index is absent from the classpath at "
-                                + INDEX
-                                + " - the compile that writes it did not run");
-            }
+        InputStream own = owner.getResourceAsStream(INDEX);
+        try (InputStream in = own != null ? own : SyncedData.class.getResourceAsStream(DE_INDEX)) {
+            if (in == null) return built;
             try (BufferedReader reader =
                     new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
                 for (String line; (line = reader.readLine()) != null; ) {
                     if (line.isBlank()) continue;
-
                     String[] parts = line.split(" ");
                     built.computeIfAbsent(parts[0], k -> new ArrayList<>())
                             .add(new String[] {parts[1], parts[2]});
                 }
             }
         } catch (IOException e) {
-            throw new UncheckedIOException("cannot read the container-sync index", e);
+            throw new UncheckedIOException(
+                    "cannot read the container-sync index of " + owner.getPackageName(), e);
         }
-        return index = built;
+        return built;
     }
 
     private record Layout(Class<?> owner, Map<String, Entry> entries, int slots, Entry[] bySlot) {}
@@ -187,7 +190,6 @@ public final class SyncedData implements ContainerData {
             try {
                 return switch (type) {
                     case "boolean" -> field.getBoolean(be) ? 1 : 0;
-
                     case "enum" -> ((Enum<?>) field.get(be)).ordinal();
                     default -> field.getLong(be);
                 };

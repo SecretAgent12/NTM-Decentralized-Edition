@@ -8,6 +8,7 @@ import com.google.gson.JsonObject;
 import com.hbm.blocks.ModBlocks;
 import com.hbm.lib.Library;
 import com.hbm.world.feature.*;
+import com.hbm.world.placement.OreHostPlacement;
 import com.hbm.world.placement.WorldConfigPlacement;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
@@ -176,8 +177,8 @@ public final class OreGenerationProfiles {
             }
             case OreCaveConfig cave -> {
                 target(cave.ore(), cave.replaceable(), targets, conditions);
-                targets.add(cave.stalactite());
-                targets.add(cave.stalagmite());
+                cave.stalactite().ifPresent(targets::add);
+                cave.stalagmite().ifPresent(targets::add);
                 cave.fluid().ifPresent(targets::add);
                 height =
                         OreHeightProfile.band(
@@ -207,7 +208,7 @@ public final class OreGenerationProfiles {
                 conditions.addFirst(text("oil_bubble", oil.minSize(), oil.maxSize() - 1));
             }
             case BedrockOilDepositConfig oil -> {
-                targets.add(oil.core());
+                target(oil.core(), oil.replaceable(), targets, conditions);
                 height =
                         OreHeightProfile.band(
                                 level.getMinBuildHeight(), level.getMinBuildHeight() + BedrockOilDepositFeature.MAX_Y);
@@ -305,7 +306,8 @@ public final class OreGenerationProfiles {
                                 .getAsInt();
                 if (attempts >= 0) attempts /= chance;
             } else if (!(modifier instanceof InSquarePlacement)
-                    && !(modifier instanceof BiomeFilter)) {
+                    && !(modifier instanceof BiomeFilter)
+                    && !(modifier instanceof OreHostPlacement)) {
                 supported = false;
                 attempts = -1;
                 conditions.add(
@@ -341,6 +343,7 @@ public final class OreGenerationProfiles {
                     switch (tag) {
                         case "minecraft:stone_ore_replaceables" -> text("stone");
                         case "minecraft:deepslate_ore_replaceables" -> text("deepslate");
+                        case "minecraft:base_stone_overworld" -> text("natural_stone");
                         default -> Component.literal("#" + tag);
                     };
         } else if (encoded.has("block")) {

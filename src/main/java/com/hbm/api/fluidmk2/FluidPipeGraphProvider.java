@@ -4,8 +4,10 @@
 package com.hbm.api.fluidmk2;
 
 import com.hbm.uninos.graph.IGraphProvider;
+import com.hbm.uninos.graph.LevelNodeGraph;
 import com.mojang.serialization.Codec;
-import net.minecraft.world.level.block.state.BlockState;
+import java.util.List;
+import net.minecraft.server.level.ServerLevel;
 
 public final class FluidPipeGraphProvider implements IGraphProvider<PipeData> {
 
@@ -14,17 +16,17 @@ public final class FluidPipeGraphProvider implements IGraphProvider<PipeData> {
     private FluidPipeGraphProvider() {}
 
     @Override
-    public PipeData createData(BlockState state) {
-        return PipeData.UNSET;
-    }
-
-    @Override
     public boolean dataCompatible(PipeData a, PipeData b) {
         return a.equals(b);
     }
 
     @Override
-    public Codec<PipeData> dataCodec() {
-        return PipeData.CODEC;
+    public Codec<List<PipeData>> dataTableCodec() {
+        return PipeData.CODEC.listOf();
+    }
+
+    @Override
+    public void tick(ServerLevel level, LevelNodeGraph<PipeData> graph) {
+        FluidNetwork.tick(level, graph);
     }
 }

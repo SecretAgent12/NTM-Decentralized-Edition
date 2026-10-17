@@ -18,7 +18,6 @@ import net.minecraft.world.entity.EntityType;
 import com.hbm.backport.compat.EntityCompat;
 
 public class EntityCloudSolinium extends EntityCompat {
-
     private static final EntityDataAccessor<Integer> MAX_AGE =
             SynchedEntityData.defineId(EntityCloudSolinium.class, EntityDataSerializers.INT);
 

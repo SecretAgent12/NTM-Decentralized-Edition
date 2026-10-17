@@ -26,7 +26,6 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.BushBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunkSection;
@@ -43,7 +42,6 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.ScopedValue;
 
 public final class ImpactWorldgen {
-
     public static final ScopedValue<Boolean> VILLAGE_RUIN = ScopedValue.newInstance();
 
     private ImpactWorldgen() {}
@@ -153,17 +151,13 @@ public final class ImpactWorldgen {
     public static void clearDecoration(@Nullable TomSaveData data, ChunkAccess chunk) {
         if (!impacted(data, 0.25F)) return;
         BlockState dirt = ModBlocks.IMPACT_DIRT.get().defaultBlockState();
-
         sweep(
                 chunk,
                 state ->
                         state.is(Blocks.GRASS_BLOCK)
                                 || state.is(BlockTags.LOGS)
                                 || state.is(BlockTags.LEAVES)
-                                || state.getBlock() instanceof BushBlock
-                                || state.is(Blocks.SUGAR_CANE)
-                                || state.is(Blocks.COCOA)
-                                || state.is(ModBlocks.PLANT_REEDS.get())
+                                || LocationIsValidSpawn.isPlant(state)
                                 || state.is(ModBlocks.LEAVES_LAYER.get()),
                 state ->
                         state.is(Blocks.GRASS_BLOCK)

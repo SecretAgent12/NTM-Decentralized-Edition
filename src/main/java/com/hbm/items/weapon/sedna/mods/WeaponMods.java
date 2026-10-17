@@ -3,7 +3,6 @@
 
 package com.hbm.items.weapon.sedna.mods;
 
-import com.hbm.config.GunVisualConfig;
 import com.hbm.extprop.HbmLivingProps;
 import com.hbm.inventory.fluid.NTMFluids;
 import com.hbm.items.ModItems;
@@ -18,6 +17,7 @@ import com.hbm.render.anim.AnimationEnums.GunAnimation;
 import com.hbm.render.anim.BusAnimation;
 import com.hbm.render.anim.BusAnimationKeyframe.IType;
 import com.hbm.render.anim.BusAnimationSequence;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import com.hbm.util.DamageClass;
 import com.hbm.util.EntityDamageUtil;
@@ -817,16 +817,15 @@ abstract class WeaponModBayonet extends WeaponModBase {
             Entity victim = entityHit.getEntity();
             victim.hurt(player.damageSources().playerAttack(player), 15F);
             victim.setDeltaMovement(victim.getDeltaMovement().multiply(2D, 1D, 2D));
-            entity.level()
-                    .playSound(
-                            null,
-                            victim.getX(),
-                            victim.getY(),
-                            victim.getZ(),
-                            ModSounds.GUN_STAB.get(),
-                            SoundSource.PLAYERS,
-                            1F,
-                            0.9F + entity.getRandom().nextFloat() * 0.2F);
+            EntitySounds.play(
+                    victim,
+                    victim.getX(),
+                    victim.getY(),
+                    victim.getZ(),
+                    ModSounds.GUN_STAB.get(),
+                    SoundSource.PLAYERS,
+                    1F,
+                    0.9F + entity.getRandom().nextFloat() * 0.2F);
         } else if (hit instanceof BlockHitResult blockHit) {
             BlockState state = entity.level().getBlockState(blockHit.getBlockPos());
             entity.level()

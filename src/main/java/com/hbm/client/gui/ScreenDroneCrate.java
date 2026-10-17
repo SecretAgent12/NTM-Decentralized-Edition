@@ -3,11 +3,11 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.network.BlockEntityDroneCrate;
 import com.hbm.inventory.container.MenuDroneCrate;
 import com.hbm.lib.Library;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toserver.NbtControlPayload;
-import com.hbm.platform.Services;
-import com.hbm.tileentity.network.BlockEntityDroneCrate;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.client.gui.input.MouseButtonEvent;
 import com.hbm.backport.client.rendertype.RenderPipelines;
@@ -87,8 +87,7 @@ public class ScreenDroneCrate extends ScreenInfoContainer<MenuDroneCrate> {
     private boolean toggle(String key) {
         CompoundTag data = new CompoundTag();
         data.putBoolean(key, true);
-        Services.NETWORK.sendToServer(
-                new NbtControlPayload(menu.blockEntity().getBlockPos(), data));
+        PacketWire.sendToServer(new NbtControlPayload(menu.blockEntity().getBlockPos(), data));
         playClick();
         return true;
     }

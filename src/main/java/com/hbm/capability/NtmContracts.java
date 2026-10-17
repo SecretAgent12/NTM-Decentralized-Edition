@@ -12,12 +12,13 @@ import com.hbm.api.tile.IHeatSource;
 import com.hbm.interfaces.*;
 import com.hbm.lib.Library;
 import com.hbm.platform.BlockLookupCache;
-import com.hbm.platform.Services;
+import com.hbm.platform.NeoForgeCaps;
 import com.hbm.registration.RegistryHandle;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -31,14 +32,12 @@ import net.neoforged.neoforge.capabilities.BlockCapability;
 import org.jspecify.annotations.Nullable;
 
 public final class NtmContracts {
-
     @FunctionalInterface
     public interface OwnerLookup {
         @Nullable BlockPos ownerOf(Level level, BlockPos pos, BlockState state);
     }
 
     private static final List<Contract<?>> ALL = new ArrayList<>();
-
     private static final Set<String> PROXIED = new HashSet<>();
 
     public static final Contract<ICrucibleAcceptor> CRUCIBLE_ACCEPTOR =
@@ -73,7 +72,7 @@ public final class NtmContracts {
 
     public static final Contract<Container> INVENTORY = contract("inventory", Container.class);
 
-    public static final class Contract<T> {
+    public static final class Contract<T> implements ContractLink.Resolver<T> {
 
         private final String path;
         private final Class<T> type;
@@ -88,6 +87,7 @@ public final class NtmContracts {
             return type;
         }
 
+        @Override
         public @Nullable T at(Level level, BlockPos pos) {
             return at(level, pos, level.getBlockState(pos), null);
         }
@@ -98,14 +98,13 @@ public final class NtmContracts {
 
         public @Nullable T at(
                 Level level, BlockPos pos, BlockState state, @Nullable Direction side) {
-
             Block block = state.getBlock();
             if (type.isInstance(block)) return type.cast(block);
-            return Services.CAPS.find(token(), level, pos, side);
+            return token().getCapability(level, pos, null, null, side);
         }
 
         public BlockLookupCache<T> cacheAt(ServerLevel level, BlockPos pos) {
-            return Services.CAPS.createCache(token(), level, pos, null);
+            return new NeoForgeCaps.CapCache<>(token(), level, pos, (Direction) null);
         }
 
         private BlockCapability<T, Direction> token() {
@@ -137,7 +136,7 @@ public final class NtmContracts {
     }
 
     private static <T> void mint(Contract<T> c) {
-        c.token = Services.CAPS.createToken(Library.id(c.path), c.type, Direction.class);
+        c.token = BlockCapability.create(Library.id(c.path), c.type, Direction.class);
     }
 
     public static void registerAll(List<RegistryHandle<? extends Block>> blocks) {
@@ -150,10 +149,11 @@ public final class NtmContracts {
             Block block = handle.get();
             if (!c.type.isInstance(block) && !(block instanceof EntityBlock)) continue;
             if (PROXIED.contains(claim(c, handle))) continue;
-            Services.CAPS.registerBlockProvider(
-                    c.token(),
-                    handle,
-                    (level, pos, state, be, side) -> c.carriedBy(level, pos, state, be));
+            NeoForgeCaps.pendingBlocks.add(
+                    new NeoForgeCaps.BlockRegistration<>(
+                            c.token(),
+                            (Supplier<? extends Block>) handle,
+                            (level, pos, state, be, side) -> c.carriedBy(level, pos, state, be)));
         }
     }
 
@@ -168,16 +168,16 @@ public final class NtmContracts {
                             + "question of registration order");
         }
         PROXIED.add(claim(contract, cell));
-        Services.CAPS.registerBlockProvider(
-                contract.token(),
-                cell,
-                (level, pos, state, be, side) -> {
-                    BlockPos at = owner.ownerOf(level, pos, state);
-
-                    return at == null
-                            ? contract.carriedBy(level, pos, state, be)
-                            : contract.at(level, at, level.getBlockState(at), side);
-                });
+        NeoForgeCaps.pendingBlocks.add(
+                new NeoForgeCaps.BlockRegistration<>(
+                        contract.token(),
+                        (Supplier<? extends Block>) cell,
+                        (level, pos, state, be, side) -> {
+                            BlockPos at = owner.ownerOf(level, pos, state);
+                            return at == null
+                                    ? contract.carriedBy(level, pos, state, be)
+                                    : contract.at(level, at, level.getBlockState(at), side);
+                        }));
     }
 
     private static String claim(Contract<?> contract, RegistryHandle<? extends Block> block) {

@@ -25,7 +25,6 @@ import com.hbm.backport.storage.ValueOutput;
 import com.hbm.backport.compat.EntityCompat;
 
 public class EntityBobmazon extends EntityCompat implements StoredItems {
-
     private static final EntityDataAccessor<Integer> STATUS =
             SynchedEntityData.defineId(EntityBobmazon.class, EntityDataSerializers.INT);
 
@@ -59,11 +58,9 @@ public class EntityBobmazon extends EntityCompat implements StoredItems {
 
     @Override
     public void tick() {
-
         setDeltaMovement(0, -0.5, 0);
 
         for (int i = 0; i < 4; i++) {
-
             BlockPos nose =
                     new BlockPos((int) (getX() - 0.5), (int) (getY() + 1), (int) (getZ() - 0.5));
             if (!level().getBlockState(nose).isAir()
@@ -82,7 +79,6 @@ public class EntityBobmazon extends EntityCompat implements StoredItems {
                                 0.5F + random.nextFloat() * 0.1F);
 
                 if (!payload.isEmpty()) {
-
                     ItemEntity pack = new ItemEntity(level(), getX(), getY() + 2, getZ(), payload);
                     pack.setDeltaMovement(0, pack.getDeltaMovement().y, 0);
                     level().addFreshEntity(pack);
@@ -100,7 +96,6 @@ public class EntityBobmazon extends EntityCompat implements StoredItems {
         }
 
         if (level().isClientSide()) {
-
             ClientEffects.spawnRocketFlame(
                     level(), getX(), getY() + 1, getZ(), 1F, 0D, 0D, 0D, 300 + random.nextInt(50));
         }
@@ -113,7 +108,6 @@ public class EntityBobmazon extends EntityCompat implements StoredItems {
 
     @Override
     protected void addAdditionalSaveData(ValueOutput output) {
-
         if (!payload.isEmpty()) output.store("payload", ItemStack.OPTIONAL_CODEC, payload);
     }
 

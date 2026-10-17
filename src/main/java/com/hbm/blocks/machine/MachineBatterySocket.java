@@ -3,6 +3,7 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.storage.BlockEntityBatterySocket;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.blocks.RefreshesNeighborState;
@@ -10,10 +11,11 @@ import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.blocks.network.CableConductorBlockBase;
 import com.hbm.capability.ICapabilityBlock;
 import com.hbm.capability.MachineCaps;
-import com.hbm.tileentity.machine.storage.BlockEntityBatterySocket;
+import com.hbm.interfaces.ILookOverlay;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -21,10 +23,7 @@ import org.jspecify.annotations.Nullable;
 
 // backport: @RefreshesNeighborState(be = BlockEntityBatterySocket.class, calling = "refreshMode") woven below
 public class MachineBatterySocket extends BlockMultiblockCore
-        implements ITickingBlock, ICapabilityBlock {
-
-    private static final int[] DIMENSIONS = {1, 0, 1, 0, 1, 0};
-
+        implements ITickingBlock, ICapabilityBlock, ILookOverlay {
     private static final int NODE_MASK =
             (1 << Direction.NORTH.ordinal())
                     | (1 << Direction.SOUTH.ordinal())
@@ -33,16 +32,6 @@ public class MachineBatterySocket extends BlockMultiblockCore
 
     public MachineBatterySocket(Properties props) {
         super(props);
-    }
-
-    @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 0;
     }
 
     @Override
@@ -61,39 +50,8 @@ public class MachineBatterySocket extends BlockMultiblockCore
     }
 
     @Override
-    protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
-        super.visitCells(core, facing, visitor);
-        Direction rot = facing.getClockWise();
-        visitor.cell(
-                core.offset(-facing.getStepX(), 0, -facing.getStepZ()), MASK_NORTH | MASK_EAST);
-        visitor.cell(core.offset(rot.getStepX(), 0, rot.getStepZ()), MASK_WEST | MASK_SOUTH);
-        visitor.cell(
-                core.offset(
-                        -facing.getStepX() + rot.getStepX(),
-                        0,
-                        -facing.getStepZ() + rot.getStepZ()),
-                MASK_NORTH | MASK_WEST);
-    }
-
-    @Override
-    public int coreMask() {
-        return MASK_SOUTH | MASK_EAST;
-    }
-
-    @Override
     protected RenderShape getRenderShape(BlockState state) {
-
         return RenderShape.MODEL;
-    }
-
-    @Override
-    protected void visitPassiveCells(BlockPos core, Direction facing, PassiveCellVisitor visitor) {
-        Direction back = facing.getOpposite();
-        Direction rot = facing.getClockWise();
-        int domains = PASSIVE_POWER_IN | PASSIVE_ITEMS;
-        visitor.passiveCell(core.relative(back), MASK_ALL, domains);
-        visitor.passiveCell(core.relative(rot), MASK_ALL, domains);
-        visitor.passiveCell(core.relative(back).relative(rot), MASK_ALL, domains);
     }
 
     public static void mintNodes(ServerLevel level, BlockPos core, BlockState state) {
@@ -123,6 +81,16 @@ public class MachineBatterySocket extends BlockMultiblockCore
     @Override
     protected boolean comparatorCellAt(int lx, int ly, int lz) {
         return ly == 0;
+    }
+
+    @Override
+    public void buildLookOverlay(Level level, BlockPos pos, ILookOverlay.LookInfo info) {
+        if (!(level.getBlockEntity(pos) instanceof BlockEntityBatterySocket socket)
+                || socket.syncStack.isEmpty()) {
+            return;
+        }
+        info.title(socket.syncStack.getHoverName(), 0xffff00, 0x404000)
+                .charge(socket.syncPower, socket.syncMaxPower);
     }
 
     @Override

@@ -16,6 +16,7 @@ import com.hbm.inventory.fluid.trait.*;
 import com.hbm.inventory.fluid.trait.FluidTraitSimple.FT_Delicious;
 import com.hbm.inventory.fluid.trait.FluidTraitSimple.FT_Liquid;
 import com.hbm.lib.ModDamageTypes;
+import com.hbm.sound.EntitySounds;
 import com.hbm.util.ContaminationUtil.ContaminationType;
 import com.hbm.util.ContaminationUtil.HazardType;
 import com.hbm.util.ContaminationUtil;
@@ -50,7 +51,6 @@ import net.minecraft.world.phys.AABB;
 import com.hbm.backport.compat.EntityCompat;
 
 public class EntityMist extends EntityCompat {
-
     private static final EntityDataAccessor<Integer> TYPE =
             SynchedEntityData.defineId(EntityMist.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> WIDTH =
@@ -122,7 +122,6 @@ public class EntityMist extends EntityCompat {
 
     @Override
     public void tick() {
-
         float height = height();
 
         if (level() instanceof ServerLevel server) {
@@ -138,7 +137,6 @@ public class EntityMist extends EntityCompat {
 
             if (prop.hasTrait(FT_VentRadiation.class)) {
                 FT_VentRadiation trait = prop.getTrait(FT_VentRadiation.class);
-
                 RadiationSystemNT.incrementRad(
                         server,
                         new BlockPos(Mth.floor(getX()), Mth.floor(getY()), Mth.floor(getZ())),
@@ -149,7 +147,6 @@ public class EntityMist extends EntityCompat {
             double intensity = 1D - (double) this.tickCount / (double) maxAge;
 
             if (prop.hasTrait(FT_Flammable.class) && this.isOnFire()) {
-
                 server.explode(
                         this,
                         getX(),
@@ -188,7 +185,6 @@ public class EntityMist extends EntityCompat {
         }
 
         if (temperature < -20) {
-
             if (living != null) {
                 EntityDamageUtil.attackEntityFromIgnoreIFrame(
                         e, source(server, ModDamageTypes.ICE), 0.2F + (temperature + 20) * -0.05F);
@@ -287,8 +283,8 @@ public class EntityMist extends EntityCompat {
                 SoundSource.HOSTILE,
                 1F,
                 1F);
-        server.playSound(
-                null,
+        EntitySounds.play(
+                living,
                 living.getX(),
                 living.getY(),
                 living.getZ(),

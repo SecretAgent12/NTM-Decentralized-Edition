@@ -5,8 +5,8 @@ package com.hbm.client.gui;
 
 import com.hbm.items.tool.ItemRTTYPager;
 import com.hbm.lib.Library;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toserver.RTTYPagerControlPayload;
-import com.hbm.platform.Services;
 import net.minecraft.client.Minecraft;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
@@ -100,14 +100,13 @@ public final class ScreenPager extends ScreenCompat {
             Minecraft.getInstance()
                     .getSoundManager()
                     .play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
-            Services.NETWORK.sendToServer(new RTTYPagerControlPayload(channel.getValue()));
+            PacketWire.sendToServer(new RTTYPagerControlPayload(channel.getValue()));
             return true;
         }
         return super.mouseClicked(event, doubleClick);
     }
 
     private boolean inSaveZone(double x, double y) {
-
         return guiLeft + SAVE_X <= x
                 && guiLeft + SAVE_X + BUTTON_SIZE > x
                 && guiTop + BUTTON_Y < y

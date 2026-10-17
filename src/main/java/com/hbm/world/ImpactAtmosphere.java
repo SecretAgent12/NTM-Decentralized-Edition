@@ -3,9 +3,9 @@
 
 package com.hbm.world;
 
+import com.hbm.api.environment.AtmosphereLayers;
 import com.hbm.data.WorldData;
 import com.hbm.handler.ImpactWorldHandler;
-import com.hbm.platform.Services;
 import com.hbm.saveddata.TomSaveData;
 import net.minecraft.server.level.ServerLevel;
 import com.hbm.backport.ARGB;
@@ -20,7 +20,10 @@ public final class ImpactAtmosphere {
     // such system, so the same adjustments are plain functions for the 1.21.1 hooks to call
     // (sky darkening, the fog-colour event and the sky/cloud colour mixins): same formulas.
     public static boolean active(Level level) {
-        return level.dimension() == Level.OVERWORLD && WorldData.ENABLE_IMPACT_ATMOSPHERE.get();
+        // 26.x: MixinEnvironmentAttributeSystem skips the impact layers when an addon claims the level
+        return level.dimension() == Level.OVERWORLD
+                && WorldData.ENABLE_IMPACT_ATMOSPHERE.get()
+                && !AtmosphereLayers.claimed(level);
     }
 
     /** SKY_LIGHT_LEVEL layer: pulled towards the night value by the dust. */

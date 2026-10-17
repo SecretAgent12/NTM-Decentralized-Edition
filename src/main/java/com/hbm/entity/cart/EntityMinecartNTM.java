@@ -29,7 +29,6 @@ public abstract class EntityMinecartNTM extends AbstractMinecartCompat implement
         return net.minecraft.world.entity.vehicle.AbstractMinecart.Type.CHEST;
     }
 
-
     private static final EntityDataAccessor<Integer> BASE =
             SynchedEntityData.defineId(EntityMinecartNTM.class, EntityDataSerializers.INT);
 

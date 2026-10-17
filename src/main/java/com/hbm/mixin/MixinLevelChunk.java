@@ -3,16 +3,23 @@
 
 package com.hbm.mixin;
 
+import com.hbm.api.environment.Environment;
+import com.hbm.blockentity.ChunkPublication;
 import com.hbm.handler.radiation.RadiationSystemNT;
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.*;
 import net.minecraft.world.level.levelgen.blending.BlendingData;
 import org.jspecify.annotations.Nullable;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -20,6 +27,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(LevelChunk.class)
 public abstract class MixinLevelChunk extends ChunkAccess {
+
+    @Shadow @Final Level level;
 
     public MixinLevelChunk(
             ChunkPos chunkPos,
@@ -50,11 +59,39 @@ public abstract class MixinLevelChunk extends ChunkAccess {
             CallbackInfo ci) {
         byte[] rad = protoChunk.hbm$getRadiation();
         if (rad != null) hbm$setRadiation(rad);
-
         long[] index = protoChunk.hbm$coreIndex();
         if (index != null) {
             hbm$setCoreIndex(index, protoChunk.hbm$coreIndexSize());
         }
+        long[] pending = protoChunk.hbm$pendingFallerPositions();
+        if (pending != null) {
+            hbm$setPendingFallers(
+                    pending,
+                    protoChunk.hbm$pendingFallerStates(),
+                    protoChunk.hbm$pendingFallerSize());
+        }
+        hbm$setDuctFluids(protoChunk.hbm$ductFluids());
+    }
+
+    @WrapMethod(method = "registerAllBlockEntitiesAfterLevelLoad")
+    private void hbm$registerForPublication(Operation<Void> original) {
+        if (!(level instanceof ServerLevel server)) {
+            original.call();
+            return;
+        }
+        LevelChunk self = (LevelChunk) (Object) this;
+        ChunkPublication.enter(server, self);
+        try {
+            original.call();
+        } catch (Throwable t) {
+            ChunkPublication.abandon(self);
+            throw t;
+        }
+    }
+
+    @Inject(method = "registerTickContainerInLevel", at = @At("TAIL"))
+    private void hbm$publish(ServerLevel server, CallbackInfo ci) {
+        ChunkPublication.registered(server, (LevelChunk) (Object) this);
     }
 
     // backport: 1.21.1 LevelChunk.setBlockState(BlockPos, BlockState, boolean isMoving)
@@ -65,6 +102,21 @@ public abstract class MixinLevelChunk extends ChunkAccess {
     private void hbm$radShieldEdit(
             BlockPos pos, BlockState state, boolean isMoving, CallbackInfoReturnable<BlockState> cir) {
         RadiationSystemNT.onBlockStateReplaced((LevelChunk) (Object) this, pos, state);
+    }
+
+    // backport: 1.21.1 LevelChunk.setBlockState(BlockPos, BlockState, boolean isMoving)
+    @Inject(
+            method =
+                    "setBlockState(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Z)Lnet/minecraft/world/level/block/state/BlockState;",
+            at = @At("RETURN"))
+    private void hbm$environmentEdit(
+            BlockPos pos, BlockState state, boolean isMoving, CallbackInfoReturnable<BlockState> cir) {
+        if (!Environment.installed()) return;
+        BlockState previous = cir.getReturnValue();
+        if (previous != null
+                && ((LevelChunk) (Object) this).getLevel() instanceof ServerLevel level) {
+            Environment.blockChanged(level, pos, previous, state);
+        }
     }
 
     /**
@@ -80,7 +132,6 @@ public abstract class MixinLevelChunk extends ChunkAccess {
             net.minecraft.world.level.block.entity.BlockEntity blockEntity,
             ServerLevel level,
             CallbackInfo ci) {
-        if (blockEntity instanceof com.hbm.tileentity.GraphResident)
-            com.hbm.tileentity.GraphResident.onLoad(level, blockEntity);
+        ChunkPublication.added(level, blockEntity);
     }
 }

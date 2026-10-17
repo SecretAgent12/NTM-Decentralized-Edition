@@ -3,7 +3,7 @@
 
 package com.hbm.compat.computercraft.turret;
 
-import com.hbm.tileentity.turret.BlockEntityTurretArty;
+import com.hbm.blockentity.turret.BlockEntityTurretArty;
 import dan200.computercraft.api.lua.LuaFunction;
 import net.minecraft.world.phys.Vec3;
 
@@ -17,6 +17,7 @@ public final class ArtyPeripheral extends ArtilleryPeripheral<BlockEntityTurretA
     public final Object[] addCoords(double x, double y, double z) {
         BlockEntityTurretArty machine = machine();
         machine.mode = BlockEntityTurretArty.MODE_MANUAL;
+        machine.markChanged();
         if (distance(machine.getBlockPos(), x, y, z) >= machine.getDetectorRange())
             return new Object[] {false};
         machine.addQueuedTarget(new Vec3(x, y, z));

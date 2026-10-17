@@ -5,9 +5,9 @@ package com.hbm.blocks.network;
 
 import com.hbm.api.fluidmk2.FluidPipeGraph;
 import com.hbm.api.fluidmk2.PipeData;
+import com.hbm.blockentity.network.BlockEntityPipePaintable;
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.inventory.fluid.NTMFluidProperties;
-import com.hbm.tileentity.network.BlockEntityPipePaintable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -29,7 +29,8 @@ public class FluidDuctPaintableExhaustBlock extends FluidDuctPaintableBlock {
     }
 
     @Override
-    public boolean canConnectFluid(Level level, BlockPos pos, Direction side, Fluid fluid) {
+    public boolean hasFluidContact(
+            Level level, BlockPos pos, BlockState state, Direction side, Fluid fluid) {
         return FluidPipeGraph.isSmoke(fluid);
     }
 

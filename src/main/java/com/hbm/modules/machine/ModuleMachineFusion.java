@@ -12,7 +12,6 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.world.Container;
 import com.hbm.backport.storage.ValueInput;
 import com.hbm.backport.storage.ValueOutput;
-import org.jspecify.annotations.Nullable;
 
 public class ModuleMachineFusion extends ModuleMachineBase {
 

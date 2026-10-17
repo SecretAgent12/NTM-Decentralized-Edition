@@ -3,6 +3,7 @@
 
 package com.hbm.packet.toserver;
 
+import com.hbm.api.environment.Environment;
 import com.hbm.entity.missile.EntityBobmazon;
 import com.hbm.handler.BobmazonOffer;
 import com.hbm.handler.BobmazonOffers;
@@ -46,10 +47,15 @@ public final class BobmazonPurchasePayload extends ThreadedPayload {
         if (!(ctx.player() instanceof ServerPlayer player)) return;
         if (!(player.level() instanceof ServerLevel level)) return;
 
+        Component refusal = Environment.deliveryRefusal(level);
+        if (refusal != null) {
+            player.sendSystemMessage(refusal);
+            return;
+        }
+
         List<BobmazonOffer> catalog = BobmazonOffers.forStack(player.getMainHandItem());
 
         if (catalog == null) {
-
             player.sendSystemMessage(
                     Component.translatable("chat.bobmazonPurchase.thereAppearsToBe"));
             player.sendSystemMessage(

@@ -100,7 +100,7 @@ public class ExplosionBalefire {
         return this.n > this.nlimit;
     }
 
-    private void breakColumn(int x, int z) {
+    protected void breakColumn(int x, int z) {
         int dist = (int) (radius - Math.sqrt(x * x + z * z));
 
         if (dist <= 0) return;
@@ -152,13 +152,20 @@ public class ExplosionBalefire {
 
         for (int i = depth; i > depth - 5; i--) {
             BlockPos pos = new BlockPos(pX, i, pZ);
-            if (level.getBlockState(pos).is(Blocks.STONE)) {
+            if (slakes(level.getBlockState(pos))) {
                 level.setBlock(
                         pos,
                         ModBlocks.SELLAFIELD_SLAKED.get().defaultBlockState(),
                         Block.UPDATE_ALL);
             }
         }
+    }
+
+    // backport: whether the crater floor turns this block into slaked sellafield. DECISION (owner, checked
+    // against 1.7.10): stone only, as DE always had it; upstream widens it to the overworld base stone tag,
+    // calcite, dripstone, smooth basalt and the 26.x sulfur/cinnabar blocks.
+    protected static boolean slakes(BlockState state) {
+        return state.is(Blocks.STONE);
     }
 
     private static BlockState copyPillarAxis(BlockState from, Block to) {

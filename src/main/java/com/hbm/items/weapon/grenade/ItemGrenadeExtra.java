@@ -55,7 +55,6 @@ public class ItemGrenadeExtra extends ItemCompat {
         if (!(impact instanceof BlockHitResult blockHit)) return;
         Vec3 hit = blockHit.getLocation();
         grenade.setPos(hit.x, hit.y, hit.z);
-
         grenade.getStuck(blockHit.getBlockPos(), blockHit.getDirection().get3DDataValue());
     }
 

@@ -4,8 +4,11 @@
 package com.hbm.items.tool;
 
 import com.hbm.blocks.ModBlocks;
+import com.hbm.lib.Library;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toclient.PlayerInformPayload;
-import com.hbm.platform.Services;
+import com.hbm.registration.OverridePoint;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
@@ -24,6 +27,8 @@ import net.minecraft.world.level.Level;
 import com.hbm.backport.compat.ItemCompat;
 
 public class ItemOilDetector extends ItemCompat {
+    public static final OverridePoint<Reading> READING =
+            OverridePoint.of(Library.id("oil_detector_reading"), ItemOilDetector::scan);
 
     public ItemOilDetector(Properties properties) {
         super(properties);
@@ -36,8 +41,7 @@ public class ItemOilDetector extends ItemCompat {
         return false;
     }
 
-    @Override
-    public InteractionResult backport$use(Level level, Player player, InteractionHand hand) {
+    private static Component scan(Level level, Player player) {
         int x = (int) player.getX();
         int y = (int) player.getY();
         int z = (int) player.getZ();
@@ -57,24 +61,28 @@ public class ItemOilDetector extends ItemCompat {
                         || containsOil(level, x + 5, z - 5, y + 15, 5)
                         || containsOil(level, x - 5, z - 5, y + 15, 5);
 
+        return direct
+                ? Component.translatable("item.hbm.oil_detector.bullseye")
+                        .withStyle(ChatFormatting.DARK_GREEN)
+                : oil
+                        ? Component.translatable("item.hbm.oil_detector.detected")
+                                .withStyle(ChatFormatting.GOLD)
+                        : Component.translatable("item.hbm.oil_detector.noOil")
+                                .withStyle(ChatFormatting.RED);
+    }
+
+    @Override
+    public InteractionResult backport$use(Level level, Player player, InteractionHand hand) {
         if (player instanceof ServerPlayer serverPlayer) {
-            Component result =
-                    direct
-                            ? Component.translatable("item.hbm.oil_detector.bullseye")
-                                    .withStyle(ChatFormatting.DARK_GREEN)
-                            : oil
-                                    ? Component.translatable("item.hbm.oil_detector.detected")
-                                            .withStyle(ChatFormatting.GOLD)
-                                    : Component.translatable("item.hbm.oil_detector.noOil")
-                                            .withStyle(ChatFormatting.RED);
-            Services.NETWORK.sendTo(
+            Component result = READING.get().read(level, player);
+            PacketWire.sendTo(
                     new PlayerInformPayload(
                             result,
                             PlayerInformPayload.ID_DETONATOR,
                             PlayerInformPayload.DEFAULT_MILLIS),
                     serverPlayer);
-            level.playSound(
-                    null,
+            EntitySounds.play(
+                    player,
                     player.getX(),
                     player.getY(),
                     player.getZ(),
@@ -84,6 +92,11 @@ public class ItemOilDetector extends ItemCompat {
                     1.0F);
         }
         return InteractionResult.SUCCESS;
+    }
+
+    @FunctionalInterface
+    public interface Reading {
+        Component read(Level level, Player player);
     }
 
     @Override

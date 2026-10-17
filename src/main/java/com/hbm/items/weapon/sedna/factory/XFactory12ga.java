@@ -25,15 +25,16 @@ import com.hbm.items.weapon.sedna.mags.MagazineFullReload;
 import com.hbm.items.weapon.sedna.mags.MagazineSingleReload;
 import com.hbm.items.weapon.sedna.mods.XWeaponModManager;
 import com.hbm.main.ResourceManager;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toclient.PlasmaBlastPayload;
 import com.hbm.particle.SpentCasing.CasingType;
 import com.hbm.particle.SpentCasing;
-import com.hbm.platform.Services;
-import com.hbm.registration.IRegistrar;
+import com.hbm.registration.NeoForgeRegistrar;
 import com.hbm.render.anim.AnimationEnums.GunAnimation;
 import com.hbm.render.anim.BusAnimation;
 import com.hbm.render.anim.BusAnimationKeyframe.IType;
 import com.hbm.render.anim.BusAnimationSequence;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import com.hbm.util.BobMathUtil;
 import com.hbm.util.DamageClass;
@@ -115,7 +116,6 @@ public class XFactory12ga {
 
                     BlockPos pos = blockHit.getBlockPos();
                     BlockState state = bullet.level().getBlockState(pos);
-
                     if (state.instrument() == NoteBlockInstrument.HAT
                             || state.is(Blocks.GLOWSTONE)) {
                         bullet.level().destroyBlock(pos, false);
@@ -127,7 +127,6 @@ public class XFactory12ga {
                     }
                     if (state.getBlock() instanceof BlockDecoCRT
                             && !state.is(ModBlocks.DECO_CRT_BROKEN.get())) {
-
                         bullet.level()
                                 .setBlock(
                                         pos,
@@ -250,16 +249,15 @@ public class XFactory12ga {
                             }
                         }
                         if (rec.getFireSound(stack) != null)
-                            entity.level()
-                                    .playSound(
-                                            null,
-                                            entity.getX(),
-                                            entity.getY(),
-                                            entity.getZ(),
-                                            rec.getFireSound(stack).get(),
-                                            SoundSource.PLAYERS,
-                                            rec.getFireVolume(stack),
-                                            rec.getFirePitch(stack) * (timeFired > 1 ? 0.9F : 1F));
+                            EntitySounds.play(
+                                    entity,
+                                    entity.getX(),
+                                    entity.getY(),
+                                    entity.getZ(),
+                                    rec.getFireSound(stack).get(),
+                                    SoundSource.PLAYERS,
+                                    rec.getFireVolume(stack),
+                                    rec.getFirePitch(stack) * (timeFired > 1 ? 0.9F : 1F));
                         ItemGunBaseNT.setState(stack, index, GunState.COOLDOWN);
                         ItemGunBaseNT.setTimer(stack, index, 20);
                     } else {
@@ -1236,13 +1234,13 @@ public class XFactory12ga {
         }
 
         if (world instanceof ServerLevel server) {
-            Services.NETWORK.sendToAllAround(
+            PacketWire.sendToAllAround(
                     new PlasmaBlastPayload(x, y, z, 0.5F, 0.5F, 1.0F, pitch, yaw, 0.75F),
                     new TargetPoint(server, x, y, z, 100));
         }
     }
 
-    public static void init(IRegistrar r) {
+    public static void init() {
 
         float buckshotSpread = 0.035F;
         float magnumSpread = 0.015F;
@@ -1432,7 +1430,7 @@ public class XFactory12ga {
         g12_shredder_phosphorus = makeShredderConfig(g12_phosphorus, g12_sub_phosphorus);
 
         ModItems.GUN_MARESLEG =
-                r.registerItem(
+                NeoForgeRegistrar.registerItem(
                         "gun_maresleg",
                         props ->
                                 new ItemGunBaseNT(
@@ -1478,7 +1476,7 @@ public class XFactory12ga {
                         Item.Properties::new);
 
         ModItems.GUN_MARESLEG_AKIMBO =
-                r.registerItem(
+                NeoForgeRegistrar.registerItem(
                         "gun_maresleg_akimbo",
                         props ->
                                 new ItemGunBaseNT(
@@ -1574,7 +1572,7 @@ public class XFactory12ga {
                         Item.Properties::new);
 
         ModItems.GUN_MARESLEG_BROKEN =
-                r.registerItem(
+                NeoForgeRegistrar.registerItem(
                         "gun_maresleg_broken",
                         props ->
                                 new ItemGunBaseNT(
@@ -1636,7 +1634,7 @@ public class XFactory12ga {
                         Item.Properties::new);
 
         ModItems.GUN_LIBERATOR =
-                r.registerItem(
+                NeoForgeRegistrar.registerItem(
                         "gun_liberator",
                         props ->
                                 new ItemGunBaseNT(
@@ -1682,7 +1680,7 @@ public class XFactory12ga {
                         Item.Properties::new);
 
         ModItems.GUN_SPAS12 =
-                r.registerItem(
+                NeoForgeRegistrar.registerItem(
                         "gun_spas12",
                         props ->
                                 new ItemGunBaseNT(
@@ -1731,7 +1729,7 @@ public class XFactory12ga {
                         Item.Properties::new);
 
         ModItems.GUN_AUTOSHOTGUN =
-                r.registerItem(
+                NeoForgeRegistrar.registerItem(
                         "gun_autoshotgun",
                         props ->
                                 new ItemGunBaseNT(
@@ -1777,7 +1775,7 @@ public class XFactory12ga {
                         Item.Properties::new);
 
         ModItems.GUN_AUTOSHOTGUN_SHREDDER =
-                r.registerItem(
+                NeoForgeRegistrar.registerItem(
                         "gun_autoshotgun_shredder",
                         props ->
                                 new ItemGunBaseNT(
@@ -1826,7 +1824,7 @@ public class XFactory12ga {
                         Item.Properties::new);
 
         ModItems.GUN_AUTOSHOTGUN_SEXY =
-                r.registerItem(
+                NeoForgeRegistrar.registerItem(
                         "gun_autoshotgun_sexy",
                         props ->
                                 new ItemGunBaseNT(

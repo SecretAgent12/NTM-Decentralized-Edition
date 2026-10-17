@@ -3,14 +3,12 @@
 
 package com.hbm.blocks.network;
 
-import com.hbm.api.fluidmk2.FluidNetwork;
-import com.hbm.api.fluidmk2.FluidPipeGraph;
-import com.hbm.api.fluidmk2.FluidPipeGraphProvider;
-import com.hbm.api.fluidmk2.FluidPipeTintData;
-import com.hbm.api.fluidmk2.PipeData;
+import com.hbm.api.fluidmk2.*;
+import com.hbm.blocks.CapabilityDependentShape;
 import com.hbm.blocks.IAnalyzable;
+import com.hbm.capability.PhysicalConnector;
 import com.hbm.extprop.HbmPlayerProps;
-import com.hbm.handler.HbmKeybinds.EnumKeybind;
+import com.hbm.handler.EnumToolKey;
 import com.hbm.interfaces.ICopiable;
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.inventory.fluid.NTMFluidProperties;
@@ -41,21 +39,16 @@ import com.hbm.backport.compat.BlockCompat;
 import com.hbm.backport.Nbt;
 
 public abstract class FluidDuctBlockBase extends BlockCompat
-        implements ILookOverlay, IAnalyzable, ICopiable {
+        implements PhysicalConnector,
+                CapabilityDependentShape,
+                ILookOverlay,
+                IAnalyzable,
+                ICopiable {
 
     public static final int OPEN_ALL = 0x3F;
 
     protected FluidDuctBlockBase(Properties props) {
-        super(props);
-    }
-
-    public boolean canConnectFluid(Level level, BlockPos pos, Direction side, Fluid fluid) {
-        if (level.isClientSide()) {
-            return FluidPipeTintData.fluidAtIfKnown(level.dimension(), pos) == fluid;
-        }
-        PipeData data = FluidPipeGraph.get((ServerLevel) level, fluid).dataAt(pos.asLong());
-
-        return data != null && data.fluid() == fluid;
+        super(CapabilityDependentShape.deferShapeToFullChunk(props));
     }
 
     protected static void addTypeLine(Level level, BlockPos pos, ILookOverlay.LookInfo info) {
@@ -65,6 +58,16 @@ public abstract class FluidDuctBlockBase extends BlockCompat
                         ? Component.translatable("hbmfluid.none").getString()
                         : NTMFluidProperties.getDisplayName(type).getString();
         info.line(name, ARGB.transparent(FluidPipeTintData.colorFor(type)));
+    }
+
+    @Override
+    public boolean hasFluidContact(
+            Level level, BlockPos pos, BlockState state, Direction side, Fluid fluid) {
+        if (level.isClientSide()) {
+            return FluidPipeTintData.fluidAtIfKnown(level, pos) == fluid;
+        }
+        PipeData data = FluidPipeGraph.get((ServerLevel) level, fluid).dataAt(pos.asLong());
+        return data != null && data.fluid() == fluid;
     }
 
     @Override
@@ -119,13 +122,12 @@ public abstract class FluidDuctBlockBase extends BlockCompat
             CompoundTag nbt, int index, Level level, Player player, BlockPos pos) {
         int count = Nbt.getIntOr(nbt, "fluidCount", 0);
         if (count <= 0 || !(level instanceof ServerLevel server)) return;
-
         Fluid fluid =
                 index < count
                         ? BuiltInRegistries.FLUID.get(
                                 ResourceLocation.parse(Nbt.getStringOr(nbt, "fluidID" + index, "")))
                         : Fluids.EMPTY;
-        if (HbmPlayerProps.getData(player).getKeyPressed(EnumKeybind.TOOL_CTRL)) {
+        if (HbmPlayerProps.getData(player).isToolKeyPressed(EnumToolKey.CTRL)) {
             FluidPipeBlock.retypeRun(server, pos.asLong(), fluid);
         } else {
             FluidPipeBlock.retypeNode(server, pos.asLong(), fluid);
@@ -151,11 +153,8 @@ public abstract class FluidDuctBlockBase extends BlockCompat
             @Nullable LivingEntity by,
             ItemStack stack) {
         super.setPlacedBy(level, pos, state, by, stack);
-
         if (level.isClientSide() && retypable()) {
-            FluidPipeTintData.set(
-                    level.dimension(), pos.asLong(), FluidPipeBlock.stampedFluid(stack));
-
+            FluidPipeTintData.set(level, pos.asLong(), FluidPipeBlock.stampedFluid(stack));
             state.updateNeighbourShapes(level, pos, Block.UPDATE_CLIENTS | Block.UPDATE_IMMEDIATE);
         }
     }
@@ -170,6 +169,7 @@ public abstract class FluidDuctBlockBase extends BlockCompat
         super.onPlace(state, level, pos, oldState, movedByPiston);
         if (level instanceof ServerLevel sl && !oldState.is(this)) {
             createNodes(sl, pos, state);
+            ChunkDuctNodes.typeFromRecord(sl, pos, this);
         }
     }
 
@@ -184,7 +184,7 @@ public abstract class FluidDuctBlockBase extends BlockCompat
         long key = pos.asLong();
         if (FluidPipeGraph.graphAt(level, key) != null) return;
         LevelNodeGraph<PipeData> graph = FluidPipeGraph.get(level);
-        PipeData data = FluidPipeGraphProvider.INSTANCE.createData(state);
+        PipeData data = PipeData.UNSET;
         graph.addNode(key, data, nodeMask(state));
         FluidPipeTintData.sync(level, pos, data.fluid());
     }
@@ -199,7 +199,6 @@ public abstract class FluidDuctBlockBase extends BlockCompat
                         ? node.remoteLinks.toLongArray()
                         : new long[0];
         graph.removeNode(key);
-
         for (LevelNodeGraph<PipeData> other : FluidPipeGraph.all(level)) {
             if (other != graph) for (long peer : links) other.forgetLink(peer, key);
         }

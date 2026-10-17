@@ -31,9 +31,10 @@ import org.jetbrains.annotations.Nullable;
  *
  * Two things ntm-next added to the vanilla class through MixinItemStackTemplate
  * live here directly: the cached unstable-fuse deadline (IUnstableDeadline) and
- * GunTimers.forSave applied in fromStack.
+ * GunTimers.forSave applied in fromStack. NEXT 1.0.1+ adds the item-interior caches
+ * (IItemInteriorCache) to the same mixin; they live here too.
  */
-public final class ItemStackTemplate implements ItemInstance, IUnstableDeadline {
+public final class ItemStackTemplate implements ItemInstance, IUnstableDeadline, IItemInteriorCache {
 
     public static final MapCodec<ItemStackTemplate> MAP_CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
             ItemStack.ITEM_NON_AIR_CODEC.fieldOf("id").forGetter(ItemStackTemplate::item),
@@ -55,6 +56,8 @@ public final class ItemStackTemplate implements ItemInstance, IUnstableDeadline 
     private final DataComponentPatch components;
     private @Nullable DataComponentMap map;
     private volatile long hbm$unstableDeadline = Long.MIN_VALUE;
+    private volatile Object[] hbm$interiorReferences;
+    private volatile boolean hbm$opaqueReferences;
 
     public ItemStackTemplate(Holder<Item> item, int count, DataComponentPatch components) {
         this.item = item;
@@ -155,6 +158,26 @@ public final class ItemStackTemplate implements ItemInstance, IUnstableDeadline 
     @Override
     public void hbm$setUnstableDeadline(long value) {
         hbm$unstableDeadline = value;
+    }
+
+    @Override
+    public Object[] hbm$interiorReferences() {
+        return hbm$interiorReferences;
+    }
+
+    @Override
+    public void hbm$setInteriorReferences(Object[] references) {
+        hbm$interiorReferences = references;
+    }
+
+    @Override
+    public boolean hbm$opaqueReferences() {
+        return hbm$opaqueReferences;
+    }
+
+    @Override
+    public void hbm$setOpaqueReferences(boolean opaque) {
+        hbm$opaqueReferences = opaque;
     }
 
     @Override

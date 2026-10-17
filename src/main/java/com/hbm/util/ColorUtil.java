@@ -12,9 +12,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 public final class ColorUtil {
-
     private static final int[] DYE_RGB = new int[DyeColor.values().length];
-
     private static final TagKey<Item>[] DYE_TAGS = dyeTags();
 
     static {
@@ -52,7 +50,6 @@ public final class ColorUtil {
     }
 
     public static int getColorFromDye(ItemStack stack) {
-
         // backport: 26.x reads the DYE data component; in 1.21.1 the colour is on the item
         DyeColor dyed =
                 stack.getItem() instanceof net.minecraft.world.item.DyeItem dye

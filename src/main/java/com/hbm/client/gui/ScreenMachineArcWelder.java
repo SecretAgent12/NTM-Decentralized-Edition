@@ -3,10 +3,10 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.machine.BlockEntityMachineArcWelder;
 import com.hbm.inventory.container.MenuMachineArcWelder;
 import com.hbm.items.machine.upgrade.UpgradeType;
 import com.hbm.lib.Library;
-import com.hbm.tileentity.machine.BlockEntityMachineArcWelder;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.client.rendertype.RenderPipelines;
 import net.minecraft.network.chat.Component;

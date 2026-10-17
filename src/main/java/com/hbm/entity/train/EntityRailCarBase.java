@@ -46,7 +46,6 @@ public abstract class EntityRailCarBase extends EntityCompat {
     public LogicalTrainUnit ltu;
     public int ltuIndex = 0;
     public boolean isOnRail = true;
-
     public double lastRenderX;
     public double lastRenderY;
     public double lastRenderZ;
@@ -63,7 +62,6 @@ public abstract class EntityRailCarBase extends EntityCompat {
 
     private final RailContext railInfo = new RailContext();
     private final MoveContext railMove = new MoveContext(RailCheckType.CORE, 0);
-
     private double rotX, rotY, rotZ;
 
     private final InterpolationHandler interp = new InterpolationHandler(this);
@@ -417,7 +415,6 @@ public abstract class EntityRailCarBase extends EntityCompat {
 
         @Override
         protected void readAdditionalSaveData(ValueInput input) {
-
             this.discard();
         }
 
@@ -585,9 +582,7 @@ public abstract class EntityRailCarBase extends EntityCompat {
                 EntityTypeTest.forClass(EntityRailCarBase.class);
 
         static final List<EntityRailCarBase> TICKED = new ArrayList<>();
-
         private static final List<EntityRailCarBase> COLLIDE_HITS = new ArrayList<>();
-
         private static long updateStamp;
 
         private long stamp;
@@ -930,7 +925,6 @@ public abstract class EntityRailCarBase extends EntityCompat {
             EntityRailCarBase prev = trains[0];
             double totalSpeed = 0;
             double maxSpeed = Double.POSITIVE_INFINITY;
-
             boolean reverseTheReverse = prev.getCouplingFrom(null) == TrainCoupling.BACK;
 
             if (trains.length == 1) {
@@ -938,7 +932,6 @@ public abstract class EntityRailCarBase extends EntityCompat {
             }
 
             for (EntityRailCarBase train : this.trains) {
-
                 boolean reverse = false;
 
                 EntityRailCarBase conFront = train.getCoupledTo(TrainCoupling.FRONT);

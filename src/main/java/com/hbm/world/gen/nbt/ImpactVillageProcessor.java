@@ -36,8 +36,8 @@ public final class ImpactVillageProcessor extends StructureProcessorCompat {
             StructureTemplate.StructureBlockInfo processedBlockInfo,
             StructurePlaceSettings settings) {
         BlockState state = processedBlockInfo.state();
+        if (state.isAir()) return processedBlockInfo;
         BlockState ruin;
-
         if (state.is(BlockTags.MINEABLE_WITH_AXE)
                 || state.instrument() == NoteBlockInstrument.HAT
                 || state.is(Blocks.LADDER)

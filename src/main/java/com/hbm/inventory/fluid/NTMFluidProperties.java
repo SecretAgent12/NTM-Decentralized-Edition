@@ -3,6 +3,7 @@
 
 package com.hbm.inventory.fluid;
 
+import com.hbm.blocks.fluid.ClassicFluid;
 import com.hbm.inventory.fluid.trait.FluidTrait;
 import com.hbm.util.RegistryUtil;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
@@ -23,19 +24,16 @@ import net.minecraft.world.level.material.Fluids;
 import org.jspecify.annotations.Nullable;
 
 public final class NTMFluidProperties {
-
     private static volatile Reference2ObjectOpenHashMap<Fluid, NTMFluidProperty> OWN =
             new Reference2ObjectOpenHashMap<>();
     private static volatile Reference2ObjectOpenHashMap<Fluid, Component> NAMES =
             new Reference2ObjectOpenHashMap<>();
-
     private static volatile Reference2ReferenceOpenHashMap<Fluid, Fluid> KINDS =
             new Reference2ReferenceOpenHashMap<>();
     private static volatile Reference2ObjectOpenHashMap<Fluid, Fluid[]> EQUIVALENTS =
             new Reference2ObjectOpenHashMap<>();
     private static final Fluid[] NO_FLUIDS = new Fluid[0];
     private static final Component EMPTY_NAME = Component.translatable("hbmfluid.none");
-
     private static volatile boolean resyncPending;
     private static volatile boolean syncOwned;
 
@@ -119,17 +117,25 @@ public final class NTMFluidProperties {
         Reference2ReferenceOpenHashMap<Fluid, Fluid> kinds = new Reference2ReferenceOpenHashMap<>();
         Reference2ObjectOpenHashMap<Fluid, Fluid[]> equivalents =
                 new Reference2ObjectOpenHashMap<>();
+        Reference2ObjectOpenHashMap<Fluid, List<Fluid>> placed =
+                new Reference2ObjectOpenHashMap<>();
+        for (Fluid fluid : BuiltInRegistries.FLUID) {
+            if (!(fluid instanceof ClassicFluid classic) || classic.spec().kind() == null) continue;
+            Fluid kind = classic.spec().kind().get();
+            kinds.put(fluid, kind);
+            if (!fluid.isSource(fluid.defaultFluidState())) continue;
+            placed.computeIfAbsent(kind, k -> new ArrayList<>(1)).add(fluid);
+        }
         for (Fluid ntm : NTMFluids.displayOrder()) {
             NTMFluidProperty property = own.get(ntm);
             if (property == null) continue;
-            List<Fluid> sources = new ArrayList<>(0);
+            List<Fluid> sources = new ArrayList<>(placed.getOrDefault(ntm, List.of()));
             for (TagKey<Fluid> tag : property.shares()) {
                 for (Holder<Fluid> holder : BuiltInRegistries.FLUID.getTagOrEmpty(tag)) {
                     Fluid member = holder.value();
                     if (!isForeign(member)) continue;
                     Fluid prior = kinds.putIfAbsent(member, ntm);
                     if (prior != null && prior != ntm) continue;
-
                     if (member.isSource(member.defaultFluidState()) && !sources.contains(member))
                         sources.add(member);
                 }
@@ -177,13 +183,11 @@ public final class NTMFluidProperties {
     }
 
     public static Component getDisplayName(@Nullable Fluid fluid) {
-
         if (fluid == null || fluid == Fluids.EMPTY) return EMPTY_NAME;
         Component own = NAMES.get(fluid);
         if (own != null) return own;
         ResourceLocation id = BuiltInRegistries.FLUID.getKey(fluid);
         String key = nameKey(id);
-
         if (Language.getInstance().has(key)) return Component.translatable(key);
         return Component.literal(prettify(id.getPath()));
     }

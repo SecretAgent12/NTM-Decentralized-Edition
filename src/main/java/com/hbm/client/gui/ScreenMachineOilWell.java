@@ -3,9 +3,9 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.machine.oil.BlockEntityOilDrillBase;
 import com.hbm.inventory.container.MenuMachineOilWell;
 import com.hbm.lib.Library;
-import com.hbm.tileentity.machine.oil.BlockEntityOilDrillBase;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.client.rendertype.RenderPipelines;
 import net.minecraft.network.chat.Component;

@@ -64,7 +64,6 @@ public final class TracerRibbon {
 
         @Override
         public ShaderDefines getShaderDefines() {
-
             return false
                     ? zeroToOne
                     : negativeOneToOne;

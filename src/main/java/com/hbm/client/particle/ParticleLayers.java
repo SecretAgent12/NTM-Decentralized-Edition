@@ -3,8 +3,11 @@
 
 package com.hbm.client.particle;
 
+import com.hbm.backport.client.particle.QuadParticleRenderState;
 import com.hbm.client.render.ParticleRenderTypes;
+import com.hbm.client.render.RibbonPass;
 import com.hbm.client.render.WorldRenderPipeline;
+import com.hbm.lib.Library;
 import com.hbm.backport.client.rendertype.BlendFunction;
 import com.hbm.backport.client.rendertype.ColorTargetState;
 import com.hbm.backport.client.rendertype.DepthStencilState;
@@ -15,6 +18,9 @@ import com.hbm.backport.client.rendertype.RenderPipelines;
 import net.minecraft.client.renderer.RenderType;
 import com.hbm.backport.client.rendertype.RenderSetup;
 import net.minecraft.client.renderer.texture.TextureAtlas;
+import java.util.Optional;
+import net.minecraft.client.Minecraft;
+import org.jspecify.annotations.Nullable;
 
 public final class ParticleLayers {
     private static final float EFFECT_RENDERER_ALPHA_CUTOUT = 1.5F / 255.0F;
@@ -38,6 +44,9 @@ public final class ParticleLayers {
             WorldRenderPipeline.of(
                     RenderPipeline.builder(RenderPipelines.PARTICLE_SNIPPET)
                             .withLocation("pipeline/ntm_particle_translucent_separate")
+                            .withShaderDefine("EMISSIVE")
+                            .withFragmentShader(ParticleRenderTypes.PARTICLE_CUTOUT)
+                            .withShaderDefine("ALPHA_CUTOUT", EFFECT_RENDERER_ALPHA_CUTOUT)
                             .withColorTargetState(
                                     new ColorTargetState(
                                             new BlendFunction(
@@ -49,10 +58,36 @@ public final class ParticleLayers {
                                     new DepthStencilState(
                                             DepthStencilState.DEFAULT.depthTest(), false)));
 
+    public static final RenderPipeline TRANSLUCENT_COMPOSITE_PIPELINE =
+            WorldRenderPipeline.of(
+                    RenderPipeline.builder(RenderPipelines.PARTICLE_SNIPPET)
+                            .withLocation(Library.id("pipeline/particle_composite"))
+                            .withFragmentShader(ParticleRenderTypes.PARTICLE_CUTOUT)
+                            .withShaderDefine("ALPHA_CUTOUT", EFFECT_RENDERER_ALPHA_CUTOUT)
+                            .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+                            .withDepthStencilState(
+                                    new DepthStencilState(
+                                            DepthStencilState.DEFAULT.depthTest(), false)));
+
+    public static final RenderPipeline TRANSLUCENT_DEPTH_PIPELINE =
+            WorldRenderPipeline.of(
+                    RenderPipeline.builder(RenderPipelines.PARTICLE_SNIPPET)
+                            .withLocation(Library.id("pipeline/particle_depth"))
+                            .withFragmentShader(ParticleRenderTypes.PARTICLE_CUTOUT)
+                            .withShaderDefine("ALPHA_CUTOUT", EFFECT_RENDERER_ALPHA_CUTOUT)
+                            // backport: 1.21.1 has no per-target color format (26.x passes
+                            // GpuFormat.RGBA8_UNORM here); the shim's state is blend + write mask
+                            .withColorTargetState(
+                                    new ColorTargetState(
+                                            Optional.of(BlendFunction.TRANSLUCENT),
+                                            ColorTargetState.WRITE_NONE))
+                            .withDepthStencilState(DepthStencilState.DEFAULT));
+
     public static final RenderPipeline ADDITIVE_PIPELINE =
             WorldRenderPipeline.of(
                     RenderPipeline.builder(RenderPipelines.PARTICLE_SNIPPET)
                             .withLocation("pipeline/ntm_particle_additive")
+                            .withShaderDefine("ADDITIVE_EMISSION")
                             .withShaderDefine("ALPHA_CUTOUT", 0F)
                             .withFragmentShader(ParticleRenderTypes.PARTICLE_FADE)
                             .withColorTargetState(new ColorTargetState(BlendFunction.LIGHTNING))
@@ -64,6 +99,7 @@ public final class ParticleLayers {
             WorldRenderPipeline.of(
                     RenderPipeline.builder(ParticleRenderTypes.PARTICLE_NO_FOG_SNIPPET)
                             .withLocation("pipeline/ntm_particle_additive_no_fog")
+                            .withShaderDefine("ADDITIVE_EMISSION")
                             .withShaderDefine("ALPHA_CUTOUT", 0F)
                             .withColorTargetState(new ColorTargetState(BlendFunction.LIGHTNING))
                             .withDepthStencilState(
@@ -81,16 +117,59 @@ public final class ParticleLayers {
     public static final SingleQuadParticle.Layer ADDITIVE_NO_FOG =
             layer("ntm_particle_additive_no_fog", ADDITIVE_NO_FOG_PIPELINE);
 
+    private static final RenderType TRANSLUCENT_COMPOSITE =
+            renderType("ntm_particle_composite", TRANSLUCENT_COMPOSITE_PIPELINE);
+    private static final RenderType TRANSLUCENT_DEPTH =
+            renderType("ntm_particle_depth", TRANSLUCENT_DEPTH_PIPELINE);
+
+    static {
+        // backport: 26.x MixinQuadParticleFeatureRenderer. QuadParticleFeatureRenderer is 26.x only;
+        // DE draws particle layers in the shim's QuadParticleRenderState.submit, which takes the
+        // same two changes through its DrawHook:
+        // - drawLayers: the translucent layers use the composite pipeline while the particles have
+        //   their own target (Fabulous: LevelRenderer.getParticlesTarget, 26.x particlesTarget);
+        // - executeGroup: after the layers, the quads of the translucent layers write their depth
+        //   (with the particle target, or with a shader pack outside its shadow pass).
+        QuadParticleRenderState.drawHook =
+                new QuadParticleRenderState.DrawHook() {
+                    @Override
+                    public RenderType renderType(SingleQuadParticle.Layer layer) {
+                        if ((layer == TRANSLUCENT_SEPARATE || layer == TRANSLUCENT)
+                                && particlesTarget()) return TRANSLUCENT_COMPOSITE;
+                        return layer.renderType();
+                    }
+
+                    @Override
+                    public @Nullable RenderType afterLayers() {
+                        return particlesTarget()
+                                        || (RibbonPass.hasShaderPack() && !RibbonPass.isShadow())
+                                ? TRANSLUCENT_DEPTH
+                                : null;
+                    }
+
+                    @Override
+                    public boolean drawnAfterLayers(SingleQuadParticle.Layer layer) {
+                        return layer == TRANSLUCENT_SEPARATE || layer == TRANSLUCENT;
+                    }
+                };
+    }
+
+    private static boolean particlesTarget() {
+        return Minecraft.getInstance().levelRenderer.getParticlesTarget() != null;
+    }
+
     private static SingleQuadParticle.Layer layer(String name, RenderPipeline pipeline) {
         return new SingleQuadParticle.Layer(
-                true,
-                TextureAtlas.LOCATION_PARTICLES,
-                com.hbm.backport.client.rendertype.RenderTypeFactory.create(
-                        name,
-                        RenderSetup.builder(pipeline)
-                                .withTexture("Sampler0", TextureAtlas.LOCATION_PARTICLES)
-                                .useLightmap()
-                                .createRenderSetup()));
+                true, TextureAtlas.LOCATION_PARTICLES, renderType(name, pipeline));
+    }
+
+    private static RenderType renderType(String name, RenderPipeline pipeline) {
+        return com.hbm.backport.client.rendertype.RenderTypeFactory.create(
+                name,
+                RenderSetup.builder(pipeline)
+                        .withTexture("Sampler0", TextureAtlas.LOCATION_PARTICLES)
+                        .useLightmap()
+                        .createRenderSetup());
     }
 
     private ParticleLayers() {}

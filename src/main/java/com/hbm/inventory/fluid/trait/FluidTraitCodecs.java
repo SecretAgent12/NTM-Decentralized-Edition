@@ -47,7 +47,6 @@ public final class FluidTraitCodecs {
                         }
                     },
                     rgb -> "#" + HexFormat.of().toHexDigits(rgb, 6));
-
     public static final Codec<Integer> COLOR =
             Codec.either(HEX_RGB, Codec.INT)
                     .xmap(
@@ -332,7 +331,6 @@ public final class FluidTraitCodecs {
         Codec<Map<PollutionType, Float>> pollution =
                 Codec.unboundedMap(
                         Codec.STRING.xmap(PollutionType::valueOf, Enum::name), Codec.FLOAT);
-
         put(
                 "polluting",
                 RecordCodecBuilder.<FT_Polluting>mapCodec(
@@ -415,6 +413,20 @@ public final class FluidTraitCodecs {
     private static <T extends FluidTrait> void container(String name, MapCodec<T> codec) {
         put(name, codec);
         CONTAINERS.put(name, codec);
+    }
+
+    public static <T extends FluidTrait> void register(String name, MapCodec<T> codec) {
+        if (BY_NAME.containsKey(name)) {
+            throw new IllegalStateException("trait codec " + name + " is already registered");
+        }
+        put(name, codec);
+    }
+
+    public static <T extends FluidTrait> void registerFlag(String name, T instance) {
+        if (BY_NAME.containsKey(name)) {
+            throw new IllegalStateException("trait codec " + name + " is already registered");
+        }
+        marker(name, instance);
     }
 
     private static <T extends FluidTrait> void put(String name, MapCodec<T> codec) {

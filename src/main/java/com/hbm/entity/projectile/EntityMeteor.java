@@ -9,9 +9,9 @@ import com.hbm.blocks.ModBlocks;
 import com.hbm.client.ClientEffects;
 import com.hbm.client.ClientPlayerAccess;
 import com.hbm.data.WorldData;
+import com.hbm.entity.FarVisible;
 import com.hbm.entity.ModEntities;
 import com.hbm.explosion.ExplosionLarge;
-import com.hbm.platform.Services;
 import com.hbm.sound.AudioSystem;
 import com.hbm.sound.AudioWrapper;
 import com.hbm.sound.ModSounds;
@@ -36,7 +36,7 @@ import com.hbm.backport.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import com.hbm.backport.compat.EntityCompat;
 
-public class EntityMeteor extends EntityCompat implements IRadarDetectableNT {
+public class EntityMeteor extends EntityCompat implements IRadarDetectableNT, FarVisible {
 
     public boolean safe = false;
     private AudioWrapper audioFly;
@@ -125,7 +125,6 @@ public class EntityMeteor extends EntityCompat implements IRadarDetectableNT {
             tickClientAudio();
 
             if (WorldData.ENABLE_METEOR_TAILS.get()) {
-
                 Vec3 step = getDeltaMovement();
                 for (int i = 0; i < 10; i++) {
                     ClientEffects.spawnRocketFlame(
@@ -150,7 +149,6 @@ public class EntityMeteor extends EntityCompat implements IRadarDetectableNT {
         }
 
         if (audioFly == null) {
-
             audioFly =
                     AudioSystem.getLoopedSound(
                             ModSounds.METEORITE_FALLING_LOOP.get(),
@@ -171,7 +169,6 @@ public class EntityMeteor extends EntityCompat implements IRadarDetectableNT {
             audioFly.updatePosition(
                     (float) getX(), (float) (getY() + getBbHeight() / 2F), (float) getZ());
         } else {
-
             Player player = ClientPlayerAccess.player();
             if (player != null
                     && player.distanceToSqr(getX(), getY(), getZ()) < 210D * 210D)
@@ -199,7 +196,6 @@ public class EntityMeteor extends EntityCompat implements IRadarDetectableNT {
         if (safe) return;
 
         BlockState state = level.getBlockState(pos);
-
         if (state.isAir()) return;
 
         float hardness = state.getDestroySpeed(level, pos);
@@ -212,20 +208,16 @@ public class EntityMeteor extends EntityCompat implements IRadarDetectableNT {
             if (hardness < 0F || hardness > 5F) return;
 
             if (random.nextInt(6) == 1) {
-
                 if (state.is(BlockTags.DIRT)) {
                     level.setBlockAndUpdate(pos, ModBlocks.DIRT_DEAD.get().defaultBlockState());
-
                 } else if (state.is(BlockTags.SAND)) {
                     level.setBlockAndUpdate(
                             pos,
                             random.nextInt(2) == 1
                                     ? Blocks.SANDSTONE.defaultBlockState()
                                     : Blocks.GLASS.defaultBlockState());
-
                 } else if (state.is(BlockTags.BASE_STONE_OVERWORLD)) {
                     level.setBlockAndUpdate(pos, Blocks.COBBLESTONE.defaultBlockState());
-
                 } else if (com.hbm.backport.entity.Entities26.isGrassBlock(state)) {
                     level.setBlockAndUpdate(pos, ModBlocks.WASTE_EARTH.get().defaultBlockState());
                 }

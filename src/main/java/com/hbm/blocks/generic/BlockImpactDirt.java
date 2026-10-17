@@ -18,7 +18,6 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.BlockCompat;
 
 public class BlockImpactDirt extends BlockCompat {
-
     private static final int GRASS_LIGHT = 9;
 
     public BlockImpactDirt(Properties props) {

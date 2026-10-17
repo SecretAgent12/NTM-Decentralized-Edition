@@ -6,15 +6,12 @@ package com.hbm.neoforge.client;
 import com.hbm.NuclearTech;
 import com.hbm.api.fluidmk2.FluidPipeTintData;
 import com.hbm.blocks.fluid.ClassicFluid;
-import com.hbm.client.AbilityKeybindHandler;
-import com.hbm.client.CalculatorKeybindHandler;
 import com.hbm.client.ClientRegistry;
-import com.hbm.client.CraneKeybindHandler;
-import com.hbm.client.GunKeybindHandler;
+import com.hbm.client.FarView;
 import com.hbm.client.ItemTooltipEvents;
+import com.hbm.client.Keybinds;
 import com.hbm.client.NukeHud;
-import com.hbm.client.PlayerKeybindHandler;
-import com.hbm.client.ToolKeybindHandler;
+import com.hbm.client.RadiationResistanceTooltip;
 import com.hbm.client.WikiRenderCommand;
 import com.hbm.client.ctm.CtmEngine;
 import com.hbm.client.ctm.HbmCtmLoader;
@@ -22,24 +19,13 @@ import com.hbm.client.gui.FluidTooltipFrame;
 import com.hbm.client.gui.PwrSliceRenderState;
 import com.hbm.client.gui.PwrSliceRenderer;
 import com.hbm.client.model.SectionGeometry;
-import com.hbm.client.particle.ParticleLayers;
 import com.hbm.client.qmaw.QMAWClient;
-import com.hbm.client.render.ArmorRenderTypes;
-import com.hbm.client.render.BeamRenderTypes;
-import com.hbm.client.render.BobbleRenderTypes;
-import com.hbm.client.render.CargoElevatorOutline;
-import com.hbm.client.render.CloudRenderTypes;
-import com.hbm.client.render.ConveyorPreviewRenderer;
-import com.hbm.client.render.DetonatorLaserRenderTypes;
-import com.hbm.client.render.HologramRenderTypes;
-import com.hbm.client.render.ParticleRenderTypes;
-import com.hbm.client.render.TomRenderTypes;
-import com.hbm.client.render.TorexRenderTypes;
-import com.hbm.client.render.VortexRenderTypes;
-import com.hbm.client.render.WeaponRenderTypes;
 import com.hbm.command.ConfigCommand;
 import com.hbm.data.DataGroups;
 import com.hbm.handler.BobmazonOffers;
+import com.hbm.handler.EquipmentProtections;
+import com.hbm.handler.HazmatRegistry;
+import com.hbm.handler.SuitProtections;
 import com.hbm.hazard.HazardSystem;
 import com.hbm.inventory.fluid.NTMFluidProperties;
 import com.hbm.inventory.fluid.NTMFluids;
@@ -50,11 +36,13 @@ import com.hbm.inventory.recipes.ModRecipes;
 import com.hbm.inventory.recipes.loader.GenericRecipes;
 import com.hbm.inventory.recipes.loader.RecipeSource;
 import com.hbm.items.ModItems;
+import com.hbm.items.food.ConsumableTreatments;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.hbm.lib.Library;
 import com.hbm.packet.toserver.CrateOpenHeldPayload;
 import com.hbm.particle.HbmParticleGroups;
 import com.hbm.particle.HbmParticles;
+import com.hbm.registration.Reg;
 import com.hbm.render.loader.ObjMeshCache;
 import com.hbm.wiaj.CanneryClient;
 import com.hbm.wiaj.JarRenderState;
@@ -80,6 +68,7 @@ import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackSource;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
@@ -105,7 +94,6 @@ import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 
 @Mod(value = NuclearTech.MOD_ID, dist = Dist.CLIENT)
 public final class NuclearTechNeoForgeClient {
-
     private static final Set<ResourceLocation> NUKE_SHAKEN_LAYERS =
             Set.of(
                     VanillaGuiLayers.HOTBAR,
@@ -140,14 +128,32 @@ public final class NuclearTechNeoForgeClient {
         CtmEngine ctm = CtmEngine.selected();
         if (ctm != CtmEngine.NONE) {
             modBus.addListener(
-                    (AddPackFindersEvent event) ->
-                            event.addPackFinders(
-                                    Library.id(ctm.directory()),
-                                    PackType.CLIENT_RESOURCES,
-                                    ctm.title(),
-                                    PackSource.BUILT_IN,
-                                    true,
-                                    Pack.Position.TOP));
+                    (AddPackFindersEvent event) -> {
+                        event.addPackFinders(
+                                Library.id(ctm.directory()),
+                                PackType.CLIENT_RESOURCES,
+                                ctm.title(),
+                                PackSource.BUILT_IN,
+                                true,
+                                Pack.Position.TOP);
+                        for (String namespace : Reg.addonNamespaces()) {
+                            // backport: FML 4 IModFile.findResource (26.x FML getContents().containsFile)
+                            if (java.nio.file.Files.exists(
+                                    ModList.get()
+                                            .getModFileById(namespace)
+                                            .getFile()
+                                            .findResource(ctm.directory(), "pack.mcmeta"))) {
+                                event.addPackFinders(
+                                        ResourceLocation.fromNamespaceAndPath(
+                                                namespace, ctm.directory()),
+                                        PackType.CLIENT_RESOURCES,
+                                        ctm.title(),
+                                        PackSource.BUILT_IN,
+                                        true,
+                                        Pack.Position.TOP);
+                            }
+                        }
+                    });
         }
         if (ctm == CtmEngine.CONTINUITY) {
             HbmCtmLoader.register();
@@ -170,17 +176,21 @@ public final class NuclearTechNeoForgeClient {
                     HazardSystem.clearCaches();
                     NTMFluidProperties.bindEquivalents();
                 });
-
         NeoForge.EVENT_BUS.addListener(
                 (ClientPlayerNetworkEvent.LoggingIn event) -> {
+                    RadiationResistanceTooltip.joined(event.getPlayer().registryAccess());
                     if (!Minecraft.getInstance().hasSingleplayerServer()) {
+                        HazmatRegistry.applyDataPack(event.getPlayer().registryAccess());
+                        EquipmentProtections.applyDataPack(event.getPlayer().registryAccess());
+                        SuitProtections.applyDataPack(event.getPlayer().registryAccess());
+                        ConsumableTreatments.applyDataPack(event.getPlayer().registryAccess());
                         HazardSystem.applyDataPack(event.getPlayer().registryAccess());
                         CustomMachineDefinitions.applyDataPack(event.getPlayer().registryAccess());
                         DataGroups.applyAll(event.getPlayer().registryAccess());
                     }
                     CrateOpenHeldPayload.report();
+                    FarView.joined();
                 });
-
         modBus.addListener((FMLClientSetupEvent event) -> NuclearTech.deriveClientConfigFacades());
         // backport: Ponder guides (com.hbm.integration.ponder), only when Ponder is present
         modBus.addListener(
@@ -199,16 +209,24 @@ public final class NuclearTechNeoForgeClient {
                                     CrateOpenHeldPayload.report();
                             });
                 });
-
+        NeoForge.EVENT_BUS.addListener(
+                (ClientPlayerNetworkEvent.LoggingOut event) ->
+                        RadiationResistanceTooltip.disconnected());
+        NeoForge.EVENT_BUS.addListener(
+                (ClientPlayerNetworkEvent.LoggingOut event) -> {
+                    if (!Minecraft.getInstance().hasSingleplayerServer()) {
+                        HazmatRegistry.clear();
+                        EquipmentProtections.clear();
+                        SuitProtections.clear();
+                        ConsumableTreatments.clear();
+                    }
+                });
         NeoForge.EVENT_BUS.addListener(
                 (ClientPlayerNetworkEvent.LoggingOut event) -> RecipeSource.clearClient());
         NeoForge.EVENT_BUS.addListener(
                 (ClientPlayerNetworkEvent.LoggingOut event) -> QMAWClient.disconnected());
         NeoForge.EVENT_BUS.addListener(
                 (ClientPlayerNetworkEvent.LoggingOut event) -> CanneryClient.disconnected());
-        NeoForge.EVENT_BUS.addListener(
-                (ClientPlayerNetworkEvent.LoggingOut event) ->
-                        NTMFluidProperties.onClientDisconnect());
         NeoForge.EVENT_BUS.addListener(
                 (ClientPlayerNetworkEvent.LoggingOut event) -> OreGeneration.disconnect());
         NeoForge.EVENT_BUS.addListener(
@@ -235,7 +253,8 @@ public final class NuclearTechNeoForgeClient {
         NeoForge.EVENT_BUS.addListener(
                 (ChunkEvent.Unload event) -> {
                     if (event.getLevel().isClientSide()) {
-                        FluidPipeTintData.evictChunk(event.getChunk().getPos().toLong());
+                        FluidPipeTintData.evictChunk(
+                                (Level) event.getLevel(), event.getChunk().getPos().toLong());
                     }
                 });
         NeoForge.EVENT_BUS.addListener(
@@ -245,31 +264,14 @@ public final class NuclearTechNeoForgeClient {
                                 event.getEntity(),
                                 event.getFlags(),
                                 event.getToolTip()));
-        if (ModList.get().isLoaded("sophisticatedstorage")) {
-            NeoForge.EVENT_BUS.addListener(
-                    (ItemTooltipEvent event) ->
-                            SophisticatedStorageHazardTooltipSync.request(event.getItemStack()));
-            NeoForge.EVENT_BUS.addListener(
-                    (net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingOut event) ->
-                            SophisticatedStorageHazardTooltipSync.reset());
-        }
-        if (ModList.get().isLoaded("sophisticatedbackpacks")) {
-            NeoForge.EVENT_BUS.addListener(
-                    (ItemTooltipEvent event) ->
-                            SophisticatedBackpackHazardTooltipSync.request(event.getItemStack()));
-            NeoForge.EVENT_BUS.addListener(
-                    (net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingOut event) ->
-                            SophisticatedBackpackHazardTooltipSync.reset());
-        }
+        NeoForge.EVENT_BUS.addListener(
+                (ItemTooltipEvent event) ->
+                        ContainedHazardTooltipSync.request(event.getItemStack()));
+        NeoForge.EVENT_BUS.addListener(
+                (ClientPlayerNetworkEvent.LoggingOut event) -> ContainedHazardTooltipSync.reset());
         modBus.addListener(
                 (RegisterKeyMappingsEvent event) -> {
-                    for (KeyMapping key : CraneKeybindHandler.KEYS) event.register(key);
-                    for (KeyMapping key : ToolKeybindHandler.KEYS) event.register(key);
-                    for (KeyMapping key : GunKeybindHandler.KEYS) event.register(key);
-                    for (KeyMapping key : PlayerKeybindHandler.KEYS) event.register(key);
-                    for (KeyMapping key : AbilityKeybindHandler.KEYS) event.register(key);
-                    event.register(CalculatorKeybindHandler.OPEN);
-                    event.register(QMAWClient.OPEN_MANUAL);
+                    for (KeyMapping key : Keybinds.ALL) event.register(key);
                 });
         modBus.addListener(
                 (RegisterMenuScreensEvent event) ->
@@ -306,7 +308,6 @@ public final class NuclearTechNeoForgeClient {
                     event.registerItem(
                             GunClientExtensions.INSTANCE, ModItems.LASER_DETONATOR.get());
                 });
-
         // backport: 26.x FluidModel.Unbaked(still, flowing, no overlay, no tint) per fluid ->
         // 1.21.1 IClientFluidTypeExtensions per FluidType (both textures are block-atlas sprites)
         modBus.addListener(
@@ -322,10 +323,8 @@ public final class NuclearTechNeoForgeClient {
                                         java.util.function.Supplier<ResourceLocation> sprite =
                                                 com.google.common.base.Suppliers.memoize(
                                                         () ->
-                                                                Library.id(
-                                                                        "block/fluid/"
-                                                                                + NTMFluids.spritePath(
-                                                                                        fluid)));
+                                                                NTMFluids.sprite(
+                                                                        fluid, "block/fluid/", ""));
                                         types.putIfAbsent(fluid.getFluidType(), fluidTextures(sprite));
                                     });
                     BuiltInRegistries.FLUID.stream()
@@ -349,7 +348,10 @@ public final class NuclearTechNeoForgeClient {
                                         net.neoforged.neoforge.registries.NeoForgeRegistries
                                                 .FLUID_TYPES
                                                 .getKey(type);
-                                if (key == null || !"hbm".equals(key.getNamespace())) return;
+                                // backport-fix: BF-094 NTM addons' fluid types too
+                                if (key == null
+                                        || !com.hbm.registration.Reg.isNtmNamespace(
+                                                key.getNamespace())) return;
                                 if (!event.isFluidTypeRegistered(type))
                                     event.registerFluidType(extensions, type);
                             });
@@ -389,7 +391,6 @@ public final class NuclearTechNeoForgeClient {
                 });
         modBus.addListener(
                 (RegisterParticleGroupsEvent event) -> HbmParticleGroups.forEach(event::register));
-
         modBus.addListener(
                 (FMLClientSetupEvent event) ->
                         event.enqueueWork(ClientRegistry::registerFlywheelVisualizers));
@@ -454,7 +455,6 @@ public final class NuclearTechNeoForgeClient {
                         ClientRegistry.renderGunCrosshair(GuiGraphicsExtractor.of(event.getGuiGraphics()));
                     }
                 });
-
         NeoForge.EVENT_BUS.addListener(
                 EventPriority.LOWEST,
                 (RenderGuiLayerEvent.Pre event) -> {

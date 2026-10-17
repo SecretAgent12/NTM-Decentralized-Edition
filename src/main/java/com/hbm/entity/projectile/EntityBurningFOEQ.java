@@ -14,7 +14,6 @@ import net.minecraft.world.phys.Vec3;
 import com.hbm.backport.compat.ThrowableProjectileCompat;
 
 public class EntityBurningFOEQ extends ThrowableProjectileCompat {
-
     public float renderPitch;
     public float renderPitchO;
 

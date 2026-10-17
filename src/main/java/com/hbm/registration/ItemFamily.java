@@ -9,7 +9,6 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
@@ -23,6 +22,7 @@ public final class ItemFamily<E extends Enum<E>, I extends Item>
     private final Reg.Handle<I>[] byOrdinal;
     private List<E> creative;
     private volatile @Nullable Map<Item, E> byItem;
+    private ItemFamily<?, ?> root = this;
 
     private static final List<ItemFamily<?, ?>> ALL = new ArrayList<>();
     private static volatile @Nullable Map<Item, ItemFamily<?, ?>> byMember;
@@ -47,6 +47,18 @@ public final class ItemFamily<E extends Enum<E>, I extends Item>
             byMember = table;
         }
         return table.get(item.asItem());
+    }
+
+    public ItemFamily<E, I> joins(ItemFamily<?, ?> host) {
+        if (root != this) throw new IllegalStateException("a family joins at most one host");
+        root = host.root;
+        return this;
+    }
+
+    public static boolean sameFamily(ItemLike a, ItemLike b) {
+        ItemFamily<?, ?> first = of(a);
+        ItemFamily<?, ?> second = of(b);
+        return first != null && second != null && first.root == second.root;
     }
 
     public Reg.Handle<I> handle(E type) {

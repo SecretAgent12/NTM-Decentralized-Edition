@@ -3,26 +3,25 @@
 
 package com.hbm.inventory.recipes.crafting;
 
-import com.hbm.blocks.ModBlocks;
 import com.hbm.blocks.network.FluidPipeBlockItem;
 import com.hbm.inventory.fluid.FluidStackNTM;
+import com.hbm.inventory.recipes.ingredient.RecipeInputState;
 import com.hbm.items.ModDataComponents;
 import com.hbm.items.machine.FluidIdentifierData;
 import com.hbm.items.machine.FluidIdentifierItem;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingInput;
-import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
-import com.hbm.backport.recipe.CustomRecipeCompat;
 import com.hbm.backport.RecipeSerializers;
 
-public class DuctRetypeRecipe extends CustomRecipeCompat {
+public class DuctRetypeRecipe extends HbmCustomRecipe {
 
     public static final DuctRetypeRecipe INSTANCE = new DuctRetypeRecipe();
     public static final MapCodec<DuctRetypeRecipe> MAP_CODEC = MapCodec.unit(INSTANCE);
@@ -32,9 +31,9 @@ public class DuctRetypeRecipe extends CustomRecipeCompat {
             RecipeSerializers.of(MAP_CODEC, STREAM_CODEC);
 
     @Override
-    public boolean matches(CraftingInput input, Level level) {
+    protected boolean matchesInput(CraftingInput input, Level level) {
         boolean hasId = false;
-        int ducts = 0;
+        Item duct = null;
         for (int slot = 0; slot < input.size(); slot++) {
             ItemStack stack = input.getItem(slot);
             if (stack.isEmpty()) continue;
@@ -47,17 +46,26 @@ public class DuctRetypeRecipe extends CustomRecipeCompat {
                 if (data.primary() == Fluids.EMPTY) return false;
                 hasId = true;
             } else if (stack.getItem() instanceof FluidPipeBlockItem) {
-                ducts++;
+                if (duct != null && stack.getItem() != duct) return false;
+                duct = stack.getItem();
             } else {
                 return false;
             }
         }
-        return hasId && ducts > 0;
+        return hasId && duct != null;
+    }
+
+    @Override
+    public boolean acceptsInputState(CraftingInput input, int slot, ItemStack output) {
+        ItemStack stack = input.getItem(slot);
+        return stack.getItem() instanceof FluidPipeBlockItem
+                && RecipeInputState.only(stack, ModDataComponents.FLUID_CONTENT.get());
     }
 
     @Override
     public ItemStack assemble(CraftingInput input) {
         Fluid fluid = Fluids.EMPTY;
+        Item duct = null;
         int ducts = 0;
         for (int slot = 0; slot < input.size(); slot++) {
             ItemStack stack = input.getItem(slot);
@@ -69,10 +77,11 @@ public class DuctRetypeRecipe extends CustomRecipeCompat {
                                         FluidIdentifierData.EMPTY)
                                 .primary();
             } else if (stack.getItem() instanceof FluidPipeBlockItem) {
+                duct = stack.getItem();
                 ducts++;
             }
         }
-        ItemStack result = new ItemStack(ModBlocks.FLUID_PIPE.get(), ducts);
+        ItemStack result = new ItemStack(duct, ducts);
         if (fluid != Fluids.EMPTY) {
             result.set(ModDataComponents.FLUID_CONTENT.get(), new FluidStackNTM(fluid, 0, 0));
         }

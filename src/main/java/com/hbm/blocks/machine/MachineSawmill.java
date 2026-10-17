@@ -3,6 +3,7 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.BlockEntitySawmill;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.blocks.RefreshesNeighborState;
@@ -12,11 +13,8 @@ import com.hbm.capability.MachineCaps;
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.items.ModItems;
 import com.hbm.sound.ModSounds;
-import com.hbm.tileentity.machine.BlockEntitySawmill;
 import java.util.Locale;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import com.hbm.backport.InteractionResult;
@@ -26,45 +24,19 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jspecify.annotations.Nullable;
 
 // backport: @RefreshesNeighborState(be = BlockEntitySawmill.class, calling = "refreshHeatBelow") woven below
 public class MachineSawmill extends BlockMultiblockCore
         implements ITickingBlock, ILookOverlay, ICapabilityBlock {
-
-    private static final int[] DIMENSIONS = {1, 0, 1, 1, 1, 1};
-
     public MachineSawmill(Properties props) {
         super(props);
-
-        this.bounding.add(new AABB(-1.5D, 0D, -1.5D, 1.5D, 1D, 1.5D));
-        this.bounding.add(new AABB(-1.25D, 1D, -0.5D, -0.625D, 1.875D, 0.5D));
-        this.bounding.add(new AABB(-0.625D, 1D, -1D, 1.375D, 2D, 1D));
-    }
-
-    @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 1;
     }
 
     @Override
     protected RenderShape getRenderShape(BlockState state) {
         return RenderShape.MODEL;
-    }
-
-    @Override
-    protected void visitPassiveCells(BlockPos core, Direction facing, PassiveCellVisitor visitor) {
-        visitor.passiveCell(core.offset(1, 0, 0), MASK_ALL, PASSIVE_ITEMS);
-        visitor.passiveCell(core.offset(-1, 0, 0), MASK_ALL, PASSIVE_ITEMS);
-        visitor.passiveCell(core.offset(0, 0, 1), MASK_ALL, PASSIVE_ITEMS);
-        visitor.passiveCell(core.offset(0, 0, -1), MASK_ALL, PASSIVE_ITEMS);
     }
 
     @Override

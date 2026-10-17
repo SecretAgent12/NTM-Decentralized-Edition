@@ -54,7 +54,6 @@ public class EntityFireworks extends EntityCompat {
 
     @Override
     public void tick() {
-
         move(MoverType.SELF, new Vec3(0.0D, 3.0D, 0.0D));
 
         if (level().isClientSide()) {

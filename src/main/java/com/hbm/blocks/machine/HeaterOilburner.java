@@ -3,6 +3,7 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.BlockEntityHeaterOilburner;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.capability.ICapabilityBlock;
@@ -11,7 +12,6 @@ import com.hbm.interfaces.ILookOverlay;
 import com.hbm.interfaces.IToolable;
 import com.hbm.inventory.fluid.NTMFluidProperties;
 import com.hbm.inventory.fluid.trait.FT_Flammable;
-import com.hbm.tileentity.machine.BlockEntityHeaterOilburner;
 import java.util.Locale;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -26,50 +26,8 @@ import org.jspecify.annotations.Nullable;
 
 public class HeaterOilburner extends BlockMultiblockCore
         implements ITickingBlock, IToolable, ILookOverlay, ICapabilityBlock {
-
-    private static final int[] DIMENSIONS = {1, 0, 1, 1, 1, 1};
-
     public HeaterOilburner(Properties props) {
         super(props);
-    }
-
-    @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 1;
-    }
-
-    @Override
-    protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
-        super.visitCells(core, facing, visitor);
-
-        visitor.cell(core.offset(1, 0, 0), MASK_EAST);
-        visitor.cell(core.offset(-1, 0, 0), MASK_WEST);
-        visitor.cell(core.offset(0, 0, 1), MASK_SOUTH);
-        visitor.cell(core.offset(0, 0, -1), MASK_NORTH);
-        visitor.cell(core.offset(0, 1, 0), MASK_NONE);
-    }
-
-    @Override
-    protected void visitPassiveCells(BlockPos core, Direction facing, PassiveCellVisitor visitor) {
-        visitor.passiveCell(core.offset(1, 0, 0), MASK_ALL, PASSIVE_FLUID_IN);
-        visitor.passiveCell(core.offset(-1, 0, 0), MASK_ALL, PASSIVE_FLUID_IN);
-        visitor.passiveCell(core.offset(0, 0, 1), MASK_ALL, PASSIVE_FLUID_IN);
-        visitor.passiveCell(core.offset(0, 0, -1), MASK_ALL, PASSIVE_FLUID_IN);
-    }
-
-    @Override
-    public boolean heatSourceAt(int lx, int ly, int lz) {
-        return lx == 0 && ly == 1 && lz == 0;
-    }
-
-    @Override
-    protected boolean proxyCellAt(int lx, int ly, int lz) {
-        return heatSourceAt(lx, ly, lz);
     }
 
     @Override

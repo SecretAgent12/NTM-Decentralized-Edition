@@ -6,7 +6,6 @@ package com.hbm.inventory.recipes;
 import com.hbm.inventory.recipes.loader.GenericRecipe;
 import com.hbm.inventory.recipes.loader.GenericRecipes;
 import com.hbm.util.BobMathUtil;
-import com.hbm.util.I18nUtil;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import java.util.ArrayList;
@@ -15,13 +14,13 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import com.hbm.backport.RecipeSerializers;
 
 public class PlasmaForgeRecipe extends GenericRecipe {
-
     private static final MapCodec<Long> IGNITION_MAP_CODEC =
             Codec.LONG.optionalFieldOf("ignition_temp", 0L);
     private static final StreamCodec<RegistryFriendlyByteBuf, Long> IGNITION_STREAM_CODEC =
@@ -41,7 +40,6 @@ public class PlasmaForgeRecipe extends GenericRecipe {
                     EXTRACT_IGNITION);
     public static final RecipeSerializer<PlasmaForgeRecipe> SERIALIZER =
             RecipeSerializers.of(MAP_CODEC, STREAM_CODEC);
-
     public long ignitionTemp;
 
     public PlasmaForgeRecipe(String name) {
@@ -54,19 +52,21 @@ public class PlasmaForgeRecipe extends GenericRecipe {
     }
 
     @Override
-    public List<String> print() {
-        List<String> list = new ArrayList<>();
+    public List<Component> print() {
+        List<Component> list = new ArrayList<>();
 
         header(list);
         autoSwitch(list);
         duration(list);
         power(list);
         list.add(
-                ChatFormatting.LIGHT_PURPLE
-                        + I18nUtil.resolveKey("gui.recipe.plasmaIn")
-                        + ": "
-                        + BobMathUtil.getShortNumber(ignitionTemp)
-                        + "TU/t");
+                Component.translatable("gui.recipe.plasmaIn")
+                        .append(": ")
+                        .append(
+                                Component.translatable(
+                                        "unit.heat_per_tick",
+                                        BobMathUtil.getShortNumber(ignitionTemp)))
+                        .withStyle(ChatFormatting.LIGHT_PURPLE));
         input(list);
         output(list);
 

@@ -4,11 +4,11 @@
 package com.hbm.blocks.bomb;
 
 import com.hbm.api.block.IFuckingExplode;
+import com.hbm.blockentity.bomb.BlockEntityCharge;
 import com.hbm.entity.item.EntityTntNtm;
 import com.hbm.interfaces.IBomb;
 import com.hbm.interfaces.IToolable;
 import com.hbm.sound.ModSounds;
-import com.hbm.tileentity.bomb.BlockEntityCharge;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
@@ -135,7 +135,6 @@ public abstract class BlockChargeBase extends BlockCompat
             @Nullable Orientation orientation,
             boolean movedByPiston) {
         if (!level.isClientSide() && !canSurvive(state, level, pos)) {
-
             level.removeBlock(pos, false);
         }
     }
@@ -162,7 +161,6 @@ public abstract class BlockChargeBase extends BlockCompat
             BlockPos pos,
             Explosion explosion,
             BiConsumer<ItemStack, BlockPos> onHit) {
-
         if (!state.isAir()
                 && explosion.getBlockInteraction() != Explosion.BlockInteraction.TRIGGER_BLOCK) {
             removeBlockSafely(level, pos);
@@ -172,7 +170,6 @@ public abstract class BlockChargeBase extends BlockCompat
 
     @Override
     public void wasExploded(ServerLevel level, BlockPos pos, Explosion explosion) {
-
         ChainDetonation.spawn(
                 level, pos, explosion.getIndirectSourceEntity(), defaultBlockState(), 0);
     }
@@ -212,7 +209,6 @@ public abstract class BlockChargeBase extends BlockCompat
             Player player,
             InteractionHand hand,
             BlockHitResult hit) {
-
         return InteractionResult.TRY_WITH_EMPTY_HAND;
     }
 

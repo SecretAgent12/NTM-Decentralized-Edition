@@ -3,16 +3,16 @@
 
 package com.hbm.entity.cart;
 
+import com.hbm.blockentity.machine.storage.CrateType;
 import com.hbm.blocks.ModBlocks;
 import com.hbm.entity.ModEntities;
 import com.hbm.inventory.container.MenuCrate;
 import com.hbm.items.tool.ItemModMinecart.EnumCartBase;
 import com.hbm.items.tool.ItemModMinecart.EnumMinecart;
 import com.hbm.items.tool.ItemModMinecart;
-import com.hbm.platform.Services;
-import com.hbm.tileentity.machine.storage.CrateType;
+import com.hbm.platform.SophisticatedCoreNesting;
+import com.hbm.tags.HbmItemTags;
 import java.util.List;
-import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
@@ -22,9 +22,11 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.GameRules;
+import net.neoforged.fml.ModList;
+import com.hbm.backport.transfer.Capabilities;
+import com.hbm.lib.neotransfer.access.ItemAccess;
 
 public class EntityMinecartCrate extends EntityMinecartContainerBase {
 
@@ -37,7 +39,6 @@ public class EntityMinecartCrate extends EntityMinecartContainerBase {
     public EntityMinecartCrate(
             Level level, double x, double y, double z, EnumCartBase base, ItemStack stack) {
         super(ModEntities.CART_CRATE.get(), level, x, y, z, base);
-
         if (stack != null && !stack.isEmpty()) {
             stack.getOrDefault(DataComponents.CONTAINER, ItemContainerContents.EMPTY)
                     .copyInto(getItemStacks());
@@ -69,7 +70,15 @@ public class EntityMinecartCrate extends EntityMinecartContainerBase {
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
-        return Services.PLATFORM.canFitInsideContainerItems(stack);
+        return stack.canFitInsideContainerItems()
+                && !stack.is(HbmItemTags.NO_CONTAINER_NESTING)
+                && !stack.has(DataComponents.CONTAINER)
+                && !stack.has(DataComponents.BUNDLE_CONTENTS)
+                && (stack.isEmpty()
+                        || stack.getCapability(Capabilities.Item.ITEM, ItemAccess.forStack(stack))
+                                == null)
+                && (!ModList.get().isLoaded("sophisticatedcore")
+                        || !SophisticatedCoreNesting.hasStorage(stack));
     }
 
     @Override

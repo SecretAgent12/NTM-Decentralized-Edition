@@ -3,7 +3,8 @@
 
 package com.hbm.extprop;
 
-import com.hbm.platform.Services;
+import com.hbm.lib.Library;
+import com.hbm.platform.NeoForgeAttachments;
 import java.util.function.Supplier;
 import net.neoforged.neoforge.attachment.AttachmentType;
 
@@ -16,10 +17,16 @@ public final class ModEntityData {
 
     public static void register() {
         PLAYER_PROPS =
-                Services.ENTITY_DATA.register(
-                        "player_props", HbmPlayerProps::new, HbmPlayerProps.MAP_CODEC, true);
+                NeoForgeAttachments.register(
+                        Library.id("player_props"),
+                        HbmPlayerProps::new,
+                        HbmPlayerProps.MAP_CODEC,
+                        true);
         LIVING_PROPS =
-                Services.ENTITY_DATA.register(
-                        "living_props", HbmLivingProps::new, HbmLivingProps.MAP_CODEC, false);
+                NeoForgeAttachments.register(
+                        Library.id("living_props"),
+                        HbmLivingProps::new,
+                        HbmLivingProps.MAP_CODEC,
+                        false);
     }
 }

@@ -4,6 +4,7 @@
 package com.hbm.client.sound;
 
 import com.hbm.backport.SubLevelSpace;
+import com.hbm.blocks.multiblock.MultiblockSurface;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -26,6 +27,7 @@ public class AudioDynamic extends AbstractTickableSoundInstance {
     public int timeSinceKA;
     public boolean shouldExpire;
     public @Nullable Entity parentEntity;
+    long machineCore = MultiblockSurface.NO_CORE;
 
     // backport-fix: BF-061 — game time of the last tick the sound engine gave this sound, and of
     // start(); see isPlaying().
@@ -101,7 +103,6 @@ public class AudioDynamic extends AbstractTickableSoundInstance {
 
     public void start() {
         SoundManager manager = Minecraft.getInstance().getSoundManager();
-
         if (!manager.isActive(this)) {
             startedAt = gameTime();
             manager.play(this);
@@ -149,14 +150,18 @@ public class AudioDynamic extends AbstractTickableSoundInstance {
      * ticked within the last few ticks (or just started) counts as playing.
      */
     public boolean isPlaying() {
-        if (Minecraft.getInstance().getSoundManager().isActive(this)) return true;
         if (isStopped()) return false;
+        if (Minecraft.getInstance().getSoundManager().isActive(this)) return true;
         long now = gameTime();
         return now - lastTicked <= 3 || now - startedAt <= 3;
     }
 
     public float rawVolume() {
         return volume;
+    }
+
+    public long machineCore() {
+        return machineCore;
     }
 
     public float rawPitch() {

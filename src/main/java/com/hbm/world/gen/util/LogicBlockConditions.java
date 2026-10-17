@@ -3,20 +3,18 @@
 
 package com.hbm.world.gen.util;
 
+import com.hbm.blockentity.BlockEntityLogicBlock;
+import com.hbm.blockentity.BlockEntityPedestal;
+import com.hbm.blockentity.bomb.BlockEntityCharge;
 import com.hbm.blocks.ModBlocks;
-import com.hbm.blocks.bomb.BlockChargeBase;
 import com.hbm.entity.mob.EntityUndeadSoldier;
 import com.hbm.items.ModItems;
-import com.hbm.tileentity.BlockEntityLogicBlock;
-import com.hbm.tileentity.BlockEntityPedestal;
-import com.hbm.tileentity.bomb.BlockEntityCharge;
 import com.hbm.util.TickPhase;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Predicate;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
@@ -49,6 +47,7 @@ public final class LogicBlockConditions {
             if (tile.phase == 0 && tile.isPowered()) {
                 Player player =
                         level.getNearestPlayer(pos.getX(), pos.getY(), pos.getZ(), 25.0, false);
+                if (player == null) return false;
                 player.sendSystemMessage(
                         Component.translatable("chat.logicBlockConditions.findA")
                                 .append(
@@ -91,17 +90,15 @@ public final class LogicBlockConditions {
             return false;
 
         BlockPos pos = tile.getBlockPos();
-        boolean playerNearby =
-                !level.getEntitiesOfClass(Player.class, legacyPlayerBox(pos, 10)).isEmpty();
-        if (tile.phase == 0) return TickPhase.every(tile, 20) && playerNearby;
-        if (tile.phase < 3) {
-            return TickPhase.every(tile, 20)
-                    && tile.timer >= 60
-                    && level.getEntitiesOfClass(EntityUndeadSoldier.class, legacySoldierBox(pos))
-                            .isEmpty()
-                    && playerNearby;
+        if (tile.phase >= 3 || !TickPhase.every(tile, 20)) return false;
+        if (tile.phase > 0
+                && (tile.timer < 60
+                        || !level.getEntitiesOfClass(
+                                        EntityUndeadSoldier.class, legacySoldierBox(pos))
+                                .isEmpty())) {
+            return false;
         }
-        return false;
+        return !level.getEntitiesOfClass(Player.class, legacyPlayerBox(pos, 10)).isEmpty();
     }
 
     private static AABB legacySoldierBox(BlockPos pos) {
@@ -119,14 +116,8 @@ public final class LogicBlockConditions {
 
         BlockPos pos = tile.getBlockPos();
         if (tile.phase == 0) {
-            BlockPos chargePos = pos.above();
-            level.setBlockAndUpdate(
-                    chargePos,
-                    ModBlocks.CHARGE_C4
-                            .get()
-                            .defaultBlockState()
-                            .setValue(BlockChargeBase.FACING, Direction.UP));
-            if (level.getBlockEntity(chargePos) instanceof BlockEntityCharge charge) {
+            BlockEntityCharge charge = LogicBlockActions.craneCharge(level, pos.above(), 200);
+            if (charge.timer != 200) {
                 charge.timer = 200;
                 charge.changed();
             }

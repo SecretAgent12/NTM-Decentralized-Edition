@@ -3,7 +3,11 @@
 
 package com.hbm.particle;
 
+import com.hbm.client.particle.VisualParticle;
 import com.hbm.lib.Library;
+import dev.engine_room.flywheel.api.visual.EffectVisual;
+import dev.engine_room.flywheel.api.visualization.VisualizationContext;
+import dev.engine_room.flywheel.api.visualization.VisualizationManager;
 import java.util.Random;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
@@ -12,16 +16,16 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.levelgen.Heightmap;
+import org.jspecify.annotations.Nullable;
 import com.hbm.backport.client.particle.ParticleCompat;
 
-public class ParticleHaze extends ParticleCompat {
+public class ParticleHaze extends ParticleCompat implements VisualParticle {
 
     public static final ParticleRenderType HAZE_GROUP = new ParticleRenderType("hbm:haze", "HHZ");
 
     static final ResourceLocation TEXTURE = Library.id("textures/particle/haze.png");
-
     static final Quad[] QUADS = buildQuads();
-
+    private @Nullable VisualizationManager visualManager;
     private static final float PARTICLE_SCALE = 10F;
 
     public ParticleHaze(ClientLevel level, double x, double y, double z) {
@@ -59,7 +63,6 @@ public class ParticleHaze extends ParticleCompat {
 
         int px = Mth.floor(this.x) + this.random.nextInt(15) - 7;
         int pz = Mth.floor(this.z) + this.random.nextInt(15) - 7;
-
         int py = this.level.getHeight(Heightmap.Types.MOTION_BLOCKING, px, pz);
         this.level.addParticle(
                 ParticleTypes.LAVA,
@@ -89,6 +92,26 @@ public class ParticleHaze extends ParticleCompat {
 
     double interpZ(float pt) {
         return this.zo + (this.z - this.zo) * pt;
+    }
+
+    @Override
+    public ClientLevel level() {
+        return level;
+    }
+
+    @Override
+    public @Nullable VisualizationManager visualManager() {
+        return visualManager;
+    }
+
+    @Override
+    public void visualManager(@Nullable VisualizationManager manager) {
+        visualManager = manager;
+    }
+
+    @Override
+    public EffectVisual<?> visualize(VisualizationContext context, float partialTick) {
+        return new HazeVisual(context, this);
     }
 
     @Override

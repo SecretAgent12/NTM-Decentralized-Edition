@@ -3,10 +3,10 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.machine.BlockEntityMachineTurbine;
 import com.hbm.inventory.container.MenuMachineTurbine;
 import com.hbm.inventory.fluid.NTMFluids;
 import com.hbm.lib.Library;
-import com.hbm.tileentity.machine.BlockEntityMachineTurbine;
 import java.util.List;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.client.rendertype.RenderPipelines;

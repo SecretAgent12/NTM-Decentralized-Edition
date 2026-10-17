@@ -4,6 +4,7 @@
 package com.hbm.items.tool;
 
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
+import com.hbm.sound.EntitySounds;
 import java.util.function.Supplier;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -36,7 +37,6 @@ public final class ItemRepairKit extends ItemCompat {
 
             for (int index = 0; index < gun.getConfigCount(); index++) {
                 float maxDurability = gun.getConfig(gunStack, index).getDurability(gunStack);
-
                 if (Math.min(ItemGunBaseNT.getWear(gunStack, index), maxDurability) > 0) {
                     ItemGunBaseNT.setWear(
                             gunStack,
@@ -52,8 +52,8 @@ public final class ItemRepairKit extends ItemCompat {
 
         ItemStack stack = player.getItemInHand(hand);
         if (didSomething) {
-            level.playSound(
-                    null,
+            EntitySounds.play(
+                    player,
                     player.getX(),
                     player.getY(),
                     player.getZ(),

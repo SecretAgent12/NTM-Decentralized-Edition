@@ -16,7 +16,7 @@ import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureType;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
-public class DesertAtomStructure extends Structure {
+public class DesertAtomStructure extends Structure implements ColumnBiome.SelfTested {
 
     public static final MapCodec<DesertAtomStructure> CODEC = simpleCodec(DesertAtomStructure::new);
 
@@ -36,7 +36,6 @@ public class DesertAtomStructure extends Structure {
         ChunkPos chunkPos = context.chunkPos();
         int x = chunkPos.getBlockX(8);
         int z = chunkPos.getBlockZ(8);
-
         int y =
                 context.chunkGenerator()
                         .getBaseHeight(
@@ -45,14 +44,14 @@ public class DesertAtomStructure extends Structure {
                                 Heightmap.Types.WORLD_SURFACE_WG,
                                 context.heightAccessor(),
                                 context.randomState());
+        if (!ColumnBiome.valid(context, x, y, z)) return Optional.empty();
 
         NoiseColumn column =
                 context.chunkGenerator()
                         .getBaseColumn(
                                 x + 20, z + 16, context.heightAccessor(), context.randomState());
-        if (!column.getBlock(y).isAir()) return Optional.empty();
-        if (!LocationIsValidSpawn.isValidGround(
-                column.getBlock(y - 1), column.getBlock(y - 2), true)) {
+        if (!column.getBlock(y).isAir()
+                || !LocationIsValidSpawn.isDryGround(column.getBlock(y - 1))) {
             return Optional.empty();
         }
 

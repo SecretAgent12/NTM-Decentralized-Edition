@@ -17,7 +17,6 @@ import com.hbm.backport.storage.ValueInput;
 import com.hbm.backport.storage.ValueOutput;
 
 public class EntityGrenadeBouncyGeneric extends EntityGrenadeBouncyBase implements IGenericGrenade {
-
     private static final EntityDataAccessor<ItemStack> GRENADE =
             SynchedEntityData.defineId(
                     EntityGrenadeBouncyGeneric.class, EntityDataSerializers.ITEM_STACK);

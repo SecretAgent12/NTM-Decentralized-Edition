@@ -9,7 +9,6 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
@@ -112,8 +111,7 @@ public class MenuArmorTable extends NtmContainerMenu {
             ItemStack mod = upgrades.getItem(i);
             if (mod.isEmpty()) {
                 ArmorModHandler.removeMod(target, i);
-            } else if (ArmorModHandler.fitsSlot(mod, i)
-                    && ArmorModHandler.isApplicable(target, mod)) {
+            } else if (ArmorModHandler.fits(mod, i) && ArmorModHandler.isApplicable(target, mod)) {
                 ArmorModHandler.applyMod(target, mod, i);
             }
         }
@@ -138,16 +136,10 @@ public class MenuArmorTable extends NtmContainerMenu {
                     if (ArmorModHandler.isArmor(stack))
                         return moveItemStackTo(
                                 stack, ARMOR_STACK_SLOT, ARMOR_STACK_SLOT + 1, false);
-                    // backport: a mod may fit several slots (foreign mods); empty ones first
-                    if (ArmorModHandler.isMod(stack)) {
-                        for (int pass = 0; pass < 2; pass++) {
-                            for (int s = 0; s < ArmorModHandler.MOD_SLOTS; s++) {
-                                Slot slot = slots.get(s);
-                                if (pass == 0 && slot.hasItem()) continue;
-                                if (ArmorModHandler.fitsSlot(stack, s) && slot.mayPlace(stack))
-                                    return moveItemStackTo(stack, s, s + 1, false);
-                            }
-                        }
+                    for (int socket = 0; socket < ArmorModHandler.MOD_SLOTS; socket++) {
+                        Slot slot = slots.get(socket);
+                        if (!slot.hasItem() && slot.mayPlace(stack))
+                            return moveItemStackTo(stack, socket, socket + 1, false);
                     }
                     return false;
                 });
@@ -175,7 +167,7 @@ public class MenuArmorTable extends NtmContainerMenu {
         @Override
         public boolean mayPlace(ItemStack stack) {
             return !armor.getItem(0).isEmpty()
-                    && ArmorModHandler.fitsSlot(stack, getContainerSlot())
+                    && ArmorModHandler.fits(stack, getContainerSlot())
                     && ArmorModHandler.isApplicable(armor.getItem(0), stack);
         }
     }

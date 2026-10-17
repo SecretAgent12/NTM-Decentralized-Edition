@@ -4,9 +4,9 @@
 
 package com.hbm.items.weapon.sedna.impl;
 
-import com.hbm.config.GunVisualConfig;
 import com.hbm.items.weapon.sedna.GunConfig;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import java.util.List;
 import net.minecraft.server.level.ServerLevel;
@@ -51,7 +51,6 @@ public class ItemGunStinger extends ItemGunBaseNT {
 
         Vec3 delta = player.getViewVector(1F).scale(distance);
         Vec3 look = delta.add(x, y, z);
-
         Vec3 left = delta.yRot((float) Math.toRadians(-angleThreshold)).add(x, y, z).add(0, 10, 0);
         Vec3 right = delta.yRot((float) Math.toRadians(angleThreshold)).add(x, y, z).add(0, -10, 0);
         Vec3 pos = new Vec3(x, y, z);
@@ -137,8 +136,8 @@ public class ItemGunStinger extends ItemGunBaseNT {
                     setLockonProgress(stack, getLockonProgress(stack) + 1);
 
                     if (getLockonProgress(stack) >= 60 && !getIsLockedOn(stack)) {
-                        level.playSound(
-                                null,
+                        EntitySounds.play(
+                                player,
                                 player.getX(),
                                 player.getY(),
                                 player.getZ(),

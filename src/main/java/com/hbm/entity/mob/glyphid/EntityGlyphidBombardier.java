@@ -8,14 +8,13 @@ import com.hbm.entity.mob.glyphid.GlyphidStats.StatBundle;
 import com.hbm.entity.projectile.EntityAcidBomb;
 import com.hbm.lib.Library;
 import com.hbm.main.ResourceManager;
-import com.hbm.registration.IRegistrar;
+import com.hbm.registration.NeoForgeRegistrar;
 import com.hbm.registration.Reg;
 import com.hbm.util.MobUtil;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -30,7 +29,7 @@ public class EntityGlyphidBombardier extends EntityGlyphid {
 
     public static Reg.@Nullable EntityHandle<EntityGlyphidBombardier> TYPE;
 
-    public static void register(IRegistrar r) {
+    public static void register() {
         TYPE =
                 Reg.entity(
                         "entity_glyphid_bombardier",
@@ -43,7 +42,7 @@ public class EntityGlyphidBombardier extends EntityGlyphid {
                                         .build((ResourceKey.create(
                                                         Registries.ENTITY_TYPE,
                                                         Library.id("entity_glyphid_bombardier"))).location().toString()));
-        r.registerLivingAttributes(TYPE, EntityGlyphidBombardier::createAttributes);
+        NeoForgeRegistrar.registerLivingAttributes(TYPE, EntityGlyphidBombardier::createAttributes);
     }
 
     public static AttributeSupplier.Builder createAttributes() {

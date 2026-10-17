@@ -45,7 +45,10 @@ public final class CullShaderCheck {
                         BeamInstance.LINE,
                         ParticleInstance.TYPE,
                         ParticleInstance.GROW_IN,
-                        ParticleInstance.HADRON);
+                        ParticleInstance.HADRON,
+                        ParticleInstance.UPRIGHT,
+                        ParticleInstance.RBMK_JET,
+                        ParticleInstance.CASING_SMOKE);
         Map<ResourceLocation, InstanceType<?>> byCull = new HashMap<>();
         for (InstanceType<?> type : types) {
             InstanceType<?> other = byCull.putIfAbsent(type.cullShader(), type);

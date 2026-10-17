@@ -3,11 +3,22 @@
   "minVersion": "0.8.5",
   "package": "com.hbm.neoforge.mixin",
   "mixins": [
-    "EntityFluidInteractionMixin",
-    "LivingEntityAcceptedDamageMixin",
-    "LivingEntityEarlyDamageMixin"
+    "MixinEntityCallbacks",
+    "MixinItemStacksResourceHandler",
+    "MixinEntityFluidInteraction",
+    "MixinLivingEntity",
+    "storage.MixinInventoryHandler",
+    "storage.MixinStorageBlockEntity",
+    "storage.MixinBackpackBlockEntity",
+    "storage.MixinUpgradeHandler",
+    "storage.MixinBackpackStorage",
+    "storage.MixinItemContentsStorage"
+  ],
+  "client": [
+    "MixinEnhancedBlockModelLighter"
   ],
   "injectors": {
     "defaultRequire": 1
-  }
+  },
+  "plugin": "com.hbm.transform.inventory.StorageTrackingMixinPlugin"
 }

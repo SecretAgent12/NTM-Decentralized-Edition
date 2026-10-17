@@ -39,7 +39,6 @@ public class PressRecipe extends GenericRecipe {
                     PressRecipe::new, STAMP_STREAM_CODEC, APPLY_STAMP, EXTRACT_STAMP);
     public static final RecipeSerializer<PressRecipe> SERIALIZER =
             RecipeSerializers.of(MAP_CODEC, STREAM_CODEC);
-
     public StampType stampType;
 
     public PressRecipe(String name) {

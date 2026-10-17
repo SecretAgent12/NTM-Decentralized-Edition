@@ -4,6 +4,7 @@
 package com.hbm.neoforge;
 
 import com.hbm.NuclearTech;
+import com.hbm.capability.CapabilityInvalidation;
 import com.hbm.capability.NtmCapabilities;
 import com.hbm.command.ModCommands;
 import com.hbm.config.ForeignModChange;
@@ -16,11 +17,14 @@ import com.hbm.handler.ImpactWorldHandler;
 import com.hbm.handler.pollution.PollutionHandler;
 import com.hbm.hazard.HazardSystem;
 import com.hbm.integration.top.NTMTopPlugin;
+import com.hbm.inventory.WornAccessories;
 import com.hbm.inventory.fluid.FluidPropertyReloadListener;
 import com.hbm.inventory.fluid.NTMFluidProperties;
+import com.hbm.inventory.recipes.ingredient.HbmAnyIngredient;
 import com.hbm.inventory.recipes.ingredient.HbmFluidContentIngredient;
 import com.hbm.inventory.recipes.ingredient.HbmMatchersIngredient;
 import com.hbm.inventory.recipes.ingredient.HbmNarrowedIngredient;
+import com.hbm.inventory.recipes.ingredient.HbmRecipeIngredient;
 import com.hbm.items.armor.ItemModTwoKick;
 import com.hbm.items.tool.ItemBoltgun;
 import com.hbm.items.tool.ItemDeadManDetonator;
@@ -28,15 +32,16 @@ import com.hbm.lib.Library;
 import com.hbm.neoforge.hazard.CuriosHazards;
 import com.hbm.neoforge.hazard.HazardTransformerSophisticatedBackpacks;
 import com.hbm.neoforge.hazard.HazardTransformerSophisticatedStorage;
+import com.hbm.neoforge.inventory.CuriosAccessories;
 import com.hbm.packet.PacketDispatcher;
-import com.hbm.platform.NeoForgeCapabilityService;
-import com.hbm.platform.NeoForgeEntityDataService;
-import com.hbm.platform.NeoForgeNetworkService;
-import com.hbm.platform.Services;
+import com.hbm.platform.NeoForgeCaps;
+import com.hbm.platform.NeoForgeNetwork;
+import com.hbm.platform.NeoForgeServerEvents;
 import com.hbm.qmaw.QMAWLoader;
 import com.hbm.registration.NeoForgeRegistrar;
 import com.hbm.util.ContagionUtil;
 import com.hbm.util.EntityDamageUtil;
+import com.hbm.world.ore.OreGeneration;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -61,8 +66,10 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.conditions.ICondition;
 import net.neoforged.neoforge.common.util.FakePlayer;
+import net.neoforged.neoforge.data.loading.DatagenModLoader;
 import net.neoforged.neoforge.event.AddPackFindersEvent;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.TagsUpdatedEvent;
 import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
@@ -76,7 +83,10 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.network.event.RegisterConfigurationTasksEvent;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
@@ -85,14 +95,17 @@ public final class NuclearTechNeoForge {
     public NuclearTechNeoForge(IEventBus modBus, ModContainer container) {
         // backport: shim registries (data components, armor materials) the 26.x code relies on
         com.hbm.backport.BackportRegistries.register(modBus);
-        ((NeoForgeRegistrar) Services.REGISTRAR).subscribe(modBus);
-        ((NeoForgeEntityDataService) Services.ENTITY_DATA).subscribe(modBus);
+        NeoForgeServerEvents.install();
+        NeoForgeRegistrar.subscribe(modBus);
         NuclearTech.init();
+        NeoForge.EVENT_BUS.addListener(CapabilityInvalidation::onLevelTick);
         NeoForge.EVENT_BUS.addListener(ArmorModChestLootNeoForge::onLootTableLoad);
         modBus.addListener(
                 (AddPackFindersEvent event) -> {
                     for (ForeignModChange change : ForeignModChange.values()) {
-                        if (!ModList.get().isLoaded(change.modId) || !change.enabled()) continue;
+                        if (!change.neoForge
+                                || !ModList.get().isLoaded(change.modId)
+                                || !change.enabled()) continue;
                         // backport-fix: BF-048 the Tech Reborn pack only exists in NEXT's Fabric jar;
                         // with Tech Reborn on NeoForge (Sinytra Connector) a missing pack is null and
                         // world creation crashes in PackRepository. Only offer packs we ship.
@@ -124,7 +137,8 @@ public final class NuclearTechNeoForge {
                 });
         NeoForge.EVENT_BUS.addListener(
                 (PlayerInteractEvent.RightClickBlock event) -> {
-                    if (BobmazonSignHandler.onSignUsed(event.getLevel(), event.getPos()))
+                    if (BobmazonSignHandler.onSignUsed(
+                            event.getLevel(), event.getPos(), event.getEntity()))
                         event.setCanceled(true);
                 });
         NeoForge.EVENT_BUS.addListener(
@@ -180,7 +194,7 @@ public final class NuclearTechNeoForge {
                     if (event.getEntity() instanceof ServerPlayer player)
                         HbmPlayerProps.getData(player).grenadeDeployment = 0;
                 });
-        ((NeoForgeHbmConfig) Services.CONFIG).registerSpecs(container);
+        NeoForgeHbmConfig.registerSpecs(container);
 
         DeferredRegister<MapCodec<? extends ICondition>> conditionCodecs =
                 DeferredRegister.create(
@@ -191,14 +205,19 @@ public final class NuclearTechNeoForge {
         HbmMatchersIngredient.subscribe(modBus);
         HbmFluidContentIngredient.subscribe(modBus);
         HbmNarrowedIngredient.subscribe(modBus);
+        HbmRecipeIngredient.subscribe(modBus);
+        HbmAnyIngredient.subscribe(modBus);
 
         PacketDispatcher.register();
-        modBus.addListener(((NeoForgeNetworkService) Services.NETWORK)::flush);
-        modBus.addListener(((NeoForgeNetworkService) Services.NETWORK)::registerConfigurationTasks);
+        modBus.addListener((RegisterPayloadHandlersEvent event) -> NeoForgeNetwork.flush(event));
+        modBus.addListener(
+                (RegisterConfigurationTasksEvent event) ->
+                        NeoForgeNetwork.registerConfigurationTasks(event));
         modBus.addListener(
                 (RegisterCapabilitiesEvent event) -> {
-                    NtmCapabilities.declareAll();
-                    ((NeoForgeCapabilityService) Services.CAPS).flush(event);
+                    NtmCapabilities.declareAll(!DatagenModLoader.isRunningDataGen());
+                    NeoForgeCaps.flush(event);
+                    // backport: no AE2 integration in DE (AE2Capabilities is not registered)
                 });
         modBus.addListener(
                 (FMLCommonSetupEvent event) -> {
@@ -211,16 +230,19 @@ public final class NuclearTechNeoForge {
                         com.hbm.integration.create.CreateGogglesCompat.register();
                     if (ModList.get().isLoaded("sophisticatedstorage")) {
                         HazardSystem.addTransformer(new HazardTransformerSophisticatedStorage());
+                        com.hbm.neoforge.inventory.SophisticatedItemInteriors.registerStorage();
                     }
                     if (ModList.get().isLoaded("sophisticatedbackpacks")) {
                         HazardSystem.addTransformer(new HazardTransformerSophisticatedBackpacks());
+                        com.hbm.neoforge.inventory.SophisticatedItemInteriors.registerBackpacks();
                     }
                     if (ModList.get().isLoaded("curios")) {
                         HazardSystem.addExternalEquipmentApplicator(CuriosHazards::apply);
+                        WornAccessories.register(CuriosAccessories::collect);
                     }
                     if (ModList.get().isLoaded("travelersbackpack")) {
-                        HazardSystem.addTransformer(
-                                new com.hbm.neoforge.hazard.HazardTransformerTravelersBackpack());
+                        // 1.0.3: the stored items are read through ItemContents (its Traveler's
+                        // Backpack adapter) by HazardTransformerItemContents
                         HazardSystem.addExternalEquipmentApplicator(
                                 com.hbm.neoforge.hazard.TravelersEquipmentHazards::apply);
                     }
@@ -230,7 +252,7 @@ public final class NuclearTechNeoForge {
         modBus.addListener(
                 (ModConfigEvent.Reloading event) -> {
                     if (event.getConfig().getType() == ModConfig.Type.CLIENT) return;
-                    ((NeoForgeHbmConfig) Services.CONFIG).raiseExternalEdit();
+                    NeoForgeHbmConfig.externalEdit = true;
                 });
         if (ModList.get().isLoaded("theoneprobe")) {
             modBus.addListener(
@@ -242,11 +264,11 @@ public final class NuclearTechNeoForge {
         NeoForge.EVENT_BUS.addListener(
                 (ServerAboutToStartEvent event) ->
                         NuclearTech.serverAboutToStart(event.getServer()));
-        NeoForge.EVENT_BUS.addListener(((NeoForgeNetworkService) Services.NETWORK)::onDatapackSync);
+        NeoForge.EVENT_BUS.addListener(
+                (OnDatapackSyncEvent event) -> NeoForgeNetwork.onDatapackSync(event));
         NeoForge.EVENT_BUS.addListener((ServerStoppedEvent event) -> NuclearTech.serverStopped());
         NeoForge.EVENT_BUS.addListener(
-                (net.neoforged.neoforge.event.server.ServerStartedEvent event) ->
-                        com.hbm.world.ore.OreGeneration.serverStarted(event.getServer()));
+                (ServerStartedEvent event) -> OreGeneration.serverStarted(event.getServer()));
         NeoForge.EVENT_BUS.addListener(
                 (LevelEvent.PotentialSpawns event) -> {
                     if (!event.isCanceled()

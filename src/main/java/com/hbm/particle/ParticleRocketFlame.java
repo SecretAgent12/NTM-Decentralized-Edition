@@ -17,6 +17,7 @@ public class ParticleRocketFlame extends ParticleCompat {
 
     public final int seed;
     private float baseScale = 1F;
+    private RocketFlameColor color = RocketFlameColor.FLAME;
 
     public ParticleRocketFlame(ClientLevel level, double x, double y, double z) {
         super(level, x, y, z);
@@ -32,6 +33,15 @@ public class ParticleRocketFlame extends ParticleCompat {
     public ParticleRocketFlame setMaxAge(int maxAge) {
         this.lifetime = maxAge;
         return this;
+    }
+
+    public ParticleRocketFlame color(RocketFlameColor color) {
+        this.color = color;
+        return this;
+    }
+
+    public RocketFlameColor color() {
+        return color;
     }
 
     public ParticleRocketFlame noClip() {

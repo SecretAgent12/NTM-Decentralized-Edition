@@ -3,9 +3,9 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.BlockEntityMachineBase;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.inventory.IGUIProvider;
-import com.hbm.tileentity.BlockEntityMachineBase;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import com.hbm.backport.InteractionResult;
@@ -26,12 +26,10 @@ public abstract class BlockMachineBase extends BlockCompat implements ITickingBl
     @Override
     protected InteractionResult backport$useWithoutItem(
             BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-
         if (!(level.getBlockEntity(pos) instanceof MenuProvider provider))
             return InteractionResult.PASS;
         if (player.isSecondaryUseActive()) return InteractionResult.PASS;
         if (!level.isClientSide()) {
-
             if (provider instanceof IGUIProvider gui) {
                 IGUIProvider.openBlockMenu(player, gui, pos);
             } else {

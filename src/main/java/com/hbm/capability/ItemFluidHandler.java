@@ -3,7 +3,6 @@
 
 package com.hbm.capability;
 
-import com.hbm.items.machine.IFluidContainerItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
@@ -50,7 +49,7 @@ public final class ItemFluidHandler extends ItemAccessResourceHandler<FluidResou
     public int insert(
             int index, FluidResource resource, int amount, TransactionContext transaction) {
         if (resource.isEmpty()) return 0;
-        // backport-fix: BF-084 the item answers per item; the base class splits a stack-wide amount
+        // backport-fix: BF-084 (DE 2026-10-10, commit 55668394) the item answers per item; the base class splits a stack-wide amount
         int count = itemAccess.getAmount();
         if (count <= 0) return 0;
         long accepted =
@@ -63,7 +62,7 @@ public final class ItemFluidHandler extends ItemAccessResourceHandler<FluidResou
     public int extract(
             int index, FluidResource resource, int amount, TransactionContext transaction) {
         if (resource.isEmpty()) return 0;
-        // backport-fix: BF-084 the item answers per item; the base class splits a stack-wide amount
+        // backport-fix: BF-084 (DE 2026-10-10, commit 55668394) the item answers per item; the base class splits a stack-wide amount
         int count = itemAccess.getAmount();
         if (count <= 0) return 0;
         long given =
@@ -78,7 +77,8 @@ public final class ItemFluidHandler extends ItemAccessResourceHandler<FluidResou
      * answer for one item. Passing that one-item answer on as the stack-wide amount drained a
      * stack of 16 deuterium cells by 1000/16 = 62 mB each, and a fixed 1000 mB cell has no item for
      * 938 mB: ItemFluidCell.filledContainer threw (EvilCraft's HUD drains the held stack every
-     * frame and crashed the client). Same in ntm-next.
+     * frame and crashed the client). Same in ntm-next 1.0.0. NEXT 1.0.3 (2026-10-12) multiplies by the
+     * count too, but as {@code (int) accepted * count} (int overflow); DE keeps its own version.
      */
     private static int stackWide(long perItem, int count) {
         return (int) Math.min(perItem * count, Integer.MAX_VALUE);

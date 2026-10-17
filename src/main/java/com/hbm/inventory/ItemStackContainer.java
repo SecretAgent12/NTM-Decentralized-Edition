@@ -3,14 +3,17 @@
 
 package com.hbm.inventory;
 
+import com.hbm.handler.UnstableFuses;
 import com.hbm.items.tool.ItemLeadBox;
 import com.hbm.items.tool.ItemPlasticBag;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemContainerContents;
@@ -21,6 +24,7 @@ public class ItemStackContainer extends SimpleContainer {
     private final @Nullable Player owner;
     private final ItemStack target;
     private final Store store;
+    private boolean writing;
 
     public ItemStackContainer(@Nullable Player owner, ItemStack target, int size) {
         this(owner, target, size, Store.CONTAINER);
@@ -33,10 +37,24 @@ public class ItemStackContainer extends SimpleContainer {
         this.store = store;
 
         store.read(target).copyInto(getItems());
+        if (owner != null) {
+            Inventory inventory = owner.getInventory();
+            int slot;
+            if (owner.getMainHandItem() == target) slot = inventory.selected;
+            else if (owner.getOffhandItem() == target) slot = Inventory.SLOT_OFFHAND;
+            else
+                throw new IllegalArgumentException(
+                        "Item-backed menu target must be held by its owner");
+            InventorySlotBinding.bind(target, inventory, slot);
+        }
     }
 
     public ItemStack target() {
         return target;
+    }
+
+    public Player inventoryHolder() {
+        return owner;
     }
 
     @Override
@@ -48,12 +66,24 @@ public class ItemStackContainer extends SimpleContainer {
 
     @Override
     public void setChanged() {
-        store.write(target, ItemContainerContents.fromItems(getItems()));
+        writing = true;
+        try {
+            store.write(target, ItemContainerContents.fromItems(getItems()));
+        } finally {
+            writing = false;
+        }
+        if (owner != null && !InventorySlotBinding.isBound(target)) UnstableFuses.changed(owner);
+    }
+
+    public void refreshFromTarget() {
+        if (writing) return;
+        store.read(target).copyInto(getItems());
     }
 
     @Override
     public boolean stillValid(Player player) {
-        return player == owner
+        return !target.isEmpty()
+                && player == owner
                 && (player.getMainHandItem() == target || player.getOffhandItem() == target);
     }
 
@@ -69,7 +99,6 @@ public class ItemStackContainer extends SimpleContainer {
     }
 
     public interface Store {
-
         Store CONTAINER =
                 new Store() {
                     @Override
@@ -93,15 +122,14 @@ public class ItemStackContainer extends SimpleContainer {
 
     private void cue(SoundEvent sound) {
         if (owner == null || target.getItem() instanceof ItemPlasticBag) return;
-        owner.level()
-                .playSound(
-                        null,
-                        owner.getX(),
-                        owner.getY(),
-                        owner.getZ(),
-                        sound,
-                        SoundSource.PLAYERS,
-                        1.0F,
-                        0.8F);
+        EntitySounds.play(
+                owner,
+                owner.getX(),
+                owner.getY(),
+                owner.getZ(),
+                sound,
+                SoundSource.PLAYERS,
+                1.0F,
+                0.8F);
     }
 }

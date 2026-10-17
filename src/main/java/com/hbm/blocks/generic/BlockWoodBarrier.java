@@ -103,7 +103,6 @@ public class BlockWoodBarrier extends HorizontalDirectionalBlockCompat implement
 
     @Override
     public @Nullable BlockState getStateForPlacement(BlockPlaceContext ctx) {
-
         Direction clicked = ctx.getClickedFace();
         Direction facing =
                 clicked.getAxis().isHorizontal()

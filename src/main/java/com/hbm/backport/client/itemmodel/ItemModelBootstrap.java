@@ -21,7 +21,8 @@ public final class ItemModelBootstrap {
     private ItemModelBootstrap() {}
 
     private static boolean hbm(Item item) {
-        return "hbm".equals(BuiltInRegistries.ITEM.getKey(item).getNamespace());
+        // backport-fix: BF-094 NTM addons' items too
+        return com.hbm.registration.Reg.isNtmNamespace(BuiltInRegistries.ITEM.getKey(item).getNamespace());
     }
 
     public static void register(IEventBus modBus) {

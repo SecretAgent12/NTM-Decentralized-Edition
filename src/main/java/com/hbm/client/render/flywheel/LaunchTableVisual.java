@@ -3,14 +3,15 @@
 
 package com.hbm.client.render.flywheel;
 
+import com.hbm.blockentity.bomb.BlockEntityLaunchTable;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
+import com.hbm.client.render.MissilePronter;
 import com.hbm.handler.MissileStruct;
 import com.hbm.items.weapon.ItemCustomMissilePart.PartSize;
 import com.hbm.items.weapon.ItemCustomMissilePart.PartType;
 import com.hbm.items.weapon.ItemCustomMissilePart;
 import com.hbm.main.ResourceManager;
 import com.hbm.render.loader.HFRWavefrontObject;
-import com.hbm.tileentity.bomb.BlockEntityLaunchTable;
 import com.hbm.util.Facing;
 import dev.engine_room.flywheel.api.instance.Instance;
 import dev.engine_room.flywheel.api.visual.SectionTrackedVisual;
@@ -23,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
@@ -73,7 +73,6 @@ public final class LaunchTableVisual extends HbmDynamicBlockEntityVisual<BlockEn
     private final Matrix4f instancePose = new Matrix4f();
     private final double[] lightBoundsAccumulator = new double[6];
     private final AABB anchorBounds;
-
     private int height;
     private MissileStruct trackedMissile;
     private @Nullable Key currentKey;
@@ -316,9 +315,7 @@ public final class LaunchTableVisual extends HbmDynamicBlockEntityVisual<BlockEn
                             new PartKey(source.mesh, source.skin),
                             key ->
                                     MeshPart.objParts(
-                                            new HFRWavefrontObject(
-                                                    Minecraft.getInstance().getResourceManager(),
-                                                    key.mesh),
+                                            MissilePronter.partMesh(key.mesh),
                                             MeshPart.litCutout(key.skin)));
             groups = new ArrayList<>(parts.length);
             for (var part : parts) groups.add(new PartVisual(part));

@@ -27,7 +27,6 @@ public class CrystalPulsar extends BlockCompat {
             Block block,
             @Nullable Orientation orientation,
             boolean movedByPiston) {
-
         if (!level.isClientSide()
                 || level.getBlockState(pos.east()).is(ModBlocks.CRYSTAL_VIRUS.get())
                 || level.getBlockState(pos.west()).is(ModBlocks.CRYSTAL_VIRUS.get())

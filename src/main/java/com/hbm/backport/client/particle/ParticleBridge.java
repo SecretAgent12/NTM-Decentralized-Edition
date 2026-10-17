@@ -21,8 +21,6 @@ import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.ModList;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import org.jspecify.annotations.Nullable;
 
@@ -76,13 +74,8 @@ public final class ParticleBridge {
     private static synchronized void postGroups(@Nullable IEventBus modBus) {
         if (groupsPosted) return;
         groupsPosted = true;
-        if (modBus == null)
-            modBus =
-                    ModList.get()
-                            .getModContainerById("hbm")
-                            .map(ModContainer::getEventBus)
-                            .orElse(null);
-        if (modBus != null) modBus.post(new RegisterParticleGroupsEvent());
+        // backport-fix: BF-094 on every mod's bus, as NeoForge 26 posts it (NTM addons register too)
+        net.neoforged.fml.ModLoader.postEvent(new RegisterParticleGroupsEvent());
     }
 
     static void registerGroup(

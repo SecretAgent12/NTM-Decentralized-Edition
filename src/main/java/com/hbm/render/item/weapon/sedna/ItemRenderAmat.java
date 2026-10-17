@@ -8,16 +8,13 @@ import com.hbm.items.ModItems;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.hbm.items.weapon.sedna.mods.XWeaponModManager;
 import com.hbm.main.ResourceManager;
-import com.hbm.registration.RegistryHandle;
 import com.hbm.render.anim.HbmAnimations;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
-import java.util.List;
 import com.hbm.backport.client.core.SubmitNodeCollector;
 import net.minecraft.client.renderer.RenderType;
 import com.hbm.backport.client.rendertype.RenderTypes;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.joml.Matrix4f;
 
@@ -59,7 +56,6 @@ public class ItemRenderAmat extends ItemRenderWeaponBase {
     public void renderFirstPerson(
             ItemStack stack, PoseStack pose, SubmitNodeCollector collector, int light) {
         boolean isScoped = isScoped(stack);
-
         if (isScoped && ItemGunBaseNT.prevAimingProgress == 1 && ItemGunBaseNT.aimingProgress == 1)
             return;
 

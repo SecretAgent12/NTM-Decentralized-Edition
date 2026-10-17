@@ -4,9 +4,13 @@
 package com.hbm.world.structure;
 
 import com.hbm.lib.Library;
+import com.hbm.world.gen.WorldgenHeight;
+import java.util.Optional;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtUtils;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
@@ -26,8 +30,18 @@ public class SellafieldCraterPiece extends StructurePiece {
     private final int originX;
     private final int originZ;
     private final int radius;
+    private final int exponent;
+    private final Optional<BlockState> regolith;
+    private final Optional<BlockState> rock;
 
-    public SellafieldCraterPiece(BlockPos origin, int radius, int minY, int maxY) {
+    public SellafieldCraterPiece(
+            BlockPos origin,
+            int radius,
+            int minY,
+            int maxY,
+            int exponent,
+            Optional<BlockState> regolith,
+            Optional<BlockState> rock) {
         super(
                 HbmStructureTypes.SELLAFIELD_CRATER_PIECE.get(),
                 0,
@@ -38,11 +52,13 @@ public class SellafieldCraterPiece extends StructurePiece {
                         origin.getX() + radius + 3,
                         maxY,
                         origin.getZ() + radius + 3));
-
         this.setOrientation(null);
         this.originX = origin.getX();
         this.originZ = origin.getZ();
         this.radius = radius;
+        this.exponent = exponent;
+        this.regolith = regolith;
+        this.rock = rock;
     }
 
     public SellafieldCraterPiece(StructurePieceSerializationContext context, CompoundTag tag) {
@@ -50,14 +66,58 @@ public class SellafieldCraterPiece extends StructurePiece {
         this.originX = Nbt.getIntOr(tag, "OX", 0);
         this.originZ = Nbt.getIntOr(tag, "OZ", 0);
         this.radius = Nbt.getIntOr(tag, "CraterRadius", 8);
+        this.exponent = Nbt.getIntOr(tag, "Exponent", 2);
+        var blocks = context.registryAccess().lookupOrThrow(Registries.BLOCK);
+        this.regolith =
+                Nbt.getCompound(tag, "Regolith").map(state -> NbtUtils.readBlockState(blocks, state));
+        this.rock = Nbt.getCompound(tag, "Rock").map(state -> NbtUtils.readBlockState(blocks, state));
     }
 
-    private static double depthFunc(double r, double radius, double depth) {
-        return -(r * r) / (radius * radius) * depth + depth;
+    private double depthFunc(double r, double depth) {
+        return -Math.pow(r, exponent) / Math.pow(radius, exponent) * depth + depth;
+    }
+
+    public boolean intersectsHorizontal(BoundingBox box) {
+        return affectsColumn(
+                Math.clamp(originX, box.minX(), box.maxX()),
+                Math.clamp(originZ, box.minZ(), box.maxZ()));
+    }
+
+    public boolean affectsColumn(int x, int z) {
+        long dx = (long) x - originX;
+        long dz = (long) z - originZ;
+        long reach = radius + 2L;
+        return dx * dx + dz * dz <= reach * reach;
+    }
+
+    public boolean intersectsCarving(BoundingBox box) {
+        long dx = (long) Math.clamp(originX, box.minX(), box.maxX()) - originX;
+        long dz = (long) Math.clamp(originZ, box.minZ(), box.maxZ()) - originZ;
+        double distance = Math.sqrt((double) dx * dx + (double) dz * dz);
+        return depthFunc(distance, radius * 0.35D) >= 1.0D;
+    }
+
+    public boolean hasSolidFill() {
+        BlockState outer = rock.orElseGet(SellafieldCraterPiece::sellafieldSlaked);
+        return outer.blocksMotion() && regolith.orElse(outer).blocksMotion();
+    }
+
+    public int groundHeight(int firstFree, int x, int z, int minBuild) {
+        if (firstFree <= minBuild + 1) return firstFree;
+        double dx = (double) x - originX, dz = (double) z - originZ;
+        int depth =
+                (int)
+                        Mth.clamp(
+                                depthFunc(Math.sqrt(dx * dx + dz * dz), radius * 0.35D),
+                                0,
+                                firstFree - minBuild - 2);
+        return firstFree - depth;
     }
 
     private static int findSurface(WorldGenLevel level, int x, int z, int minBuild) {
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(x, (level.getMaxBuildHeight() - 1) - 1, z);
+        BlockPos.MutableBlockPos pos =
+                new BlockPos.MutableBlockPos(
+                        x, WorldgenHeight.highestFilledSectionTop(level, x, z), z);
         while (pos.getY() > minBuild) {
             if (Heightmap.Types.MOTION_BLOCKING.isOpaque().test(level.getBlockState(pos))) {
                 return pos.getY();
@@ -83,6 +143,9 @@ public class SellafieldCraterPiece extends StructurePiece {
         tag.putInt("OX", originX);
         tag.putInt("OZ", originZ);
         tag.putInt("CraterRadius", radius);
+        tag.putInt("Exponent", exponent);
+        regolith.ifPresent(state -> tag.put("Regolith", NbtUtils.writeBlockState(state)));
+        rock.ifPresent(state -> tag.put("Rock", NbtUtils.writeBlockState(state)));
     }
 
     @Override
@@ -94,7 +157,8 @@ public class SellafieldCraterPiece extends StructurePiece {
             BoundingBox chunkBB,
             ChunkPos chunkPos,
             BlockPos referencePos) {
-        BlockState fill = sellafieldSlaked();
+        BlockState outer = rock.orElseGet(SellafieldCraterPiece::sellafieldSlaked);
+        BlockState inner = regolith.orElse(outer);
         double depth = radius * 0.35D;
         int minBuild = level.getMinBuildHeight();
 
@@ -114,7 +178,7 @@ public class SellafieldCraterPiece extends StructurePiece {
                 int surfaceY = findSurface(level, x, z, minBuild);
                 if (surfaceY <= minBuild) continue;
 
-                int dep = (int) Mth.clamp(depthFunc(r, radius, depth), 0, surfaceY - minBuild - 1);
+                int dep = (int) Mth.clamp(depthFunc(r, depth), 0, surfaceY - minBuild - 1);
                 for (int i = 0; i < dep; i++) {
                     this.placeBlock(
                             level, Blocks.AIR.defaultBlockState(), x, surfaceY - i, z, chunkBB);
@@ -122,8 +186,7 @@ public class SellafieldCraterPiece extends StructurePiece {
 
                 int floorY = surfaceY - dep;
                 int fillLayers = Math.max(0, Math.min(3, floorY - minBuild - 1));
-
-                random.nextInt(3);
+                BlockState fill = r + random.nextInt(3) <= radius / 3.0D ? inner : outer;
                 for (int i = 0; i < fillLayers; i++) {
                     this.placeBlock(level, fill, x, floorY - i, z, chunkBB);
                 }

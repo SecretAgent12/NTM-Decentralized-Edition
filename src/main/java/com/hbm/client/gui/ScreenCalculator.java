@@ -99,7 +99,6 @@ public final class ScreenCalculator extends ScreenCompat {
             input.moveCursorToEnd(false);
             input.setHighlightPos(0);
         } catch (Exception ignored) {
-
         }
     }
 

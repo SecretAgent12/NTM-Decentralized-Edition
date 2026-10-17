@@ -8,6 +8,7 @@ import com.hbm.explosion.vanillant.standard.EntityProcessorCrossSmooth;
 import com.hbm.explosion.vanillant.standard.PlayerProcessorStandard;
 import com.hbm.items.special.ItemCustomLore;
 import com.hbm.particle.helper.ExplosionCreator;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
@@ -16,10 +17,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 public class ItemMemespoon extends ItemCustomLore {
-
     private static final float CRIT_FALL = 2F, BLAST_FALL = 20F;
     private static final float CRIT_DAMAGE = 50F;
-
     private static final float BLAST = 15F;
     private static final int PIERCE = 25;
 
@@ -33,8 +32,8 @@ public class ItemMemespoon extends ItemCustomLore {
             return;
         if (attacker.fallDistance < CRIT_FALL) return;
 
-        level.playSound(
-                null,
+        EntitySounds.play(
+                victim,
                 victim.blockPosition(),
                 ModSounds.BANG.get(),
                 SoundSource.PLAYERS,

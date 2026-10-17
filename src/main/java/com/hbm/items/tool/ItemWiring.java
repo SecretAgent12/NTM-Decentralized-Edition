@@ -4,9 +4,9 @@
 package com.hbm.items.tool;
 
 import com.hbm.api.energymk2.PowerGraph;
+import com.hbm.blockentity.network.BlockEntityPylonBase;
 import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.items.ModDataComponents;
-import com.hbm.tileentity.network.BlockEntityPylonBase;
 import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -29,7 +29,6 @@ public class ItemWiring extends ItemCompat {
     }
 
     private static @Nullable BlockEntityPylonBase pylonAt(Level level, BlockPos pos) {
-
         BlockPos core = MultiblockSurface.coreOfAny(level, pos);
         BlockPos target = core == null ? pos : core;
         return level.getBlockEntity(target) instanceof BlockEntityPylonBase pylon ? pylon : null;

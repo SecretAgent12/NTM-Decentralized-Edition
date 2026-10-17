@@ -3,13 +3,19 @@
 
 package com.hbm.particle;
 
+import com.hbm.client.particle.ExplosionSmallVisual;
+import com.hbm.client.particle.VisualParticle;
+import dev.engine_room.flywheel.api.visual.EffectVisual;
+import dev.engine_room.flywheel.api.visualization.VisualizationContext;
+import dev.engine_room.flywheel.api.visualization.VisualizationManager;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
 import com.hbm.backport.client.particle.ParticleRenderType;
 import net.minecraft.util.Mth;
+import org.jspecify.annotations.Nullable;
 import com.hbm.backport.client.particle.ParticleCompat;
 
-public class ParticleExplosionSmall extends ParticleCompat {
+public class ParticleExplosionSmall extends ParticleCompat implements VisualParticle {
 
     public static final ParticleRenderType EXPLOSION_SMALL_GROUP =
             new ParticleRenderType("hbm:explosion_small", "HES");
@@ -20,6 +26,7 @@ public class ParticleExplosionSmall extends ParticleCompat {
     public final float baseScale;
     private final float spinDir;
     public float roll, rollO;
+    private @Nullable VisualizationManager visualManager;
 
     public ParticleExplosionSmall(
             ClientLevel level, double x, double y, double z, float scale, float speedMult) {
@@ -93,6 +100,26 @@ public class ParticleExplosionSmall extends ParticleCompat {
 
     public double interpZ(float pt) {
         return this.zo + (this.z - this.zo) * pt;
+    }
+
+    @Override
+    public ClientLevel level() {
+        return level;
+    }
+
+    @Override
+    public @Nullable VisualizationManager visualManager() {
+        return visualManager;
+    }
+
+    @Override
+    public void visualManager(@Nullable VisualizationManager manager) {
+        visualManager = manager;
+    }
+
+    @Override
+    public EffectVisual<?> visualize(VisualizationContext context, float partialTick) {
+        return new ExplosionSmallVisual(context, this, partialTick);
     }
 
     @Override

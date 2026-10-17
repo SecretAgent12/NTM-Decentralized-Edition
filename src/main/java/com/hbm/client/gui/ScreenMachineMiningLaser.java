@@ -5,11 +5,11 @@ package com.hbm.client.gui;
 
 import com.hbm.backport.SubLevelAnchor;
 import java.util.List;
+import com.hbm.blockentity.machine.BlockEntityMachineMiningLaser;
 import com.hbm.inventory.container.MenuMachineMiningLaser;
 import com.hbm.lib.Library;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toserver.NbtControlPayload;
-import com.hbm.platform.Services;
-import com.hbm.tileentity.machine.BlockEntityMachineMiningLaser;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.client.gui.input.MouseButtonEvent;
 import com.hbm.backport.client.rendertype.RenderPipelines;
@@ -97,7 +97,6 @@ public class ScreenMachineMiningLaser extends ScreenInfoContainer<MenuMachineMin
                 menu.getPower(),
                 BlockEntityMachineMiningLaser.MAX_POWER);
         drawFluidGaugeInfo(graphics, mouseX, mouseY, TANK_X, TANK_Y, TANK_W, TANK_H, be.tank);
-
         drawCustomInfoStat(
                 graphics,
                 mouseX,
@@ -141,7 +140,7 @@ public class ScreenMachineMiningLaser extends ScreenInfoContainer<MenuMachineMin
                         (int) event.x(), (int) event.y(), TOGGLE_X, TOGGLE_Y, TOGGLE_W, TOGGLE_H)) {
             CompoundTag data = new CompoundTag();
             data.putBoolean("toggle", true);
-            Services.NETWORK.sendToServer(new NbtControlPayload(laser().getBlockPos(), data));
+            PacketWire.sendToServer(new NbtControlPayload(laser().getBlockPos(), data));
             playClick();
             return true;
         }

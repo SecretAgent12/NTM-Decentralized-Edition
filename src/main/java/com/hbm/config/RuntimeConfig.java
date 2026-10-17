@@ -19,6 +19,10 @@ public interface RuntimeConfig {
         return store().get(ConfigSchema.ULTRA_LARP_MODE);
     }
 
+    default int farTrackingRange() {
+        return store().get(ConfigSchema.FAR_TRACKING_RANGE);
+    }
+
     default boolean damageCompatibilityMode() {
         return store().get(ConfigSchema.DAMAGE_COMPATIBILITY_MODE);
     }
@@ -29,6 +33,10 @@ public interface RuntimeConfig {
 
     default boolean unstableRecoverySweep() {
         return store().get(ConfigSchema.UNSTABLE_RECOVERY_SWEEP);
+    }
+
+    default boolean enableMOTD() {
+        return store().get(ConfigSchema.ENABLE_MOTD);
     }
 
     default boolean extendedLogging() {

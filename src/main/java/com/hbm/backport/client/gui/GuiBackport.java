@@ -18,7 +18,8 @@ public final class GuiBackport {
         // ourselves so the mod's listeners fill com.hbm.backport.client.gui.render.pip's registry
         modBus.addListener(
                 FMLClientSetupEvent.class,
-                event -> event.enqueueWork(() -> modBus.post(new RegisterPictureInPictureRenderersEvent())));
+                // backport-fix: BF-094 on every mod's bus, as NeoForge 26 posts it (NTM addons register too)
+                event -> event.enqueueWork(() -> net.neoforged.fml.ModLoader.postEvent(new RegisterPictureInPictureRenderersEvent())));
         // fluid tooltip frames recolour the 1.21.1 tooltip border (see FluidTooltipFrame)
         NeoForge.EVENT_BUS.addListener(com.hbm.client.gui.FluidTooltipFrame::onTooltipColor);
     }

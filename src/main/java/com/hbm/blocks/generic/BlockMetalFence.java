@@ -3,8 +3,10 @@
 
 package com.hbm.blocks.generic;
 
+import com.hbm.tags.HbmBlockTags;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -14,7 +16,6 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import com.hbm.backport.compat.FenceBlockCompat;
 
 public class BlockMetalFence extends FenceBlockCompat {
-
     public static final MapCodec<FenceBlock> CODEC = simpleCodec(BlockMetalFence::new);
 
     private static final double MIN = 6 / 16D;
@@ -27,6 +28,12 @@ public class BlockMetalFence extends FenceBlockCompat {
     @Override
     public MapCodec<FenceBlock> codec() {
         return CODEC;
+    }
+
+    @Override
+    public boolean connectsTo(BlockState state, boolean faceSolid, Direction direction) {
+        return state.is(HbmBlockTags.METAL_FENCE_JOINS)
+                || super.connectsTo(state, faceSolid, direction);
     }
 
     @Override
@@ -49,7 +56,6 @@ public class BlockMetalFence extends FenceBlockCompat {
         if (n || s) {
             shape = Shapes.or(shape, Shapes.box(MIN, 0D, n ? 0D : MIN, MAX, 1D, s ? 1D : MAX));
         }
-
         if (e || w || (!n && !s)) {
             shape = Shapes.or(shape, Shapes.box(w ? 0D : MIN, 0D, MIN, e ? 1D : MAX, 1D, MAX));
         }

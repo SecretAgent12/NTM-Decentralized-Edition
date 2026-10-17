@@ -11,6 +11,7 @@ import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.hbm.items.weapon.sedna.Receiver;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
 import com.hbm.render.anim.AnimationEnums.GunAnimation;
+import com.hbm.sound.EntitySounds;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import net.minecraft.sounds.SoundSource;
@@ -19,7 +20,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 public class GunStateDecider {
-
     public static BiConsumer<ItemStack, LambdaContext> LAMBDA_STANDARD_DECIDER =
             (stack, ctx) -> {
                 int index = ctx.configIndex();
@@ -125,23 +125,21 @@ public class GunStateDecider {
                     ItemGunBaseNT.setTimer(stack, gunIndex, rec.getDelayAfterFire(stack));
 
                     if (rec.getFireSound(stack) != null)
-                        entity.level()
-                                .playSound(
-                                        null,
-                                        entity.getX(),
-                                        entity.getY(),
-                                        entity.getZ(),
-                                        rec.getFireSound(stack).get(),
-                                        SoundSource.PLAYERS,
-                                        rec.getFireVolume(stack),
-                                        rec.getFirePitch(stack));
+                        EntitySounds.play(
+                                entity,
+                                entity.getX(),
+                                entity.getY(),
+                                entity.getZ(),
+                                rec.getFireSound(stack).get(),
+                                SoundSource.PLAYERS,
+                                rec.getFireVolume(stack),
+                                rec.getFirePitch(stack));
 
                     int remaining = rec.getRoundsPerCycle(stack) - 1;
                     for (int i = 0; i < remaining; i++)
                         if (rec.getCanFire(stack).apply(stack, ctx))
                             rec.getOnFire(stack).accept(stack, ctx);
                 } else if (rec.getDoesDryFireAfterAuto(stack)) {
-
                     ItemGunBaseNT.setState(
                             stack,
                             gunIndex,
@@ -153,7 +151,6 @@ public class GunStateDecider {
                     ItemGunBaseNT.setTimer(stack, gunIndex, 0);
                 }
             } else {
-
                 if (rec.getReloadOnEmpty(stack)
                         && rec.getMagazine(stack).getAmount(stack, ctx.inventory()) <= 0) {
                     ItemGunBaseNT.setIsAiming(stack, false);

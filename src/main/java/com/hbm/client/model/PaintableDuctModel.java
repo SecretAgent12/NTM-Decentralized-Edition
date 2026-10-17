@@ -8,8 +8,8 @@ import com.hbm.blocks.network.FluidDuctPaintableBlock;
 import com.hbm.blocks.network.FluidDuctPaintableExhaustBlock;
 import com.hbm.blocks.network.PaintableCamoBlock;
 import com.hbm.blocks.network.pneumatic.PneumoTubePaintableBlock;
-import com.hbm.tileentity.network.BlockEntityPipePaintable;
-import com.hbm.tileentity.network.pneumatic.BlockEntityPneumoTubePaintable;
+import com.hbm.blockentity.network.BlockEntityPipePaintable;
+import com.hbm.blockentity.network.pneumatic.BlockEntityPneumoTubePaintable;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.Minecraft;
@@ -115,7 +115,7 @@ public record PaintableDuctModel() implements SimpleBlockModel {
                 new SimpleModelWrapper[(NO_PORT + 1) * (NO_PORT + 1)];
 
         public Baked(ModelBaker baker, ResolvedModel carrier, Root root) {
-            this.baker = baker;
+            this.baker = RuntimeBaker.capture(baker, carrier);
             this.carrier = carrier;
             this.slots = carrier.getTopTextureSlots();
             this.particle = carrier.resolveParticleMaterial(slots, baker);

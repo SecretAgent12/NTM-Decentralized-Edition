@@ -30,7 +30,7 @@ import net.p3pp3rf1y.sophisticatedcore.util.RegistryHelper;
  * .saveInventory and the client contents payloads always put a new tag), so the per-tick live-storage
  * hazard check does not re-decode an unchanged inventory.
  */
-final class SophisticatedStoredStacks {
+public final class SophisticatedStoredStacks {
     private record Decoded(Tag inventory, List<ItemStack> stacks) {}
 
     private static final Map<UUID, Decoded> SERVER = new ConcurrentHashMap<>();
@@ -38,7 +38,9 @@ final class SophisticatedStoredStacks {
 
     private SophisticatedStoredStacks() {}
 
-    static List<ItemStack> stacks(UUID id, CompoundTag contents) {
+    // backport: public for the client tooltip syncs (Sophisticated*HazardTooltipSync.requestNested,
+    // upstream 1.0.3), which read the stored stacks the same way
+    public static List<ItemStack> stacks(UUID id, CompoundTag contents) {
         Map<UUID, Decoded> cache =
                 Thread.currentThread().getThreadGroup() == SidedThreadGroups.SERVER ? SERVER : CLIENT;
         Tag inventory = contents.get(InventoryHandler.INVENTORY_TAG);

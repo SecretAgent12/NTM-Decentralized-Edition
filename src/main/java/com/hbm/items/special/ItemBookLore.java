@@ -22,7 +22,6 @@ import net.minecraft.world.level.Level;
 import com.hbm.backport.compat.ItemCompat;
 
 public class ItemBookLore extends ItemCompat {
-
     public static final int DEFAULT_COVER = 0x303030;
     public static final int DEFAULT_TITLE = 0xFFFFFF;
 
@@ -88,13 +87,11 @@ public class ItemBookLore extends ItemCompat {
             TooltipDisplay display,
             Consumer<Component> lines,
             TooltipFlag flag) {
-
         String stackKey = stack.get(ModDataComponents.LORE_BOOK_KEY.get());
         if (stackKey == null || stackKey.isEmpty()) {
             super.appendHoverText(stack, context, display, lines, flag);
             return;
         }
-
         String key = "book_lore." + stackKey + ".author";
         Component author = Component.translatable(key);
         if (!author.getString().equals(key)) {
@@ -107,7 +104,6 @@ public class ItemBookLore extends ItemCompat {
 
     @Override
     public InteractionResult backport$use(Level level, Player player, InteractionHand hand) {
-
         if (level.isClientSide()) OPEN_SCREEN.accept(player);
         return InteractionResult.SUCCESS;
     }

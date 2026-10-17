@@ -18,7 +18,6 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.RecipeSerializers;
 
 public class ParticleAcceleratorRecipe extends GenericRecipe {
-
     private static final MapCodec<Integer> MOMENTUM_MAP_CODEC =
             Codec.INT.optionalFieldOf("momentum", 0);
     private static final StreamCodec<RegistryFriendlyByteBuf, Integer> MOMENTUM_STREAM_CODEC =
@@ -42,7 +41,6 @@ public class ParticleAcceleratorRecipe extends GenericRecipe {
                             EXTRACT_MOMENTUM);
     public static final RecipeSerializer<ParticleAcceleratorRecipe> SERIALIZER =
             RecipeSerializers.of(MAP_CODEC, STREAM_CODEC);
-
     public int momentum;
 
     public ParticleAcceleratorRecipe(String name) {

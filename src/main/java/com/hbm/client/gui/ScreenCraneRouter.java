@@ -3,15 +3,13 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.network.BlockEntityCraneRouter;
+import com.hbm.client.Keybinds;
 import com.hbm.inventory.container.MenuCraneRouter;
 import com.hbm.lib.Library;
-import com.hbm.module.ModulePatternMatcher;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toserver.NbtControlPayload;
-import com.hbm.platform.Services;
-import com.hbm.tileentity.network.BlockEntityCraneRouter;
 import java.util.List;
-import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.client.gui.input.MouseButtonEvent;
 import com.hbm.backport.client.rendertype.RenderPipelines;
@@ -25,8 +23,6 @@ public class ScreenCraneRouter extends ScreenInfoContainer<MenuCraneRouter> {
 
     private static final ResourceLocation TEXTURE =
             Library.id("textures/gui/storage/gui_crane_router.png");
-
-    private static final int TOOLTIP_LIFT = 30;
 
     private static final int BUTTON_X = 7;
     private static final int BUTTON_Y = 16;
@@ -103,27 +99,7 @@ public class ScreenCraneRouter extends ScreenInfoContainer<MenuCraneRouter> {
             }
         }
 
-        if (menu.getCarried().isEmpty()) {
-            for (int i = 0; i < BlockEntityCraneRouter.SLOT_COUNT; i++) {
-                Slot slot = menu.getSlot(i);
-                String mode =
-                        router.patterns[i / BlockEntityCraneRouter.FILTERS_PER_SIDE].mode(
-                                i % BlockEntityCraneRouter.FILTERS_PER_SIDE);
-
-                if (mode != null && isHovering(slot.x, slot.y, 16, 16, mouseX, mouseY)) {
-                    graphics.setComponentTooltipForNextFrame(
-                            font,
-                            List.of(
-                                    Component.translatable("desc.shared.rightClickToChange")
-                                            .withStyle(ChatFormatting.RED),
-                                    ModulePatternMatcher.getLabel(mode)),
-                            mouseX,
-                            mouseY - TOOLTIP_LIFT);
-                }
-            }
-        }
-
-        if (net.minecraft.client.gui.screens.Screen.hasAltDown()) {
+        if (Keybinds.DIAGNOSTICS.isDown()) {
             for (int i = 0; i < menu.slots.size(); i++) {
                 Slot slot = menu.getSlot(i);
                 graphics.text(
@@ -142,6 +118,15 @@ public class ScreenCraneRouter extends ScreenInfoContainer<MenuCraneRouter> {
     }
 
     @Override
+    protected List<Component> slotTooltip(Slot slot) {
+        if (slot.index >= BlockEntityCraneRouter.SLOT_COUNT) return List.of();
+        return patternModeLines(
+                menu.blockEntity()
+                        .patterns[slot.index / BlockEntityCraneRouter.FILTERS_PER_SIDE]
+                        .mode(slot.index % BlockEntityCraneRouter.FILTERS_PER_SIDE));
+    }
+
+    @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         int mx = (int) event.x(), my = (int) event.y();
 
@@ -152,7 +137,7 @@ public class ScreenCraneRouter extends ScreenInfoContainer<MenuCraneRouter> {
 
                 CompoundTag data = new CompoundTag();
                 data.putInt("toggle", column * 3 + row);
-                Services.NETWORK.sendToServer(
+                PacketWire.sendToServer(
                         new NbtControlPayload(menu.blockEntity().getBlockPos(), data));
                 playClick();
             }

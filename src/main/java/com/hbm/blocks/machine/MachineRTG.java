@@ -3,14 +3,14 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.BlockEntityMachineRTG;
+import com.hbm.blocks.CapabilityDependentShape;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.capability.ICapabilityBlock;
 import com.hbm.capability.MachineCaps;
 import com.hbm.inventory.IGUIProvider;
-import com.hbm.lib.Library;
-import com.hbm.tileentity.machine.BlockEntityMachineRTG;
-import com.hbm.uninos.graph.LevelNodeGraph;
+import com.hbm.uninos.graph.PhysicalGraph;
 import com.hbm.util.AutoRotate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -37,7 +37,8 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.BlockCompat;
 
 @AutoRotate
-public class MachineRTG extends BlockCompat implements ITickingBlock, ICapabilityBlock {
+public class MachineRTG extends BlockCompat
+        implements CapabilityDependentShape.Endpoint, ITickingBlock, ICapabilityBlock {
 
     public static final BooleanProperty NORTH = BlockStateProperties.NORTH;
     public static final BooleanProperty EAST = BlockStateProperties.EAST;
@@ -45,7 +46,7 @@ public class MachineRTG extends BlockCompat implements ITickingBlock, ICapabilit
     public static final BooleanProperty WEST = BlockStateProperties.WEST;
 
     public MachineRTG(BlockBehaviour.Properties props) {
-        super(props);
+        super(CapabilityDependentShape.deferShapeToFullChunk(props));
         registerDefaultState(
                 stateDefinition
                         .any()
@@ -80,7 +81,7 @@ public class MachineRTG extends BlockCompat implements ITickingBlock, ICapabilit
             state =
                     state.setValue(
                             propertyFor(dir),
-                            Library.canConnect(ctx.getLevel(), npos, dir.getOpposite()));
+                            PhysicalGraph.powerContact(ctx.getLevel(), npos, dir.getOpposite()));
         }
         return state;
     }
@@ -96,9 +97,9 @@ public class MachineRTG extends BlockCompat implements ITickingBlock, ICapabilit
             BlockState neighbourState,
             RandomSource random) {
         if (dir.getAxis() == Direction.Axis.Y) return state;
-        boolean joins = Library.canConnect(level, pos.relative(dir), dir.getOpposite());
+        boolean joins = PhysicalGraph.powerContact(level, pos.relative(dir), dir.getOpposite());
         if (level.isClientSide())
-            return Library.predictArm(state, propertyFor(dir), neighbourState, joins);
+            return PhysicalGraph.predictArm(state, propertyFor(dir), neighbourState, joins);
         return state.setValue(propertyFor(dir), joins);
     }
 
@@ -112,8 +113,7 @@ public class MachineRTG extends BlockCompat implements ITickingBlock, ICapabilit
             boolean movedByPiston) {
         super.neighborChanged(state, level, pos, block, orientation, movedByPiston);
         if (level instanceof ServerLevel sl) {
-            LevelNodeGraph.watchForeignNeighbours(sl, pos);
-            Library.redrawArms(state, sl, pos);
+            PhysicalGraph.redraw(state, sl, pos);
         }
     }
 

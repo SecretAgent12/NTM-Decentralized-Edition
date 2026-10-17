@@ -44,6 +44,12 @@ public class EntityFallingBlockNT extends FallingBlockEntityCompat {
     }
 
     public static EntityFallingBlockNT fall(ServerLevel level, BlockPos pos, BlockState state) {
+        EntityFallingBlockNT entity = create(level, pos, state);
+        level.addFreshEntity(entity);
+        return entity;
+    }
+
+    static EntityFallingBlockNT create(Level level, BlockPos pos, BlockState state) {
         EntityFallingBlockNT entity =
                 new EntityFallingBlockNT(ModEntities.FALLING_BLOCK_NT.get(), level);
         entity.blockState =
@@ -57,15 +63,55 @@ public class EntityFallingBlockNT extends FallingBlockEntityCompat {
         entity.yo = entity.getY();
         entity.zo = entity.getZ();
         entity.setStartPos(pos);
-        level.addFreshEntity(entity);
         return entity;
+    }
+
+    static EntityFallingBlockNT resume(
+            Level level,
+            BlockPos source,
+            BlockState state,
+            double y,
+            double velocity,
+            double fallDistance,
+            int age) {
+        EntityFallingBlockNT entity = create(level, source, state);
+        entity.setPos(source.getX() + 0.5, y, source.getZ() + 0.5);
+        entity.setDeltaMovement(0.0, velocity, 0.0);
+        entity.xo = entity.getX();
+        entity.yo = y;
+        entity.zo = entity.getZ();
+        entity.time = age;
+        entity.tickCount = age;
+        entity.fallDistance = (float) fallDistance; // backport: 1.21.1 fallDistance is a float
+        entity.dropItem = false;
+        entity.setOldPosAndRot();
+        return entity;
+    }
+
+    int virtualAge() {
+        return time;
+    }
+
+    void syncVirtualVisual(double y, double velocity, int age) {
+        setOldPosAndRot();
+        setPos(getX(), y, getZ());
+        setDeltaMovement(0.0, velocity, 0.0);
+        time = age;
+        tickCount = age;
+    }
+
+    void advanceVirtualVisual() {
+        setOldPosAndRot();
+        double movement = getDeltaMovement().y - 0.04;
+        setPos(getX(), getY() + movement, getZ());
+        setDeltaMovement(0.0, movement * 0.98F, 0.0);
+        time++;
+        tickCount++;
     }
 
     @Override
     public void tick() {
-
         if (this.blockState.isAir() || this.blockState.getBlock() instanceof ISpotlight) {
-
             this.discard();
             return;
         }
@@ -131,7 +177,6 @@ public class EntityFallingBlockNT extends FallingBlockEntityCompat {
                                                 Direction.DOWN,
                                                 ItemStack.EMPTY,
                                                 Direction.UP));
-
                         boolean wouldSurvive = this.blockState.canSurvive(this.level(), pos);
                         if (mayReplace && wouldSurvive) {
                             if (this.blockState.hasProperty(BlockStateProperties.WATERLOGGED)

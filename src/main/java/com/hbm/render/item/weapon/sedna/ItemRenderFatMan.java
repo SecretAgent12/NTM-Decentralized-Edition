@@ -5,25 +5,20 @@
 package com.hbm.render.item.weapon.sedna;
 
 import com.hbm.client.render.WeaponRenderTypes;
-import com.hbm.items.ModItems;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.hbm.items.weapon.sedna.factory.XFactoryCatapult;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
 import com.hbm.main.ResourceManager;
-import com.hbm.registration.RegistryHandle;
 import com.hbm.render.anim.HbmAnimations;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
-import java.util.List;
 import com.hbm.backport.client.core.SubmitNodeCollector;
 import net.minecraft.client.renderer.RenderType;
 import com.hbm.backport.client.rendertype.RenderTypes;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.joml.Matrix4f;
 
 public class ItemRenderFatMan extends ItemRenderWeaponBase {
-    private static final String BALEFIRE = "ammo_standard_nuke_balefire";
     private final RenderType body = RenderTypes.entityCutout(ResourceManager.fatman_tex);
 
     public static void renderNuke(

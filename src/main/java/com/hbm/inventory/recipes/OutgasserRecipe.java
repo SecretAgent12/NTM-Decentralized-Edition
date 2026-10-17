@@ -34,7 +34,6 @@ public class OutgasserRecipe extends GenericRecipe {
                     recipe -> recipe.fusionOnly);
     public static final RecipeSerializer<OutgasserRecipe> SERIALIZER =
             RecipeSerializers.of(MAP_CODEC, STREAM_CODEC);
-
     public boolean fusionOnly = false;
 
     public OutgasserRecipe(String name) {

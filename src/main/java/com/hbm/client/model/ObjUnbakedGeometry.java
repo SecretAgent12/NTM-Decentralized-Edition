@@ -39,12 +39,9 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
     public static final String OVERLAY_SLOT = "overlay";
     public static final float RAW_OFFSET_Y = 0.5F;
     private static final int FULL_BRIGHT = 15;
-
     private static final float UV_EPS = 1.0e-4F;
-
     private static final int MAX_TILES = 64;
     private static final int CLIP_MAX = 12;
-    private final @Nullable ResourceLocation meshId;
     private final @Nullable HFRWavefrontObject model;
     private final @Nullable List<Loaded> groups;
     private final List<BoxSpec> boxes;
@@ -55,16 +52,13 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
     private final int overlayTintIndex;
     private final boolean translucentBase;
     private final Map<String, String[]> skins;
-    private final String[] hidden;
     private final Overrides overrides;
     private final boolean smooth;
-
     private final Map<String, float[]> uvScales;
 
     public ObjUnbakedGeometry(
             ResourceLocation objId,
             Map<String, String[]> skins,
-            String[] hidden,
             float offsetX,
             float offsetY,
             float offsetZ,
@@ -74,12 +68,10 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
             Overrides overrides,
             boolean smooth,
             Map<String, float[]> uvScales) {
-        this.meshId = objId;
         this.model = Meshes.load(objId);
         this.groups = null;
         this.boxes = List.of();
         this.skins = skins;
-        this.hidden = hidden;
         this.offsetX = offsetX;
         this.offsetY = offsetY;
         this.offsetZ = offsetZ;
@@ -92,10 +84,8 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
     }
 
     public ObjUnbakedGeometry(
-            @Nullable ResourceLocation ownMesh,
             List<GroupSpec> groups,
             List<BoxSpec> boxes,
-            String[] hidden,
             float offsetX,
             float offsetY,
             float offsetZ,
@@ -105,16 +95,6 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
         List<Loaded> loaded = new ArrayList<>(groups.size());
         for (GroupSpec spec : groups) {
             HFRWavefrontObject mesh = meshes.computeIfAbsent(spec.mesh(), Meshes::load);
-            for (String part : spec.parts()) {
-                if (!hasGroup(mesh, part)) {
-                    throw new IllegalStateException(
-                            spec.mesh()
-                                    + " has no group '"
-                                    + part
-                                    + "'; it has "
-                                    + mesh.getGroupNames());
-                }
-            }
             loaded.add(
                     new Loaded(
                             mesh,
@@ -124,12 +104,10 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
                             spec.smooth(),
                             spec.color()));
         }
-        this.meshId = ownMesh;
-        this.model = ownMesh == null ? null : meshes.computeIfAbsent(ownMesh, Meshes::load);
+        this.model = null;
         this.groups = List.copyOf(loaded);
         this.boxes = List.copyOf(boxes);
         this.skins = Map.of();
-        this.hidden = hidden;
         this.offsetX = offsetX;
         this.offsetY = offsetY;
         this.offsetZ = offsetZ;
@@ -139,11 +117,6 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
         this.overrides = overrides;
         this.smooth = true;
         this.uvScales = uvScales;
-    }
-
-    private static boolean hasGroup(HFRWavefrontObject mesh, String name) {
-        for (GroupObject group : mesh.groups) if (group.name.equals(name)) return true;
-        return false;
     }
 
     static QuadCollection bakeGroups(
@@ -241,14 +214,12 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
 
     private static BakedQuad.MaterialInfo meshInfo(
             Material.Baked material, Transparency transparency, int tintIndex, int lightEmission) {
-
         return QuadLighting.ownBlock(
                 BakedQuad.MaterialInfo.of(
                         material, transparency, tintIndex, true, lightEmission, false));
     }
 
     private static BakedQuad.MaterialInfo fullBright(BakedQuad.MaterialInfo info) {
-
         var result =
                 new BakedQuad.MaterialInfo(
                         info.sprite(),
@@ -258,7 +229,6 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
                         info.shade(),
                         FULL_BRIGHT,
                         info.ambientOcclusion());
-
         result.hbm$setLightOrigin(info.hbm$lightOrigin());
         return result;
     }
@@ -290,9 +260,7 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
             float offsetY,
             float offsetZ,
             Overrides overrides) {
-
         QuadCollection.Builder builder = new QuadCollection.Builder();
-
         QuadScratch scratch = new QuadScratch();
         for (Group g : groups) {
             Matrix4fc matrix = g.state().transformation().getMatrix();
@@ -313,7 +281,6 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
                         float[] src = cut == null ? q : cut[f];
                         int at = cut == null ? base : 0;
                         float[] back = twoSided ? reversed(src, at) : null;
-
                         builder.addUnculledFace(
                                 makeQuad(
                                         scratch,
@@ -350,7 +317,6 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
             }
         }
         for (BoxQuad box : boxQuads) {
-
             BakedQuad q = box.quad();
             BakedQuad tinted =
                     box.color() == WHITE && box.origin() == QuadLighting.VANILLA
@@ -378,7 +344,6 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
             if (box.cull() == null) builder.addUnculledFace(tinted);
             else builder.addCulledFace(box.cull(), tinted);
         }
-
         return builder.build();
     }
 
@@ -465,7 +430,6 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
                 overrides.emissive() == null ? info : fullBright(info);
 
         QuadCollection.Builder builder = new QuadCollection.Builder();
-
         QuadScratch scratch = new QuadScratch();
         for (GroupObject group : model.groups) {
             if (parts != null && !contains(parts, group.name)) continue;
@@ -483,7 +447,6 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
                     float[] src = cut == null ? q : cut[f];
                     int at = cut == null ? base : 0;
                     float[] back = twoSided ? reversed(src, at) : null;
-
                     builder.addUnculledFace(
                             makeQuad(
                                     scratch,
@@ -515,9 +478,7 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
                                         uv[0],
                                         uv[1],
                                         groupColor));
-
                     if (overlaySprite != null) {
-
                         builder.addUnculledFace(
                                 makeQuad(
                                         scratch,
@@ -537,7 +498,6 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
                 }
             }
         }
-
         return builder.build();
     }
 
@@ -675,7 +635,6 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
             int v = base + i * GroupObject.STRIDE;
             Vector3f transformed =
                     normalMatrix.transform(normals[i].set(q[v + 5], q[v + 6], q[v + 7]));
-
             if (transformed.lengthSquared() < 1e-12F) {
                 normalMatrix.transform(transformed.set(direction.step()));
             }
@@ -736,7 +695,6 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
                 BakedNormals.of(
                         BakedNormals.pack(normals[0]), BakedNormals.pack(normals[1]),
                         BakedNormals.pack(normals[2]), BakedNormals.pack(normals[3]));
-
         return new BakedQuad(
                 new Vector3f(pos[0]),
                 new Vector3f(pos[1]),
@@ -752,61 +710,9 @@ public final class ObjUnbakedGeometry implements UnbakedGeometry {
                 BakedColors.of(color));
     }
 
-    private void checkCensus(ModelDebugName name) {
-        if (model == null) return;
-        Map<String, String> claimedBy = new LinkedHashMap<>();
-        List<String> twice = new ArrayList<>();
-        if (groups != null) {
-            for (Loaded group : groups) {
-                if (group.model() != model) continue;
-                for (String part : group.parts()) claimedBy.put(part, group.slot());
-            }
-        } else {
-            skins.forEach(
-                    (slot, parts) -> {
-                        for (String part : parts) {
-                            String previous = claimedBy.put(part, slot);
-                            if (previous != null)
-                                twice.add(part + " (" + previous + ", " + slot + ")");
-                        }
-                    });
-        }
-        List<String> unknown = new ArrayList<>();
-        for (String part : claimedBy.keySet()) if (!hasGroup(model, part)) unknown.add(part);
-        for (String part : hidden) {
-            if (!hasGroup(model, part)) unknown.add(part);
-            if (claimedBy.containsKey(part))
-                twice.add(part + " (hidden and " + claimedBy.get(part) + ")");
-        }
-        List<String> unclaimed = new ArrayList<>();
-        for (String group : new LinkedHashSet<>(model.getGroupNames())) {
-            if (!claimedBy.containsKey(group) && !contains(hidden, group)) unclaimed.add(group);
-        }
-        if (unknown.isEmpty() && twice.isEmpty() && unclaimed.isEmpty()) return;
-        throw new IllegalStateException(
-                name.debugName()
-                        + " does not account for its mesh "
-                        + meshId
-                        + ": "
-                        + unclaimed.size()
-                        + " name(s) neither drawn nor hidden "
-                        + unclaimed
-                        + ", "
-                        + unknown.size()
-                        + " name(s) the mesh does not have "
-                        + unknown
-                        + ", "
-                        + twice.size()
-                        + " claimed twice "
-                        + twice
-                        + ". The mesh has "
-                        + new LinkedHashSet<>(model.getGroupNames()));
-    }
-
     @Override
     public QuadCollection bake(
             TextureSlots slots, ModelBaker baker, ModelState state, ModelDebugName name) {
-        checkCensus(name);
         if (groups != null) return bakeSpecs(slots, baker, state, name);
         if (skins.size() == 1) {
             Map.Entry<String, String[]> only = skins.entrySet().iterator().next();

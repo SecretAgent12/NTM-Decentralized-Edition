@@ -3,6 +3,7 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.BlockEntityStirling;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.RefreshesNeighborState;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
@@ -10,14 +11,11 @@ import com.hbm.capability.ICapabilityBlock;
 import com.hbm.capability.MachineCaps;
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.items.EnumGearType;
-import com.hbm.items.ModDataComponents;
 import com.hbm.items.ModItems;
 import com.hbm.sound.ModSounds;
-import com.hbm.tileentity.machine.BlockEntityStirling;
 import com.hbm.util.BobMathUtil;
 import java.util.Locale;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import com.hbm.backport.InteractionResult;
@@ -32,9 +30,6 @@ import org.jspecify.annotations.Nullable;
 // backport: @RefreshesNeighborState(be = BlockEntityStirling.class, calling = "refreshHeatBelow") woven below
 public class MachineStirling extends BlockMultiblockCore
         implements ITickingBlock, ILookOverlay, ICapabilityBlock {
-
-    private static final int[] DIMENSIONS = {1, 0, 1, 1, 1, 1};
-
     private final Tier tier;
 
     public MachineStirling(Tier tier, Properties props) {
@@ -44,26 +39,6 @@ public class MachineStirling extends BlockMultiblockCore
 
     public Tier tier() {
         return tier;
-    }
-
-    @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 1;
-    }
-
-    @Override
-    protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
-        super.visitCells(core, facing, visitor);
-
-        visitor.cell(core.offset(1, 0, 0), MASK_EAST);
-        visitor.cell(core.offset(-1, 0, 0), MASK_WEST);
-        visitor.cell(core.offset(0, 0, 1), MASK_SOUTH);
-        visitor.cell(core.offset(0, 0, -1), MASK_NORTH);
     }
 
     @Override
@@ -139,7 +114,6 @@ public class MachineStirling extends BlockMultiblockCore
     public enum Tier {
         NORMAL(EnumGearType.LARGE.ordinal(), 300, false),
         STEEL(EnumGearType.LARGE_STEEL.ordinal(), 1500, false),
-
         CREATIVE(2, 1500, true);
 
         public final int gear;

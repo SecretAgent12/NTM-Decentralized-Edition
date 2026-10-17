@@ -3,6 +3,8 @@
 
 package com.hbm.client.render;
 
+import com.hbm.blockentity.BlockEntityBobble;
+import com.hbm.blocks.generic.BlockBobble.Bobble;
 import com.hbm.blocks.generic.BlockBobble.BobbleType;
 import com.hbm.blocks.generic.BlockBobble;
 import com.hbm.client.render.flywheel.BobbleVisual;
@@ -11,13 +13,14 @@ import com.hbm.items.ModItems;
 import com.hbm.items.weapon.sedna.factory.GunFactory.EnumModSpecial;
 import com.hbm.main.ResourceManager;
 import com.hbm.render.loader.HFRWavefrontObject;
-import com.hbm.tileentity.BlockEntityBobble;
 import com.hbm.util.GameTime;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.hbm.lib.crankshaft.ConcurrentRenderStateExtraction;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import com.hbm.backport.client.core.OrderedSubmitNodeCollector;
@@ -61,7 +64,6 @@ public class RenderBobble
     public static final int GLOW = ResourceManager.bobble.partId("Glow");
     public static final int HEV_HEAD = ResourceManager.armor_hev.partId("Head");
     public static final int MINI_NUKE = ResourceManager.fatman.partId("MiniNuke");
-
     public static final int[] NI4NI =
             ResourceManager.n_i_4_n_i.partIds(
                     "FrameDark", "Grip", "FrameLight", "Cylinder", "Barrel");
@@ -69,15 +71,13 @@ public class RenderBobble
             ResourceManager.double_barrel.partIds("Stock", "BarrelShort", "Buckle", "Lever");
     public static final Skin LAYERED = skinSet("");
     public static final Skin FLAT = skinSet("17");
-
     private static final Map<BobbleType, RenderType> SKINS = new EnumMap<>(BobbleType.class);
     private static final RenderType SOCKET =
             RenderTypes.entityCutoutCull(ResourceManager.bobble_socket_tex);
-
     private static final RenderType SHINE = BobbleRenderTypes.figurine(ResourceManager.white_tex);
     private static final double[] ZERO = {0, 0, 0};
     private static final Map<BobbleType, Pose> POSES = new EnumMap<>(BobbleType.class);
-    private static final Pose NO_POSE = new Pose(ZERO, ZERO, ZERO, ZERO, 0, ZERO);
+    private static final Map<Bobble, RenderType> FIGURE_SKINS = new ConcurrentHashMap<>();
     private static final Quaternionfc TURN = Axis.YP.rotationDegrees(90);
 
     static {
@@ -210,8 +210,10 @@ public class RenderBobble
                         ResourceManager.bobble.partId("Head" + suffix));
     }
 
-    public static Pose pose(BobbleType type) {
-        return POSES.getOrDefault(type, NO_POSE);
+    public static Pose pose(Bobble type) {
+        return type instanceof BobbleType ntm
+                ? POSES.getOrDefault(ntm, BobbleFigures.NO_POSE)
+                : BobbleFigures.get(type).pose();
     }
 
     public static float wobbleX(long time) {
@@ -223,17 +225,15 @@ public class RenderBobble
     }
 
     public static int shine(long time) {
-
         float alpha = 0.1F + (float) Math.sin(time * 0.001D) * 0.05F;
         return ARGB.colorFromFloat(alpha, 1.0F, 1.0F, 0.0F);
     }
 
-    public static int labelColor(BobbleType type) {
+    public static int labelColor(Bobble type) {
         return type == BobbleType.VT ? 0xFFFF0000 : 0xFFFFFFFF;
     }
 
     public static Matrix4f labelBase(Matrix4f pose) {
-
         float f3 = 0.01F;
         return pose.translate(0.63F, 0.175F, 0F).scale(f3, -f3, f3);
     }
@@ -242,8 +242,9 @@ public class RenderBobble
         return pose.translate(0F, 0F, width * 0.5F).rotate(TURN).translate(0F, 1F, 0F);
     }
 
-    public static ResourceLocation skinTexture(BobbleType type) {
-        return switch (type) {
+    public static ResourceLocation skinTexture(Bobble type) {
+        if (!(type instanceof BobbleType ntm)) return BobbleFigures.get(type).skin();
+        return switch (ntm) {
             case STRENGTH, PERCEPTION, ENDURANCE, CHARISMA, INTELLIGENCE, AGILITY, LUCK ->
                     ResourceManager.bobble_vaultboy_tex;
             case BOB -> ResourceManager.bobble_hbm_tex;
@@ -265,6 +266,13 @@ public class RenderBobble
             case ABEL -> ResourceManager.bobble_abel_tex;
             default -> ResourceManager.universal_tex;
         };
+    }
+
+    private static RenderType skin(Bobble type) {
+        return type instanceof BobbleType ntm
+                ? SKINS.get(ntm)
+                : FIGURE_SKINS.computeIfAbsent(
+                        type, key -> BobbleRenderTypes.figurine(skinTexture(key)));
     }
 
     public static RenderBobble forItem() {
@@ -289,7 +297,6 @@ public class RenderBobble
         state.type = be.type;
         state.rotation = be.getBlockState().getValue(BlockBobble.ROTATION);
         state.time = GameTime.now();
-
         state.propOnly = HbmBlockEntityVisual.hasVisual(be);
         if (state.propOnly && !BobbleVisual.vanillaNeeded(be)) return;
         if (state.type == BobbleType.VAER) resolveCigarette(state.cigarette, be.getLevel());
@@ -302,7 +309,6 @@ public class RenderBobble
         ps.pushPose();
         ps.translate(0.5, 0.0, 0.5);
         ps.scale(0.25F, 0.25F, 0.25F);
-
         ps.mulPose(Axis.YN.rotationDegrees(22.5F * s.rotation + 90.0F));
         if (s.propOnly) renderProp(s, ps, col);
         else
@@ -314,31 +320,31 @@ public class RenderBobble
     private static void renderProp(
             State state, PoseStack poseStack, SubmitNodeCollector collector) {
         ItemStackRenderState prop;
-        switch (state.type) {
-            case VAER -> {
-                Pose pose = pose(state.type);
-                poseStack.mulPose(Axis.YP.rotationDegrees((float) pose.body));
-                poseStack.translate(0D, 1.75D, 0D);
-                poseStack.mulPose(Axis.XP.rotationDegrees(wobbleX(state.time)));
-                poseStack.mulPose(Axis.ZP.rotationDegrees(wobbleZ(state.time)));
-                poseStack.mulPose(Axis.XP.rotationDegrees((float) pose.head[0]));
-                poseStack.mulPose(Axis.YP.rotationDegrees((float) pose.head[1]));
-                poseStack.mulPose(Axis.ZP.rotationDegrees((float) pose.head[2]));
-                poseStack.translate(0D, -1.75D, 0D);
-                prop = state.cigarette;
-            }
-            case FRIZZLE -> prop = state.doubloons;
-            case ADAM29 -> prop = state.redBomb;
-            default -> {
-                return;
-            }
+        if (state.type == BobbleType.VAER) {
+            Pose pose = pose(state.type);
+            poseStack.mulPose(Axis.YP.rotationDegrees((float) pose.body));
+            poseStack.translate(0D, 1.75D, 0D);
+            poseStack.mulPose(Axis.XP.rotationDegrees(wobbleX(state.time)));
+            poseStack.mulPose(Axis.ZP.rotationDegrees(wobbleZ(state.time)));
+            poseStack.mulPose(Axis.XP.rotationDegrees((float) pose.head[0]));
+            poseStack.mulPose(Axis.YP.rotationDegrees((float) pose.head[1]));
+            poseStack.mulPose(Axis.ZP.rotationDegrees((float) pose.head[2]));
+            poseStack.translate(0D, -1.75D, 0D);
+            prop = state.cigarette;
+        } else if (state.type == BobbleType.FRIZZLE) {
+            prop = state.doubloons;
+        } else if (state.type == BobbleType.ADAM29) {
+            prop = state.redBomb;
+        } else {
+            return;
         }
         propPose(state.type, poseStack);
         prop.submit(poseStack, collector, state.lightCoords, OverlayTexture.NO_OVERLAY, 0);
     }
 
-    public static ItemStack prop(BobbleType type) {
-        return switch (type) {
+    public static ItemStack prop(Bobble type) {
+        if (!(type instanceof BobbleType ntm)) return ItemStack.EMPTY;
+        return switch (ntm) {
             case VAER -> new ItemStack(ModItems.CIGARETTE);
             case FRIZZLE -> ModItems.WEAPON_MOD_SPECIAL.stack(EnumModSpecial.DOUBLOONS);
             case ADAM29 -> new ItemStack(ModItems.CAN_REDBOMB);
@@ -346,8 +352,9 @@ public class RenderBobble
         };
     }
 
-    public static void propPose(BobbleType type, PoseStack ps) {
-        switch (type) {
+    public static void propPose(Bobble type, PoseStack ps) {
+        if (!(type instanceof BobbleType ntm)) throw new IllegalArgumentException(type.id());
+        switch (ntm) {
             case VAER -> {
                 ps.translate(0.25, 1.9, 0.075);
                 ps.mulPose(Axis.ZP.rotationDegrees(-60));
@@ -367,7 +374,7 @@ public class RenderBobble
     }
 
     public void renderBobble(
-            BobbleType type,
+            Bobble type,
             long time,
             PoseStack ps,
             SubmitNodeCollector col,
@@ -377,19 +384,29 @@ public class RenderBobble
             @Nullable ItemStackRenderState doubloons) {
         part(col, ps, SOCKET, ResourceManager.bobble, light, SOCKET_PART);
 
-        switch (type) {
-            case PU238 -> renderPellet(time, ps, col, light);
-            case UFFR -> renderFumo(time, ps, col, light);
-
-            case DRILLGON ->
-                    part(
-                            col,
-                            ps,
-                            RenderTypes.entityCutoutCull(ResourceManager.bobble_drillgon_tex),
-                            ResourceManager.bobble,
-                            light,
-                            DRILLGON);
-            default -> renderGuy(time, ps, col, 0, light, type, SKINS.get(type), cigarette);
+        Supplier<Body> body = type instanceof BobbleType ? null : BobbleFigures.get(type).body();
+        if (body != null) {
+            part(
+                    col,
+                    ps,
+                    RenderTypes.entityCutoutCull(skinTexture(type)),
+                    body.get().mesh(),
+                    light,
+                    body.get().group());
+        } else if (type == BobbleType.PU238) {
+            renderPellet(time, ps, col, light);
+        } else if (type == BobbleType.UFFR) {
+            renderFumo(time, ps, col, light);
+        } else if (type == BobbleType.DRILLGON) {
+            part(
+                    col,
+                    ps,
+                    RenderTypes.entityCutoutCull(ResourceManager.bobble_drillgon_tex),
+                    ResourceManager.bobble,
+                    light,
+                    DRILLGON);
+        } else {
+            renderGuy(time, ps, col, 0, light, type, skin(type), cigarette);
         }
 
         ps.pushPose();
@@ -405,12 +422,11 @@ public class RenderBobble
             SubmitNodeCollector col,
             int order,
             int light,
-            BobbleType type,
+            Bobble type,
             RenderType skin,
             @Nullable ItemStackRenderState cigarette) {
         Pose pose = pose(type);
         HFRWavefrontObject m = ResourceManager.bobble;
-
         OrderedSubmitNodeCollector out = col == null ? null : col.order(order);
 
         ps.pushPose();
@@ -418,7 +434,7 @@ public class RenderBobble
 
         if (type == BobbleType.PEEP) part(out, ps, skin, m, light, PEEP_TAIL);
 
-        Skin set = type.skinLayers ? LAYERED : FLAT;
+        Skin set = type.skinLayers() ? LAYERED : FLAT;
 
         limb(out, ps, skin, m, light, set.leftLeg, 0, 1, -0.125, pose.leftLeg);
         limb(out, ps, skin, m, light, set.rightLeg, 0, 1, 0.125, pose.rightLeg);
@@ -483,7 +499,6 @@ public class RenderBobble
     }
 
     private void renderPellet(long time, PoseStack ps, SubmitNodeCollector col, int light) {
-
         part(
                 col,
                 ps,
@@ -522,14 +537,15 @@ public class RenderBobble
     }
 
     private void renderPost(
-            BobbleType type,
+            Bobble type,
             long time,
             PoseStack ps,
             SubmitNodeCollector col,
             int light,
             @Nullable ItemStackRenderState redBomb,
             @Nullable ItemStackRenderState doubloons) {
-        switch (type) {
+        if (!(type instanceof BobbleType ntm)) return;
+        switch (ntm) {
             case BLUEHAT -> {
                 ps.translate(0.0, 0.875, -0.5);
                 ps.mulPose(Axis.YP.rotationDegrees(-90));
@@ -549,7 +565,6 @@ public class RenderBobble
                 ps.scale(0.125F, 0.125F, 0.125F);
                 ps.mulPose(Axis.YP.rotationDegrees(90));
                 ps.mulPose(Axis.XP.rotationDegrees(10));
-
                 RenderType gun = RenderTypes.entityCutoutCull(ResourceManager.n_i_4_n_i_tex);
                 for (int p : NI4NI) part(col, ps, gun, ResourceManager.n_i_4_n_i, light, p);
                 ps.popPose();
@@ -582,7 +597,6 @@ public class RenderBobble
                 ps.mulPose(Axis.XP.rotationDegrees(-90));
                 ps.scale(0.125F, 0.125F, 0.125F);
                 RenderType nuke = RenderTypes.entityCutoutCull(ResourceManager.fatman_mininuke_tex);
-
                 ps.translate(-6, 0, 0);
                 for (int i = -1; i <= 1; i++) {
                     ps.translate(3, 0, 0);
@@ -643,14 +657,13 @@ public class RenderBobble
         }
     }
 
-    private void renderSocket(BobbleType type, PoseStack ps, SubmitNodeCollector col) {
-        labelWidth(labelBase(ps.last().pose()), font.width(type.label));
-
+    private void renderSocket(Bobble type, PoseStack ps, SubmitNodeCollector col) {
+        labelWidth(labelBase(ps.last().pose()), font.width(type.label()));
         col.submitText(
                 ps,
                 0,
                 0,
-                FormattedCharSequence.forward(type.label, Style.EMPTY),
+                FormattedCharSequence.forward(type.label(), Style.EMPTY),
                 false,
                 Font.DisplayMode.NORMAL,
                 LightTexture.FULL_BRIGHT,
@@ -717,11 +730,15 @@ public class RenderBobble
             double body,
             double[] head) {}
 
+    public record Figure(ResourceLocation skin, Pose pose, @Nullable Supplier<Body> body) {}
+
+    public record Body(HFRWavefrontObject mesh, int group) {}
+
     public static final class State extends BlockEntityRenderState {
         public final ItemStackRenderState cigarette = new ItemStackRenderState();
         public final ItemStackRenderState redBomb = new ItemStackRenderState();
         public final ItemStackRenderState doubloons = new ItemStackRenderState();
-        public BobbleType type = BobbleType.NONE;
+        public Bobble type = BobbleType.NONE;
         public int rotation;
         public long time;
         public boolean propOnly;

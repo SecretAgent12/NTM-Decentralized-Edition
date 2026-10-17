@@ -3,7 +3,7 @@
 
 package com.hbm.blocks.generic;
 
-import com.hbm.tileentity.BlockEntitySnowglobe;
+import com.hbm.blockentity.BlockEntitySnowglobe;
 import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
 import com.hbm.backport.InteractionResult;
@@ -32,11 +32,8 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.BlockCompat;
 
 public class BlockSnowglobe extends BlockCompat implements EntityBlock {
-
     public static final IntegerProperty ROTATION = BlockStateProperties.ROTATION_16;
-
     private static final VoxelShape SHAPE = Block.box(4, 0, 4, 12, 5, 12);
-
     public static Consumer<BlockEntitySnowglobe> OPEN_GUI = be -> {};
 
     public BlockSnowglobe(Properties props) {
@@ -119,7 +116,6 @@ public class BlockSnowglobe extends BlockCompat implements EntityBlock {
                             pos.getY(),
                             pos.getZ() + 0.5,
                             BlockEntitySnowglobe.stackOf(globe.type));
-
             item.setDeltaMovement(0, 0, 0);
             level.addFreshEntity(item);
         }

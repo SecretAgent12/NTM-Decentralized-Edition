@@ -5,13 +5,13 @@ package com.hbm.blocks.machine;
 
 import com.hbm.api.energymk2.EnergyCaps;
 import com.hbm.api.energymk2.IEnergyHandlerMK2;
+import com.hbm.blockentity.machine.BlockEntityMachineICFController;
 import com.hbm.blocks.ModBlocks;
 import com.hbm.blocks.multiblock.AssembledMembers;
 import com.hbm.capability.ICapabilityBlock;
 import com.hbm.capability.MachineCaps;
-import com.hbm.platform.Services;
+import com.hbm.platform.NeoForgeCaps;
 import com.hbm.registration.RegistryHandle;
-import com.hbm.tileentity.machine.BlockEntityMachineICFController;
 import com.hbm.util.ChunkUtil;
 import java.util.function.Supplier;
 import net.minecraft.core.BlockPos;
@@ -55,7 +55,6 @@ public class BlockICF extends BlockCompat implements ICapabilityBlock, Assembled
         BlockPos owner = AssembledMembers.owner(level, pos);
         AssembledMembers.release(level, pos);
         BlockState original = state.getValue(PART).original();
-
         if (level.getBlockState(pos) == original) return;
         level.setBlock(pos, original, UPDATE_ALL);
         BlockEntityMachineICFController controller =
@@ -81,13 +80,20 @@ public class BlockICF extends BlockCompat implements ICapabilityBlock, Assembled
     }
 
     @Override
+    public boolean hasPowerContact(Level level, BlockPos pos, BlockState state, Direction side) {
+        return state.getValue(PART) == Part.PORT;
+    }
+
+    @Override
     public MachineCaps caps() {
         return MachineCaps.blockKeyed().powerIn().selfProvided();
     }
 
     @Override
     public void declareExtraCaps(RegistryHandle<? extends Block> self) {
-        Services.CAPS.registerBlockProvider(EnergyCaps.RECEIVER, self, BlockICF::portCap);
+        NeoForgeCaps.pendingBlocks.add(
+                new NeoForgeCaps.BlockRegistration<>(
+                        EnergyCaps.RECEIVER, (Supplier<? extends Block>) self, BlockICF::portCap));
     }
 
     private static @Nullable IEnergyHandlerMK2 portCap(
@@ -115,7 +121,6 @@ public class BlockICF extends BlockCompat implements ICapabilityBlock, Assembled
         TURBOCHARGER("turbocharger", () -> ModBlocks.ICF_TURBOCHARGER.get());
 
         private final String name;
-
         private final Supplier<Block> block;
 
         Part(String name, Supplier<Block> block) {

@@ -12,8 +12,14 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 
 public final class TorexClientFX {
-
     private TorexClientFX() {}
+
+    // backport: upstream samples the Flywheel LOD terrain (LodTerrain.surface, 26.x Flywheel only)
+    // for columns outside loaded chunks; without LOD terrain the surface is always unknown, which
+    // upstream answers with the torex's own height
+    public static int lodSurface(EntityNukeTorex torex, int x, int z) {
+        return (int) torex.getY();
+    }
 
     public static void skyFlash(Level level) {
         if (level instanceof ClientLevel client) {
@@ -44,7 +50,6 @@ public final class TorexClientFX {
                             false);
             torex.didPlaySound = true;
         }
-
         if (!torex.didShake && NukeHud.armShake()) {
             torex.didShake = true;
             player.animateHurt(0F);

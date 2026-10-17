@@ -3,12 +3,12 @@
 
 package com.hbm.client.render.flywheel;
 
-import com.hbm.client.model.Meshes;
+import com.hbm.blockentity.bomb.BlockEntityCompactLauncher;
+import com.hbm.client.render.MissilePronter;
 import com.hbm.handler.MissileStruct;
 import com.hbm.items.weapon.ItemCustomMissilePart.PartType;
 import com.hbm.items.weapon.ItemCustomMissilePart;
 import com.hbm.render.loader.HFRWavefrontObject;
-import com.hbm.tileentity.bomb.BlockEntityCompactLauncher;
 import dev.engine_room.flywheel.api.instance.Instance;
 import dev.engine_room.flywheel.api.visual.ShaderLightVisual;
 import dev.engine_room.flywheel.api.visualization.VisualizationContext;
@@ -55,7 +55,7 @@ public final class CompactLauncherVisual
     }
 
     private static PartModels models(PartKey key) {
-        HFRWavefrontObject mesh = Meshes.faceNormals(key.mesh);
+        HFRWavefrontObject mesh = MissilePronter.partMesh(key.mesh);
         return new PartModels(
                 MeshPart.objParts(mesh, MeshPart.litCutout(key.skin)), mesh.getExtents()[4]);
     }

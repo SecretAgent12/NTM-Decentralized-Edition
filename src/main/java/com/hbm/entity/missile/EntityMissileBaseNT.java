@@ -4,7 +4,9 @@
 package com.hbm.entity.missile;
 
 import com.hbm.api.entity.IRadarDetectableNT;
+import com.hbm.api.environment.Environment;
 import com.hbm.client.ClientEffects;
+import com.hbm.entity.FarVisible;
 import com.hbm.explosion.ExplosionLarge;
 import com.hbm.explosion.vanillant.ExplosionVNT;
 import com.hbm.explosion.vanillant.standard.*;
@@ -34,11 +36,10 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import com.hbm.backport.compat.ProjectileCompat;
 
-public abstract class EntityMissileBaseNT extends ProjectileCompat implements IRadarDetectableNT {
-
+public abstract class EntityMissileBaseNT extends ProjectileCompat
+        implements IRadarDetectableNT, FarVisible {
     private static final EntityDataAccessor<Byte> FACING =
             SynchedEntityData.defineId(EntityMissileBaseNT.class, EntityDataSerializers.BYTE);
-
     private final InterpolationHandler interpolation = new InterpolationHandler(this);
     public int startX;
     public int startZ;
@@ -49,7 +50,6 @@ public abstract class EntityMissileBaseNT extends ProjectileCompat implements IR
     public double accelXZ;
     public boolean isCluster = false;
     public int health = 50;
-
     public float renderPitch;
     public float renderPitchO;
     public float renderYaw;
@@ -123,7 +123,6 @@ public abstract class EntityMissileBaseNT extends ProjectileCompat implements IR
 
     @Override
     public void tick() {
-
         Vec3 prePos = position();
         this.interpolation.interpolate();
         super.tick();
@@ -135,6 +134,10 @@ public abstract class EntityMissileBaseNT extends ProjectileCompat implements IR
             return;
         }
 
+        fly();
+    }
+
+    protected void fly() {
         double mult = velocity;
         Vec3 from = position();
         Vec3 to = from.add(getDeltaMovement().scale(mult));
@@ -211,12 +214,12 @@ public abstract class EntityMissileBaseNT extends ProjectileCompat implements IR
             Vec3 step, double offsetX, double offsetY, double offsetZ) {
         double len = step.length();
         Vec3 back = step.lengthSqr() < 1.0e-8 ? Vec3.ZERO : step.normalize().scale(-1);
-
         Vec3 thrust = noseAxis();
         int count = (int) Math.max(Math.min(len, 10), 1);
+        double pressure = Environment.particlePressure(level());
         for (int i = 0; i < count; i++) {
             double d = len - i;
-            ClientEffects.spawnRocketFlame(
+            ClientEffects.spawnRocketFlameInAir(
                     level(),
                     getX() + back.x * d + offsetX,
                     getY() + back.y * d + offsetY,
@@ -225,7 +228,8 @@ public abstract class EntityMissileBaseNT extends ProjectileCompat implements IR
                     -thrust.x,
                     -thrust.y,
                     -thrust.z,
-                    60 + random.nextInt(20));
+                    60 + random.nextInt(20),
+                    pressure);
         }
     }
 
@@ -238,7 +242,6 @@ public abstract class EntityMissileBaseNT extends ProjectileCompat implements IR
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
         if (isInvulnerableTo(source)) return false;
-
         if (health > 0) {
             health -= amount;
             if (health <= 0) killMissile();

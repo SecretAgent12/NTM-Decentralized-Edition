@@ -3,6 +3,7 @@
 
 package com.hbm.client.render;
 
+import com.hbm.client.model.Meshes;
 import com.hbm.client.render.flywheel.ItemVisuals;
 import com.hbm.client.render.flywheel.MeshItemVisual;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
@@ -79,7 +80,6 @@ public final class MeshItemRenderer
                                                                         draw.offset()))
                                                 .toList())
                         .toList();
-
         this.skins =
                 skins.stream()
                         .map(
@@ -319,6 +319,7 @@ public final class MeshItemRenderer
             ResourceLocation base,
             ResourceLocation mesh,
             boolean smooth,
+            boolean flatShaded,
             boolean cull,
             Optional<String> part,
             List<List<Draw>> parts,
@@ -340,6 +341,9 @@ public final class MeshItemRenderer
                                                 Codec.BOOL
                                                         .optionalFieldOf("smooth", true)
                                                         .forGetter(Unbaked::smooth),
+                                                Codec.BOOL
+                                                        .optionalFieldOf("flat_shaded", false)
+                                                        .forGetter(Unbaked::flatShaded),
                                                 Codec.BOOL
                                                         .optionalFieldOf("cull", true)
                                                         .forGetter(Unbaked::cull),
@@ -377,6 +381,7 @@ public final class MeshItemRenderer
             HFRWavefrontObject loaded =
                     new HFRWavefrontObject(Minecraft.getInstance().getResourceManager(), mesh);
             if (!smooth) loaded.noSmooth();
+            if (flatShaded) loaded = Meshes.flatShaded(loaded);
 
             EnumMap<ItemDisplayContext, Clock> clocks = new EnumMap<>(ItemDisplayContext.class);
             Map<String, Matrix4fc> remainder = suffixes.orElse(Map.of());

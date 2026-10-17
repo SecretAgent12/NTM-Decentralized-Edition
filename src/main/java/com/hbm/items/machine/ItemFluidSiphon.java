@@ -10,8 +10,7 @@ import com.hbm.inventory.fluid.NTMFluidProperties;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
 import com.hbm.inventory.fluid.trait.FluidTraitSimple.FT_Unsiphonable;
 import com.hbm.items.tool.ItemPipette;
-import com.hbm.platform.IFluidHandlerView;
-import com.hbm.platform.Services;
+import com.hbm.platform.NeoForgeCaps;
 import net.minecraft.core.BlockPos;
 import com.hbm.backport.InteractionResult;
 import net.minecraft.world.SimpleContainer;
@@ -23,11 +22,12 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.material.Fluid;
+import com.hbm.lib.neotransfer.ResourceHandler;
+import com.hbm.lib.neotransfer.fluid.FluidResource;
 import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.ItemCompat;
 
 public class ItemFluidSiphon extends ItemCompat {
-
     private static final int PIPETTE_REMAINDER = 1000;
 
     public ItemFluidSiphon(Properties props) {
@@ -50,7 +50,6 @@ public class ItemFluidSiphon extends ItemCompat {
             Fluid type = tank.getTankType();
             if (tank.getFill() <= 0 || type == null) continue;
             if (NTMFluidProperties.hasTrait(type, FT_Unsiphonable.class)) continue;
-
             if (drain(player, tank, tank.getFluid())) {
                 be.setChanged();
                 return InteractionResult.SUCCESS;
@@ -106,12 +105,12 @@ public class ItemFluidSiphon extends ItemCompat {
             return FluidContainerRows.filled(stack, type);
         }
         SimpleContainer scratch = new SimpleContainer(stack.copyWithCount(1));
-        IFluidHandlerView view = Services.CAPS.findFluidHandler(scratch, 0);
-        if (view == null) return null;
+        ResourceHandler<FluidResource> store = NeoForgeCaps.findFluidStore(scratch, 0);
+        if (store == null) return null;
 
-        long room = view.insertable(type);
+        long room = NeoForgeCaps.insertable(store, type);
         if (room <= 0 || room > tank.getFill()) return null;
-        long given = view.insert(type, room);
+        long given = NeoForgeCaps.insert(store, type, room);
         if (given <= 0) return null;
 
         tank.setFill(tank.getFill() - given);

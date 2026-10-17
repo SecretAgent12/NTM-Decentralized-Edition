@@ -4,6 +4,7 @@
 package com.hbm.items.food;
 
 import com.hbm.items.special.ItemCustomLore;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
@@ -14,7 +15,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
 public class ItemEmetic extends ItemCustomLore {
-
     private static final int HUNGER_TICKS = 50;
     private static final int HUNGER_AMPLIFIER = 49;
 
@@ -27,9 +27,8 @@ public class ItemEmetic extends ItemCustomLore {
         ItemStack rest = super.finishUsingItem(stack, level, entity);
         entity.addEffect(new MobEffectInstance(MobEffects.HUNGER, HUNGER_TICKS, HUNGER_AMPLIFIER));
         if (level instanceof ServerLevel server) {
-
-            server.playSound(
-                    null,
+            EntitySounds.play(
+                    entity,
                     entity.getX(),
                     entity.getY(),
                     entity.getZ(),

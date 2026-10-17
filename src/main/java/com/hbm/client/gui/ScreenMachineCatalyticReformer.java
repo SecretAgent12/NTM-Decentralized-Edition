@@ -3,10 +3,10 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.machine.BlockEntityMachineCatalyticReformer;
 import com.hbm.inventory.container.MenuMachineCatalyticReformer;
 import com.hbm.items.ModItems;
 import com.hbm.lib.Library;
-import com.hbm.tileentity.machine.BlockEntityMachineCatalyticReformer;
 import java.util.List;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.client.rendertype.RenderPipelines;

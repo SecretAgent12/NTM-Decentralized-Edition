@@ -12,7 +12,6 @@ import com.hbm.backport.TooltipDisplay;
 import com.hbm.backport.compat.ItemCompat;
 
 public class ItemCatalyst extends ItemCompat {
-
     private final int color;
 
     public ItemCatalyst(int color, Properties props) {

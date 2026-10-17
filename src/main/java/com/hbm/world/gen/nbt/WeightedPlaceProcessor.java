@@ -11,18 +11,15 @@ import com.hbm.backport.random.WeightedList;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import com.hbm.backport.StructureProcessorCompat;
 
-public final class WeightedPlaceProcessor extends StructureProcessorCompat {
+public final class WeightedPlaceProcessor extends MarkerProcessor {
     // backport: a record in 26.x; a record cannot extend the 1.21.1 base class
     private final BlockState marker;
     private final WeightedList<BlockState> options;
     private final int seedOffsetY;
 
     public WeightedPlaceProcessor(BlockState marker, WeightedList<BlockState> options, int seedOffsetY) {
-
         if (options.isEmpty()) {
             throw new IllegalArgumentException("Weighted list must have at least one entry");
         }
@@ -31,6 +28,7 @@ public final class WeightedPlaceProcessor extends StructureProcessorCompat {
         this.seedOffsetY = seedOffsetY;
     }
 
+    @Override
     public BlockState marker() {
         return marker;
     }
@@ -58,7 +56,6 @@ public final class WeightedPlaceProcessor extends StructureProcessorCompat {
         return "WeightedPlaceProcessor[" + "marker=" + marker + ", " + "options=" + options + ", " + "seedOffsetY=" + seedOffsetY + "]";
     }
 
-
     public static final MapCodec<WeightedPlaceProcessor> MAP_CODEC =
             RecordCodecBuilder.mapCodec(
                     i ->
@@ -73,7 +70,6 @@ public final class WeightedPlaceProcessor extends StructureProcessorCompat {
                                                     .optionalFieldOf("seed_offset_y", 0)
                                                     .forGetter(WeightedPlaceProcessor::seedOffsetY))
                                     .apply(i, WeightedPlaceProcessor::new));
-
 
     @Override
     public StructureTemplate.StructureBlockInfo processBlock(

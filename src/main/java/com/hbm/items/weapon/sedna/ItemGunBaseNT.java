@@ -18,9 +18,10 @@ import com.hbm.items.weapon.sedna.impl.ItemGunStinger;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
 import com.hbm.items.weapon.sedna.mags.MagazineInfinite;
 import com.hbm.items.weapon.sedna.mods.XWeaponModManager;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toclient.HbmAnimationPayload;
-import com.hbm.platform.Services;
 import com.hbm.render.anim.AnimationEnums.GunAnimation;
+import com.hbm.render.anim.HbmAnimations;
 import com.hbm.sound.AudioWrapper;
 import com.hbm.util.BobMathUtil;
 import com.hbm.util.EnumUtil;
@@ -88,17 +89,13 @@ public class ItemGunBaseNT extends ItemCompat implements IKeybindReceiver, IEqui
     public static float prevAimingProgress;
     public static float aimingProgress;
     public long[] lastShot;
-
     public double shotRand = 0D;
-
     public List<Supplier<ItemStack>> recognizedMods = new ArrayList<>();
-
     public Enum<?> defaultAmmoType;
     public int defaultAmmoAmount;
     public boolean isDefaultExpensive = false;
     public Function<ItemStack, String> LAMBDA_NAME_MUTATOR;
     public WeaponQuality quality;
-
     protected GunConfig[] configs_DNA;
 
     public ItemGunBaseNT(WeaponQuality quality, Properties properties, GunConfig... cfg) {
@@ -107,7 +104,6 @@ public class ItemGunBaseNT extends ItemCompat implements IKeybindReceiver, IEqui
         this.quality = quality;
         this.lastShot = new long[cfg.length];
         for (int i = 0; i < cfg.length; i++) cfg[i].index = i;
-
         if (quality == WeaponQuality.LEGENDARY || quality == WeaponQuality.SECRET)
             secrets.add(this);
     }
@@ -129,8 +125,9 @@ public class ItemGunBaseNT extends ItemCompat implements IKeybindReceiver, IEqui
 
     public static void playAnimation(Player player, ItemStack stack, GunAnimation type, int index) {
         if (player instanceof ServerPlayer serverPlayer) {
-            Services.NETWORK.sendTo(
-                    new HbmAnimationPayload(type.ordinal(), 0, index), serverPlayer);
+            PacketWire.sendTo(
+                    new HbmAnimationPayload(serverPlayer, stack, type.ordinal(), 0, index),
+                    serverPlayer);
         }
 
         setLastAnim(stack, index, type);
@@ -139,6 +136,7 @@ public class ItemGunBaseNT extends ItemCompat implements IKeybindReceiver, IEqui
 
     public static void clientHeldTick() {
         Player player = ClientPlayerAccess.player();
+        HbmAnimations.updateHeldGun(player);
         if (player == null) return;
         ItemStack stack = player.getMainHandItem();
         if (!(stack.getItem() instanceof ItemGunBaseNT gun)) return;
@@ -155,7 +153,6 @@ public class ItemGunBaseNT extends ItemCompat implements IKeybindReceiver, IEqui
         if (gun instanceof ItemGunStinger) {
             ItemGunStinger.clientLockonTick(stack);
         }
-
         if (gun instanceof ItemGunChargeThrower) {
             ItemGunChargeThrower.clientGrappleTick(stack);
         }
@@ -537,7 +534,6 @@ public class ItemGunBaseNT extends ItemCompat implements IKeybindReceiver, IEqui
     @Override
     public boolean canHandleKeybind(Player player, ItemStack stack, EnumKeybind keybind) {
         if (AkimboGhost.isGhost(stack)) return false;
-
         return keybind == EnumKeybind.GUN_PRIMARY
                 || keybind == EnumKeybind.GUN_SECONDARY
                 || keybind == EnumKeybind.GUN_TERTIARY
@@ -631,7 +627,6 @@ public class ItemGunBaseNT extends ItemCompat implements IKeybindReceiver, IEqui
     @Override
     public void inventoryTick(
             ItemStack stack, ServerLevel level, Entity entity, @Nullable EquipmentSlot slot) {
-
         if (AkimboGhost.isGhost(stack)) return;
         if (!(entity instanceof LivingEntity)) return;
         Player player = entity instanceof Player ? (Player) entity : null;
@@ -662,7 +657,6 @@ public class ItemGunBaseNT extends ItemCompat implements IKeybindReceiver, IEqui
                     int draw = (single != null ? single : configs[i]).getDrawDuration(stack);
                     if (getTimer(stack, i) != draw) setTimer(stack, i, draw);
                 }
-
                 if (getLastAnim(stack, i) != GunAnimation.CYCLE)
                     setLastAnim(stack, i, GunAnimation.CYCLE);
             }

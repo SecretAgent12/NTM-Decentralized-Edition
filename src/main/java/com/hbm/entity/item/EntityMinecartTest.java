@@ -16,7 +16,6 @@ import net.minecraft.world.phys.Vec3;
 import com.hbm.backport.compat.MinecartTNTCompat;
 
 public class EntityMinecartTest extends MinecartTNTCompat {
-
     private static final EntityDataAccessor<Byte> SIGN_X =
             SynchedEntityData.defineId(EntityMinecartTest.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> SIGN_Z =

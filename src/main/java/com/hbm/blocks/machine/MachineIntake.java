@@ -3,6 +3,7 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.BlockEntityMachineIntake;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.capability.ICapabilityBlock;
@@ -10,7 +11,6 @@ import com.hbm.capability.MachineCaps;
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.inventory.fluid.NTMFluidProperties;
 import com.hbm.inventory.fluid.NTMFluids;
-import com.hbm.tileentity.machine.BlockEntityMachineIntake;
 import com.hbm.util.BobMathUtil;
 import net.minecraft.ChatFormatting;
 import net.minecraft.SharedConstants;
@@ -24,47 +24,12 @@ import org.jspecify.annotations.Nullable;
 
 public class MachineIntake extends BlockMultiblockCore
         implements ITickingBlock, ILookOverlay, ICapabilityBlock {
-
-    private static final int[] DIMENSIONS = {0, 0, 1, 0, 1, 0};
-
     public MachineIntake(Properties props) {
         super(props);
     }
 
     @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 0;
-    }
-
-    @Override
-    protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
-        super.visitCells(core, facing, visitor);
-
-        Direction rot = facing.getClockWise();
-        BlockPos back = core.relative(facing.getOpposite());
-        visitor.cell(back, MASK_NORTH | MASK_EAST);
-        visitor.cell(core.relative(rot), MASK_SOUTH | MASK_WEST);
-        visitor.cell(back.relative(rot), MASK_NORTH | MASK_WEST);
-    }
-
-    @Override
-    public int coreMask() {
-        return MASK_EAST | MASK_SOUTH;
-    }
-
-    @Override
-    protected void visitPassiveCells(BlockPos core, Direction facing, PassiveCellVisitor visitor) {
-        passiveEverywhere(core, facing, visitor, PASSIVE_POWER_IN | PASSIVE_FLUID_IN);
-    }
-
-    @Override
     protected RenderShape getRenderShape(BlockState state) {
-
         return RenderShape.MODEL;
     }
 
@@ -96,7 +61,6 @@ public class MachineIntake extends BlockMultiblockCore
 
     @Override
     public MachineCaps caps() {
-
         return MachineCaps.blockKeyed()
                 .powerIn()
                 .fluidOut()

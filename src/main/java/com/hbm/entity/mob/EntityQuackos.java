@@ -3,12 +3,12 @@
 
 package com.hbm.entity.mob;
 
+import com.hbm.backport.entity.Entities26;
 import com.hbm.entity.ModEntities;
-import com.hbm.items.ModItems;
 import com.hbm.particle.helper.FlameCreator;
 import com.hbm.sound.ModSounds;
 import com.hbm.util.DropHeight;
-import net.minecraft.network.chat.Component;
+import com.hbm.util.MobUtil;
 import net.minecraft.server.level.ServerBossEvent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -31,6 +31,8 @@ import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 public class EntityQuackos extends EntityDuck {
+
+    public static final String PEAS_LOOT = "peas";
 
     private final ServerBossEvent bossEvent =
             new ServerBossEvent(getDisplayName(), BossEvent.BossBarColor.YELLOW, BossEvent.BossBarOverlay.PROGRESS);
@@ -71,7 +73,6 @@ public class EntityQuackos extends EntityDuck {
 
     @Override
     public void remove(RemovalReason reason) {
-
         if (level().isClientSide()
                 || (reason != RemovalReason.KILLED && reason != RemovalReason.DISCARDED)) {
             super.remove(reason);
@@ -109,7 +110,7 @@ public class EntityQuackos extends EntityDuck {
         return result;
     }
 
-    public void despawn() {
+    public void despawn(Player offering, ItemStack peas) {
         if (level() instanceof ServerLevel server) {
             for (int i = 0; i < 150; i++) {
                 FlameCreator.composeEffect(
@@ -119,7 +120,14 @@ public class EntityQuackos extends EntityDuck {
                         getZ() + random.nextDouble() * 20 - 10,
                         FlameCreator.META_BALEFIRE);
             }
-            spawnAtLocation(new ItemStack(ModItems.SPAWN_DUCK.get(), 3));
+            // backport: 26.x Entity.dropFromEntityInteractLootTable -> Entities26
+            Entities26.dropFromEntityInteractLootTable(
+                    this,
+                    server,
+                    MobUtil.lootVariant(getType(), PEAS_LOOT),
+                    offering,
+                    peas,
+                    (l, stack) -> spawnAtLocation(stack));
         }
 
         super.remove(RemovalReason.DISCARDED);

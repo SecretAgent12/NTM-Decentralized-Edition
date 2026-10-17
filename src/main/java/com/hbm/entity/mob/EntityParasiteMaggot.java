@@ -3,14 +3,14 @@
 
 package com.hbm.entity.mob;
 
+import com.hbm.api.environment.ISuffocationImmune;
 import com.hbm.lib.Library;
-import com.hbm.registration.IRegistrar;
+import com.hbm.registration.NeoForgeRegistrar;
 import com.hbm.registration.Reg;
 import com.hbm.util.MobUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -31,11 +31,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.MonsterCompat;
 
-public class EntityParasiteMaggot extends MonsterCompat {
+public class EntityParasiteMaggot extends MonsterCompat implements ISuffocationImmune {
 
     public static Reg.@Nullable EntityHandle<EntityParasiteMaggot> TYPE;
 
-    public static void register(IRegistrar r) {
+    public static void register() {
         TYPE =
                 Reg.entity(
                         "entity_parasite_maggot",
@@ -48,7 +48,7 @@ public class EntityParasiteMaggot extends MonsterCompat {
                                         .build((ResourceKey.create(
                                                         Registries.ENTITY_TYPE,
                                                         Library.id("entity_parasite_maggot"))).location().toString()));
-        r.registerLivingAttributes(TYPE, EntityParasiteMaggot::createAttributes);
+        NeoForgeRegistrar.registerLivingAttributes(TYPE, EntityParasiteMaggot::createAttributes);
     }
 
     public EntityParasiteMaggot(EntityType<? extends EntityParasiteMaggot> type, Level level) {
@@ -76,7 +76,6 @@ public class EntityParasiteMaggot extends MonsterCompat {
         goalSelector.addGoal(4, new LookAtPlayerGoal(this, Player.class, 8F));
         goalSelector.addGoal(5, new RandomLookAroundGoal(this));
         targetSelector.addGoal(1, new HurtByTargetGoal(this));
-
         targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, false));
     }
 

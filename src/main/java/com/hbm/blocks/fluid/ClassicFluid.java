@@ -40,7 +40,6 @@ public abstract class ClassicFluid extends FlowingFluid {
     public enum Physics {
         WATER(FluidTags.WATER),
         LAVA(FluidTags.LAVA),
-
         NONE(null);
 
         public final @Nullable TagKey<Fluid> tag;
@@ -58,7 +57,30 @@ public abstract class ClassicFluid extends FlowingFluid {
             boolean displacesLiquids,
             ResourceLocation sprite,
             Supplier<? extends BlockFluidClassicBase> block,
-            Supplier<ItemStack> bucket) {}
+            Supplier<ItemStack> bucket,
+            @Nullable Supplier<? extends Fluid> kind) {
+
+        public Spec(
+                Physics physics,
+                int quanta,
+                int tickDelay,
+                int density,
+                boolean displacesLiquids,
+                ResourceLocation sprite,
+                Supplier<? extends BlockFluidClassicBase> block,
+                Supplier<ItemStack> bucket) {
+            this(
+                    physics,
+                    quanta,
+                    tickDelay,
+                    density,
+                    displacesLiquids,
+                    sprite,
+                    block,
+                    bucket,
+                    null);
+        }
+    }
 
     public record Pair(
             RegistryHandle<? extends ClassicFluid> source,
@@ -155,7 +177,6 @@ public abstract class ClassicFluid extends FlowingFluid {
             case LAVA ->
                     state.getHeight(level, pos) >= LavaFluid.MIN_LEVEL_CUTOFF
                             && other.is(FluidTags.WATER);
-
             case NONE ->
                     !(other instanceof ClassicFluid sibling) || sibling.spec.density > spec.density;
         };

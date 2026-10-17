@@ -3,9 +3,9 @@
 
 package com.hbm.client.render;
 
+import com.hbm.blockentity.turret.BlockEntityTurretBaseNT;
 import com.hbm.main.ResourceManager;
 import com.hbm.render.loader.HFRWavefrontObject;
-import com.hbm.tileentity.turret.BlockEntityTurretBaseNT;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.hbm.lib.crankshaft.ConcurrentRenderStateExtraction;
 import java.util.HashMap;

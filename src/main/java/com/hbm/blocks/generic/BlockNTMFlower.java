@@ -128,7 +128,6 @@ public class BlockNTMFlower extends BushBlockCompat implements BonemealableBlock
         FOXGLOVE(false, false, false),
         TOBACCO(false, false, false),
         NIGHTSHADE(false, false, false),
-
         WEED(true, false, true),
         CD0(true, true, false),
         CD1(true, true, true);

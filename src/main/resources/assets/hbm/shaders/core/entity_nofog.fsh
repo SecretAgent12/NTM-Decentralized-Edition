@@ -9,6 +9,8 @@ uniform sampler2D Sampler0;
 uniform vec4 ColorModulator;
 
 uniform float AlphaCutout;
+// backport: DISCARD_ZERO_ALPHA define as a uniform (1.0 = discard fully transparent fragments)
+uniform float HbmDiscardZeroAlpha;
 
 
 in vec4 vertexColor;
@@ -26,5 +28,8 @@ void main() {
     color *= vertexColor * ColorModulator;
     color.rgb = mix(overlayColor.rgb, color.rgb, overlayColor.a);
     color *= lightMapColor;
+    if (HbmDiscardZeroAlpha > 0.5 && color.a <= 0.0) {
+        discard;
+    }
     fragColor = color;
 }

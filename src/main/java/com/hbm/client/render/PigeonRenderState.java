@@ -6,7 +6,6 @@ package com.hbm.client.render;
 import com.hbm.backport.client.core.LivingEntityRenderState;
 
 public final class PigeonRenderState extends LivingEntityRenderState {
-
     public float flap;
     public boolean fat;
 }

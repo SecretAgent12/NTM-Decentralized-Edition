@@ -3,14 +3,12 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.network.BlockEntityCraneGrabber;
 import com.hbm.inventory.container.MenuCraneGrabber;
 import com.hbm.lib.Library;
-import com.hbm.module.ModulePatternMatcher;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toserver.NbtControlPayload;
-import com.hbm.platform.Services;
-import com.hbm.tileentity.network.BlockEntityCraneGrabber;
 import java.util.List;
-import net.minecraft.ChatFormatting;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.client.gui.input.MouseButtonEvent;
 import com.hbm.backport.client.rendertype.RenderPipelines;
@@ -24,8 +22,6 @@ public class ScreenCraneGrabber extends ScreenInfoContainer<MenuCraneGrabber> {
 
     private static final ResourceLocation TEXTURE =
             Library.id("textures/gui/storage/gui_crane_grabber.png");
-
-    private static final int TOOLTIP_LIFT = 30;
 
     private static final int LEVER_X = 97;
     private static final int LEVER_Y = 30;
@@ -64,24 +60,14 @@ public class ScreenCraneGrabber extends ScreenInfoContainer<MenuCraneGrabber> {
                 256,
                 256);
 
-        if (menu.getCarried().isEmpty()) {
-            for (int i = 0; i < BlockEntityCraneGrabber.FILTER_SLOTS; i++) {
-                Slot slot = menu.getSlot(i);
-                String mode = grabber.matcher.mode(i);
-                if (mode != null && isHovering(slot.x, slot.y, 16, 16, mouseX, mouseY)) {
-                    graphics.setComponentTooltipForNextFrame(
-                            font,
-                            List.of(
-                                    Component.translatable("desc.shared.rightClickToChange")
-                                            .withStyle(ChatFormatting.RED),
-                                    ModulePatternMatcher.getLabel(mode)),
-                            mouseX,
-                            mouseY - TOOLTIP_LIFT);
-                }
-            }
-        }
-
         super.extractLabels(graphics, mouseX, mouseY);
+    }
+
+    @Override
+    protected List<Component> slotTooltip(Slot slot) {
+        return slot.index < BlockEntityCraneGrabber.FILTER_SLOTS
+                ? patternModeLines(menu.blockEntity().matcher.mode(slot.index))
+                : List.of();
     }
 
     @Override
@@ -89,8 +75,7 @@ public class ScreenCraneGrabber extends ScreenInfoContainer<MenuCraneGrabber> {
         if (checkClick((int) event.x(), (int) event.y(), LEVER_X, LEVER_Y, LEVER_W, LEVER_H)) {
             CompoundTag data = new CompoundTag();
             data.putBoolean("whitelist", true);
-            Services.NETWORK.sendToServer(
-                    new NbtControlPayload(menu.blockEntity().getBlockPos(), data));
+            PacketWire.sendToServer(new NbtControlPayload(menu.blockEntity().getBlockPos(), data));
             playClick();
         }
 

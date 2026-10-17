@@ -21,7 +21,6 @@ import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.BlockCompat;
 
 public abstract class BlockBarrelExplosive extends BlockCompat implements IFuckingExplode {
-
     private static final VoxelShape SHAPE = Block.box(2, 0, 2, 14, 16, 14);
 
     private final int popFuse;
@@ -73,7 +72,6 @@ public abstract class BlockBarrelExplosive extends BlockCompat implements IFucki
         for (Direction dir : Direction.VALUES) {
             if (level.getBlockState(pos.relative(dir)).is(Blocks.FIRE)) {
                 level.removeBlock(pos, false);
-
                 primeFromBlast(level, pos, null);
                 return;
             }

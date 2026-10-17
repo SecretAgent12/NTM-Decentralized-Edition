@@ -8,6 +8,8 @@ modId = "hbm"
 version = "${mod_version}"
 displayName = "NTM: Decentralized Edition"
 logoFile = "ntm_de_logo.png"
+# backport: 1.0.3's iconFile / iconBlur / bannerFile = "hbm.png" are newer FML keys; 1.21.1 FML reads
+# logoFile, which keeps the DE logo
 description = '''HBM's Nuclear Tech Mod on Minecraft 1.21.1 / NeoForge: a backport of ntm-next (the 26.2 port by movblock / Warfactory) with Create: Aeronautics (Sable) support and 1.21.1 mod integrations.
 
 Unofficial. Not affiliated with HbmMods or Warfactory - report bugs of this build to the backport, not upstream.'''
@@ -25,13 +27,13 @@ config = "hbm-common.mixins.json"
 [[mixins]]
 config = "hbm-compat.mixins.json"
 
-[[mixins]]
-config = "hbm-storage-compat.mixins.json"
+# backport: 1.0.3 adds hbm-iris-compat.mixins.json (mixins into the 26.2 Iris GlDevice / RenderPipeline);
+# not registered: the 1.21.1 Iris has neither class, and DE handles shader packs in RenderTypeFactory
 
-# backport: hbm-network-compat.mixins.json disabled (NEB / Bandwidth Optimizer compat, see disabled/network-compat)
+# backport: hbm-network-optimizer.mixins.json (1.0.3's name for hbm-network-compat) disabled
+# (NEB / Bandwidth Optimizer compat, see disabled/network-compat)
 
-[[mixins]]
-config = "hbm-neoforge-storage.mixins.json"
+# 1.0.3 dropped hbm-storage-compat / hbm-neoforge-storage (the storage layer replaced them)
 
 [[mixins]]
 config = "hbm-neoforge.mixins.json"
@@ -65,6 +67,11 @@ versionRange = "[1.0.0,2.0)"
 ordering = "AFTER"
 side = "CLIENT"
 
+# backport: fenced integration Fusion: 1.0.3's optional "fusion" [1.3.13,) entry is dropped while the
+# Fusion compat mixins are disabled.
+# backport: 1.0.3's optional "ae2" (26.2.1-alpha) entry is dropped: no AE2 integration in DE.
+# backport: 1.0.3's optional "sophisticatedcore" [1.5.0,) pins a 26.2 build; DE's Sophisticated
+# integration targets the 1.21.1 builds, so no range is declared.
 # backport: dropped "ctm" (optional [26.2.0.1], CTM Lib): on 1.21.1 the mod id "ctm" belongs to Chisel's
 # CTM, a different mod; the CTM Lib integration is disabled.
 # backport: fenced integration ScalableLux / Lithium (jar not available yet): their optional entries only

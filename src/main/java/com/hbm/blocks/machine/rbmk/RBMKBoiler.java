@@ -3,13 +3,12 @@
 
 package com.hbm.blocks.machine.rbmk;
 
+import com.hbm.blockentity.machine.rbmk.BlockEntityRBMKBase;
+import com.hbm.blockentity.machine.rbmk.BlockEntityRBMKBoiler;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.capability.ICapabilityBlock;
 import com.hbm.capability.MachineCaps;
-import com.hbm.capability.NtmCapabilities;
 import com.hbm.registration.RegistryHandle;
-import com.hbm.tileentity.machine.rbmk.BlockEntityRBMKBase;
-import com.hbm.tileentity.machine.rbmk.BlockEntityRBMKBoiler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -32,8 +31,8 @@ public class RBMKBoiler extends RBMKBase implements ICapabilityBlock {
     }
 
     @Override
-    protected boolean proxyCellAt(int lx, int ly, int lz) {
-        return ly == above();
+    protected boolean proxiesTop() {
+        return true;
     }
 
     @Override

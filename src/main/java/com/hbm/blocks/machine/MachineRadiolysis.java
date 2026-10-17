@@ -3,13 +3,13 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.BlockEntityMachineRadiolysis;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.capability.ICapabilityBlock;
 import com.hbm.capability.MachineCaps;
 import com.hbm.handler.BossSpawnHandler;
-import com.hbm.tileentity.machine.BlockEntityMachineRadiolysis;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import com.hbm.backport.InteractionResult;
@@ -22,39 +22,8 @@ import org.jspecify.annotations.Nullable;
 
 public class MachineRadiolysis extends BlockMultiblockCore
         implements ITickingBlock, ICapabilityBlock {
-
-    private static final int[] DIMENSIONS = {2, 0, 1, 1, 1, 1};
-
     public MachineRadiolysis(Properties props) {
         super(props);
-    }
-
-    @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 0;
-    }
-
-    @Override
-    protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
-        super.visitCells(core, facing, visitor);
-        visitor.cell(core.offset(-1, 0, 0), MASK_WEST);
-        visitor.cell(core.offset(1, 0, 0), MASK_EAST);
-        visitor.cell(core.offset(0, 0, -1), MASK_NORTH);
-        visitor.cell(core.offset(0, 0, 1), MASK_SOUTH);
-    }
-
-    @Override
-    protected void visitPassiveCells(BlockPos core, Direction facing, PassiveCellVisitor visitor) {
-        int domains = PASSIVE_POWER_IN | PASSIVE_FLUID_IN | PASSIVE_ITEMS;
-        visitor.passiveCell(core.offset(-1, 0, 0), MASK_ALL, domains);
-        visitor.passiveCell(core.offset(1, 0, 0), MASK_ALL, domains);
-        visitor.passiveCell(core.offset(0, 0, -1), MASK_ALL, domains);
-        visitor.passiveCell(core.offset(0, 0, 1), MASK_ALL, domains);
     }
 
     @Override

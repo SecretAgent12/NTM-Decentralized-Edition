@@ -3,12 +3,12 @@
 
 package com.hbm.items.weapon.sedna.impl;
 
-import com.hbm.config.GunVisualConfig;
 import com.hbm.items.ICustomizable;
 import com.hbm.items.weapon.sedna.GunConfig;
 import com.hbm.items.weapon.sedna.GunTimers;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.hbm.items.weapon.sedna.mods.XWeaponModManager;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
@@ -82,8 +82,8 @@ public class ItemGunNI4NI extends ItemGunBaseNT implements ICustomizable {
                 setCoinCount(stack, newCount);
 
                 if (slot == EquipmentSlot.MAINHAND) {
-                    level.playSound(
-                            null,
+                    EntitySounds.play(
+                            entity,
                             entity.getX(),
                             entity.getY(),
                             entity.getZ(),

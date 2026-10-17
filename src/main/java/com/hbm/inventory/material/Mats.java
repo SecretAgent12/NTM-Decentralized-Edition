@@ -6,19 +6,17 @@ package com.hbm.inventory.material;
 
 import com.hbm.hazard.HazardRegistry;
 import com.hbm.inventory.material.NTMMaterial.SmeltingBehavior;
+import com.hbm.inventory.recipes.ingredient.RecipeInputState;
+import com.hbm.items.ModDataComponents;
 import com.hbm.items.machine.ItemScraps;
 import com.hbm.packet.SyncField;
 import com.hbm.packet.SyncSource;
-import com.hbm.util.I18nUtil;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.netty.buffer.ByteBuf;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.tags.TagKey;
@@ -585,12 +583,6 @@ public class Mats {
                     .setAutogen(FRAGMENT, DUST, BLOCK)
                     .legacy(DUST, "powder_fire", "powder_fire")
                     .n();
-
-    public static final NTMMaterial MAT_IODINE =
-            makeNonSmeltable(5300, I, 0x7A8796, 0x2B1C43, 0x50556E)
-                    .setAutogen(DUST)
-                    .legacy(DUST, "powder_iodine")
-                    .n();
     public static final NTMMaterial MAT_CHLOROCALCITE =
             makeNonSmeltable(1701, CHLOROCALCITE, 0xF7E761, 0x475B46, 0xB8B963)
                     .setAutogen(FRAGMENT, DUST)
@@ -607,7 +599,6 @@ public class Mats {
                     .setAutogen(FRAGMENT, GEM)
                     .setTagOnly(CRYSTAL, ORE)
                     .n();
-
     public static final NTMMaterial MAT_CADMIUM =
             makeSmeltable(4800, CD, 0xFFFADE, 0x350000, 0xA85600)
                     .setAutogen(DUST)
@@ -881,12 +872,10 @@ public class Mats {
                     .legacy(INGOT, "ingot_pvc")
                     .n();
 
-    static {
-        for (NTMMaterial mat : orderedList) {
-            for (MaterialShapes shape : MaterialShapes.allShapes) {
-                if (shape.tagPathPlural == null || shape.q(1) == 0) continue;
-                tagToMaterial.put(shape.tagFor(mat.tagPath), new MaterialStack(mat, shape.q(1)));
-            }
+    static void bindShapeTags(NTMMaterial mat) {
+        for (MaterialShapes shape : allShapes) {
+            if (shape.tagPathPlural == null || shape.q(1) == 0) continue;
+            tagToMaterial.put(shape.tagFor(mat.tagPath), new MaterialStack(mat, shape.q(1)));
         }
     }
 
@@ -943,7 +932,6 @@ public class Mats {
             while (tags.hasNext()) {
                 MaterialStack hit = tagToMaterial.get(tags.next());
                 if (hit == null) continue;
-
                 SmeltingBehavior into = hit.material.smeltsInto.smeltable;
                 if (into != SmeltingBehavior.SMELTABLE && into != SmeltingBehavior.ADDITIVE)
                     continue;
@@ -1001,6 +989,9 @@ public class Mats {
     }
 
     public static List<MaterialStack> getSmeltingMaterialsFromItem(ItemStack stack) {
+        if (stack.getItem() instanceof ItemScraps) {
+            if (!RecipeInputState.only(stack, ModDataComponents.SCRAP.get())) return List.of();
+        } else if (!stack.getComponentsPatch().isEmpty()) return List.of();
         List<MaterialStack> base = getMaterialsFromItem(stack);
         List<MaterialStack> out = new ArrayList<>(base.size());
         for (MaterialStack m : base) {
@@ -1010,10 +1001,10 @@ public class Mats {
         return out;
     }
 
-    public static String formatAmount(int amount, boolean showInMb) {
-        if (showInMb) return (amount * 2) + "mB";
+    public static Component formatAmount(int amount, boolean showInMb) {
+        if (showInMb) return Component.translatable("unit.millibuckets", amount * 2);
 
-        StringBuilder out = new StringBuilder();
+        var out = Component.empty();
 
         int blocks = amount / BLOCK.q(1);
         amount -= BLOCK.q(blocks);
@@ -1025,25 +1016,28 @@ public class Mats {
 
         if (blocks > 0)
             out.append(
-                            I18nUtil.resolveKey(
-                                    blocks == 1 ? "matshape.block" : "matshape.blocks", blocks))
-                    .append(' ');
-        if (ingots > 0)
+                    Component.translatable(
+                            blocks == 1 ? "matshape.block" : "matshape.blocks", blocks));
+        if (ingots > 0) {
+            if (!out.getSiblings().isEmpty()) out.append(" ");
             out.append(
-                            I18nUtil.resolveKey(
-                                    ingots == 1 ? "matshape.ingot" : "matshape.ingots", ingots))
-                    .append(' ');
-        if (nuggets > 0)
+                    Component.translatable(
+                            ingots == 1 ? "matshape.ingot" : "matshape.ingots", ingots));
+        }
+        if (nuggets > 0) {
+            if (!out.getSiblings().isEmpty()) out.append(" ");
             out.append(
-                            I18nUtil.resolveKey(
-                                    nuggets == 1 ? "matshape.nugget" : "matshape.nuggets", nuggets))
-                    .append(' ');
-        if (quanta > 0)
+                    Component.translatable(
+                            nuggets == 1 ? "matshape.nugget" : "matshape.nuggets", nuggets));
+        }
+        if (quanta > 0) {
+            if (!out.getSiblings().isEmpty()) out.append(" ");
             out.append(
-                    I18nUtil.resolveKey(
+                    Component.translatable(
                             quanta == 1 ? "matshape.quantum" : "matshape.quanta", quanta));
+        }
 
-        return out.toString().trim();
+        return out;
     }
 
     public static class MaterialStack implements SyncSource {

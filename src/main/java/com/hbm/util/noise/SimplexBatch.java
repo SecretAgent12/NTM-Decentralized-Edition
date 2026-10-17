@@ -3,10 +3,10 @@
 
 package com.hbm.util.noise;
 
+import com.hbm.lib.internal.Accelerator;
 import com.hbm.lib.internal.FusedMath;
 import com.hbm.lib.internal.VectorApi;
 import com.hbm.lib.internal.VectorBackend;
-import com.hbm.lib.internal.natives.NativeLibrary;
 import java.util.Arrays;
 import net.minecraft.util.Mth;
 import org.slf4j.LoggerFactory;
@@ -81,10 +81,15 @@ public interface SimplexBatch {
         SimplexGridBatch.Scratch scratch = SimplexGridBatch.scratch();
         for (int base = 0; base < len; base += SimplexGridBatch.TILE) {
             int count = Math.min(SimplexGridBatch.TILE, len - base);
+            int row = base / sizeZ;
+            int column = base % sizeZ;
             for (int i = 0; i < count; i++) {
-                int index = base + i;
-                scratch.xs[i] = (double) (firstX + index / sizeZ) * scaleX;
-                scratch.zs[i] = (double) (firstZ + index % sizeZ) * scaleZ;
+                scratch.xs[i] = (double) (firstX + row) * scaleX;
+                scratch.zs[i] = (double) (firstZ + column) * scaleZ;
+                if (++column == sizeZ) {
+                    column = 0;
+                    row++;
+                }
             }
             fractal(perm, gradX, gradY, scratch.xs, scratch.zs, scratch.out, octaves, count);
             System.arraycopy(scratch.out, 0, out, base, count);
@@ -174,13 +179,9 @@ public interface SimplexBatch {
         boolean enabled = Boolean.parseBoolean(System.getProperty("hbm.vector.simplex", "true"));
         if (!enabled) return new SimplexBatchScalar();
 
-        try {
-
-            if (NativeLibrary.AVAILABLE && nativeOptIn()) return new SimplexBatchNative();
-        } catch (Throwable t) {
-            LoggerFactory.getLogger("NTM")
-                    .warn("Native simplex kernel unavailable; using a Java kernel", t);
-        }
+        Accelerator accelerator = Accelerator.INSTALLED;
+        SimplexBatch accelerated = accelerator == null ? null : accelerator.simplex();
+        if (accelerated != null) return accelerated;
 
         if (!FusedMath.AVAILABLE) return new SimplexBatchScalar();
 
@@ -195,10 +196,6 @@ public interface SimplexBatch {
                     .warn("Vector simplex kernel unavailable; using scalar", t);
         }
         return new SimplexBatchScalar();
-    }
-
-    private static boolean nativeOptIn() {
-        return Boolean.parseBoolean(System.getProperty("hbm.natives.simplex", "true"));
     }
 
     private static boolean gatherOptIn() {

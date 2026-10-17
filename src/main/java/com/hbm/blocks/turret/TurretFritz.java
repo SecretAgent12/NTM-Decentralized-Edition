@@ -3,9 +3,9 @@
 
 package com.hbm.blocks.turret;
 
+import com.hbm.blockentity.turret.BlockEntityTurretFritz;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.capability.MachineCaps;
-import com.hbm.tileentity.turret.BlockEntityTurretFritz;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -27,12 +27,6 @@ public class TurretFritz extends TurretBaseNT {
                 .fluidFaces(
                         BlockEntityTurretFritz.class,
                         (be, face) -> face.side() != Direction.UP && face.side() != Direction.DOWN);
-    }
-
-    @Override
-    protected void visitPassiveCells(BlockPos core, Direction facing, PassiveCellVisitor visitor) {
-        passiveEverywhere(
-                core, facing, visitor, PASSIVE_POWER_IN | PASSIVE_FLUID_IN | PASSIVE_ITEMS);
     }
 
     @Override

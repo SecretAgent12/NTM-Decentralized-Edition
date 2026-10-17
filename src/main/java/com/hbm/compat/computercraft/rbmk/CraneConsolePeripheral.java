@@ -3,9 +3,9 @@
 
 package com.hbm.compat.computercraft.rbmk;
 
+import com.hbm.blockentity.machine.rbmk.BlockEntityCraneConsole;
 import com.hbm.compat.computercraft.SnapshotPeripheral;
 import com.hbm.items.machine.ItemRBMKRod;
-import com.hbm.tileentity.machine.rbmk.BlockEntityCraneConsole;
 import dan200.computercraft.api.lua.LuaFunction;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -85,6 +85,7 @@ public final class CraneConsolePeripheral extends SnapshotPeripheral<BlockEntity
             }
             default -> {}
         }
+        machine.markChanged();
         return new Object[] {};
     }
 

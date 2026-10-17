@@ -6,6 +6,8 @@ package com.hbm.blocks.machine;
 import com.hbm.advancement.AwardRegions;
 import com.hbm.advancement.DetonationTrigger;
 import com.hbm.advancement.HbmCriteria;
+import com.hbm.blockentity.machine.oil.BlockEntityMachineRefinery;
+import com.hbm.blockentity.machine.oil.RefineryContents;
 import com.hbm.blocks.IPersistentInfoProvider;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.blocks.ModBlockEntities;
@@ -18,8 +20,6 @@ import com.hbm.interfaces.ILookOverlay;
 import com.hbm.interfaces.IRepairable;
 import com.hbm.interfaces.IToolable;
 import com.hbm.items.ModDataComponents;
-import com.hbm.tileentity.machine.oil.BlockEntityMachineRefinery;
-import com.hbm.tileentity.machine.oil.RefineryContents;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
@@ -49,7 +49,6 @@ public class MachineRefinery extends BlockMultiblockCore
                 IPersistentInfoProvider {
 
     public static final BooleanProperty EXPLODED = BooleanProperty.create("exploded");
-    private static final int[] DIMENSIONS = {8, 0, 1, 1, 1, 1};
 
     public MachineRefinery(Properties props) {
         super(props);
@@ -68,43 +67,10 @@ public class MachineRefinery extends BlockMultiblockCore
     }
 
     @Override
-    public int[] getDimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
-    public int getOffset() {
-        return 1;
-    }
-
-    @Override
-    protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
-        super.visitCells(core, facing, visitor);
-        for (int dx = -1; dx <= 1; dx += 2) {
-            for (int dz = -1; dz <= 1; dz += 2) {
-                visitor.cell(core.offset(dx, 0, dz), MachineChemicalPlant.ringMask(dx, dz));
-            }
-        }
-    }
-
-    @Override
-    protected void visitPassiveCells(BlockPos core, Direction facing, PassiveCellVisitor visitor) {
-        for (int dx = -1; dx <= 1; dx += 2) {
-            for (int dz = -1; dz <= 1; dz += 2) {
-                visitor.passiveCell(
-                        core.offset(dx, 0, dz),
-                        MASK_ALL,
-                        PASSIVE_POWER_IN | PASSIVE_FLUID_IN | PASSIVE_ITEMS);
-            }
-        }
-    }
-
-    @Override
     protected InteractionResult useAtCore(
             BlockState coreState, Level level, BlockPos core, Player player, BlockHitResult hit) {
         if (player.isSecondaryUseActive()) return InteractionResult.SUCCESS;
         if (level.isClientSide()) return InteractionResult.SUCCESS;
-
         if (coreState.getValue(EXPLODED)) return InteractionResult.SUCCESS;
         if (level.getBlockEntity(core) instanceof MenuProvider menu) {
             openCoreMenu(player, core, menu);
@@ -124,7 +90,6 @@ public class MachineRefinery extends BlockMultiblockCore
             be.lastExplosion = explosion;
             if (!be.hasExploded()) {
                 be.explode(level, core);
-
                 if (explosion.getDirectSourceEntity() instanceof EntityBombletZeta) {
                     AwardRegions.within(
                             level,
@@ -171,7 +136,6 @@ public class MachineRefinery extends BlockMultiblockCore
 
     @Override
     public MachineCaps caps() {
-
         return MachineCaps.of(ModBlockEntities.REFINERY)
                 .powerIn()
                 .fluidIn()

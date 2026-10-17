@@ -13,7 +13,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
 public class ItemPeas extends ItemCustomLore {
-
     private static final double RANGE = 50D;
 
     public ItemPeas(Properties props) {
@@ -23,12 +22,13 @@ public class ItemPeas extends ItemCustomLore {
     @Override
     public InteractionResult backport$use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
+        ItemStack offered = stack.copyWithCount(1);
         stack.consume(1, player);
         if (level instanceof ServerLevel server) {
             for (EntityQuackos duck :
                     server.getEntitiesOfClass(
                             EntityQuackos.class, player.getBoundingBox().inflate(RANGE))) {
-                duck.despawn();
+                duck.despawn(player, offered);
             }
         }
         return InteractionResult.CONSUME;

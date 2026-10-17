@@ -18,6 +18,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -55,7 +56,7 @@ import org.jspecify.annotations.Nullable;
  * <p>Z: 26.x has no GUI z; everything here is drawn at the z of the current pose, like 1.21.1's
  * own blits, so 1.21.1's depth-tested item icons (z 100-250) stay in front of later 2D draws.
  */
-public class GuiGraphicsExtractor extends GuiGraphics {
+public class GuiGraphicsExtractor extends GuiGraphics implements com.hbm.client.gui.DeferredGuiDraws {
 
     private static final Field POSE = field("pose");
     private static final Field SCISSOR = field("scissorStack");
@@ -87,6 +88,7 @@ public class GuiGraphicsExtractor extends GuiGraphics {
     private final GuiGraphics base;
     private final GuiPoseStack pose;
     private @Nullable Runnable deferredTooltip;
+    private @Nullable List<Consumer<GuiGraphicsExtractor>> deferredDraws;
     private int deferDepth;
 
     protected GuiGraphicsExtractor(GuiGraphics base) {
@@ -504,6 +506,37 @@ public class GuiGraphicsExtractor extends GuiGraphics {
         Runnable r = deferredTooltip;
         deferredTooltip = null;
         if (r != null) r.run();
+        List<Consumer<GuiGraphicsExtractor>> deferred = deferredDraws;
+        deferredDraws = null;
+        if (deferred != null) for (Consumer<GuiGraphicsExtractor> draw : deferred) drawStratum(draw);
+    }
+
+    /**
+     * backport: 26.x MixinGuiGraphicsExtractor (DeferredGuiDraws) queues draws for the TAIL of
+     * GuiGraphicsExtractor.extractDeferredElements, each in a new stratum above the frame and its
+     * tooltip. Here they run right after the deferred tooltip of a bridged screen's frame
+     * ({@link #renderDeferredTooltip}); outside a deferral they are drawn right away, like tooltips.
+     */
+    @Override
+    public void hbm$defer(Consumer<GuiGraphicsExtractor> draw) {
+        if (deferDepth == 0) {
+            drawStratum(draw);
+            return;
+        }
+        if (deferredDraws == null) deferredDraws = new ArrayList<>(2);
+        deferredDraws.add(draw);
+    }
+
+    // backport: 26.x nextStratum() puts the draw above everything drawn before it; 1.21.1 GUI draws
+    // are depth tested, so the draw is lifted by the z 1.21.1 tooltips use
+    private void drawStratum(Consumer<GuiGraphicsExtractor> draw) {
+        base.pose().pushPose();
+        base.pose().translate(0F, 0F, 400F);
+        try {
+            draw.accept(this);
+        } finally {
+            base.pose().popPose();
+        }
     }
 
     private void tooltip(Runnable draw, boolean focused) {

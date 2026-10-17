@@ -3,11 +3,10 @@
 
 package com.hbm.blocks.turret;
 
+import com.hbm.blockentity.turret.BlockEntityTurretJeremy;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.capability.MachineCaps;
-import com.hbm.tileentity.turret.BlockEntityTurretJeremy;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
@@ -21,11 +20,6 @@ public class TurretJeremy extends TurretBaseNT {
     @Override
     public MachineCaps caps() {
         return MachineCaps.of(ModBlockEntities.TURRET_JEREMY).powerIn().itemsAtCells();
-    }
-
-    @Override
-    protected void visitPassiveCells(BlockPos core, Direction facing, PassiveCellVisitor visitor) {
-        passiveEverywhere(core, facing, visitor, PASSIVE_POWER_IN | PASSIVE_ITEMS);
     }
 
     @Override

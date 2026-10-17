@@ -3,8 +3,8 @@
 
 package com.hbm.blocks;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+import com.hbm.blockentity.DoorDecl;
+import com.hbm.blockentity.machine.storage.CrateType;
 import com.hbm.blocks.bomb.*;
 import com.hbm.blocks.fluid.*;
 import com.hbm.blocks.gas.*;
@@ -22,7 +22,6 @@ import com.hbm.blocks.machine.rbmk.*;
 import com.hbm.blocks.machine.storage.*;
 import com.hbm.blocks.machine.storage.BlockCrateTungsten;
 import com.hbm.blocks.multiblock.BlockMultiblockCell;
-import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.blocks.multiblock.BlockMultiblockGeometryCell;
 import com.hbm.blocks.multiblock.CellBuckets;
 import com.hbm.blocks.network.*;
@@ -55,6 +54,7 @@ import com.hbm.inventory.material.NTMMaterial;
 import com.hbm.inventory.recipes.ingredient.CountIngredient;
 import com.hbm.itempool.ItemPools;
 import com.hbm.items.DescBlockItem;
+import com.hbm.items.ItemDroneWaypoint;
 import com.hbm.items.ModDataComponents;
 import com.hbm.items.ModItems;
 import com.hbm.items.block.*;
@@ -66,10 +66,6 @@ import com.hbm.registration.ItemFamily;
 import com.hbm.registration.ItemSubtype;
 import com.hbm.registration.Reg;
 import com.hbm.registration.RegistryHandle;
-import com.hbm.tags.HbmBlockTags;
-import com.hbm.tileentity.DoorDecl;
-import com.hbm.tileentity.machine.BlockEntityWatz;
-import com.hbm.tileentity.machine.storage.CrateType;
 import it.unimi.dsi.fastutil.objects.ReferenceLinkedOpenHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -77,17 +73,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import net.minecraft.core.Direction;
-import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.ColorRGBA;
 import net.minecraft.world.entity.EntityType;
@@ -120,16 +112,13 @@ public final class ModBlocks {
             new RegistryHandle[5];
 
     public static final List<RegistryHandle<TrappedBrick>> JUNGLE_TRAPS = new ArrayList<>();
-
     public static final List<RegistryHandle<BlockCrashedBomb>> CRASHED_BOMBS = new ArrayList<>();
     public static final List<RegistryHandle<Item>> CRATES = new ArrayList<>();
     public static final List<RegistryHandle<Item>> EXTRA_ORE_BLOCKS = new ArrayList<>();
     public static final List<RegistryHandle<Item>> STRUCTURAL_BLOCKS = new ArrayList<>();
     public static final List<MaterialBlockEntry> MATERIAL_BLOCKS = new ArrayList<>();
     public static final List<RegistryHandle<Item>> DECO_BLOCKS = new ArrayList<>();
-
     public static final List<RegistryHandle<Item>> RAIL_BLOCKS = new ArrayList<>();
-
     public static final List<RegistryHandle<Item>> MACHINE_BLOCKS = new ArrayList<>();
     public static final List<RegistryHandle<BlockAnvil>> ANVILS = new ArrayList<>();
     public static final int[] ANVIL_TIERS = {
@@ -445,7 +434,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 6.0F)
                                     .sound(ModSoundTypes.PIPE)
                                     .requiresCorrectToolForDrops());
-
     public static final RegistryHandle<ConveyorBlock> CONVEYOR =
             Reg.blockItem(
                             "conveyor",
@@ -474,7 +462,6 @@ public final class ModBlocks {
                             ModBlocks::conveyorProps,
                             (block, props) -> new DescBlockItem(block, props, 3))
                     .bakedBy(() -> new ConveyorModel());
-
     public static final RegistryHandle<ConveyorLiftBlock> CONVEYOR_LIFT =
             Reg.blockItem(
                             "conveyor_lift",
@@ -489,7 +476,6 @@ public final class ModBlocks {
                             ModBlocks::conveyorProps,
                             (block, props) -> new DescBlockItem(block, props, 2))
                     .bakedBy(() -> new ConveyorChuteModel.Family());
-
     public static final RegistryHandle<MachineConveyorPress> MACHINE_CONVEYOR_PRESS =
             Reg.blockItem(
                     "machine_conveyor_press",
@@ -500,7 +486,6 @@ public final class ModBlocks {
                                     .noOcclusion()
                                     .requiresCorrectToolForDrops(),
                     (block, props) -> new DescBlockItem(block, props, 3));
-
     public static final RegistryHandle<CraneInserter> CRANE_INSERTER =
             Reg.blockItem(
                             "crane_inserter",
@@ -542,7 +527,6 @@ public final class ModBlocks {
                     CraneRouter::new,
                     ModBlocks::craneProps,
                     (block, props) -> new DescBlockItem(block, props, 3));
-
     public static final RegistryHandle<CraneSplitter> CRANE_SPLITTER =
             Reg.blockItem(
                     "crane_splitter",
@@ -553,7 +537,6 @@ public final class ModBlocks {
                                     .noOcclusion()
                                     .requiresCorrectToolForDrops(),
                     (block, props) -> new DescBlockItem(block, props, 3));
-
     public static final RegistryHandle<CranePartitioner> CRANE_PARTITIONER =
             Reg.blockItem(
                     "crane_partitioner",
@@ -564,7 +547,6 @@ public final class ModBlocks {
                                     .noOcclusion()
                                     .requiresCorrectToolForDrops(),
                     (block, props) -> new DescBlockItem(block, props, 3));
-
     public static final RegistryHandle<DroneCrateBlock> DRONE_CRATE =
             droneStation("drone_crate", DroneCrateBlock::new, 3);
     public static final RegistryHandle<DroneDockBlock> DRONE_DOCK =
@@ -699,7 +681,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 6.0F)
                                     .requiresCorrectToolForDrops()
                                     .noOcclusion());
-
     public static final RegistryHandle<MachineElectricFurnace> MACHINE_ELECTRIC_FURNACE =
             Reg.blockItem(
                     "machine_electric_furnace",
@@ -720,7 +701,6 @@ public final class ModBlocks {
                                     .strength(15.0F, 0.15F)
                                     .noOcclusion()
                                     .requiresCorrectToolForDrops());
-
     public static final RegistryHandle<BlockAnvil> ANVIL_IRON =
             anvil("anvil_iron", BlockAnvil.TIER_IRON);
     public static final RegistryHandle<BlockAnvil> ANVIL_STEEL =
@@ -764,7 +744,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 6.0F)
                                     .requiresCorrectToolForDrops()
                                     .noOcclusion());
-
     public static final RegistryHandle<MachineBatteryREDD> MACHINE_BATTERY_REDD =
             Reg.blockItem(
                     "machine_battery_redd",
@@ -774,7 +753,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 6.0F)
                                     .noOcclusion()
                                     .requiresCorrectToolForDrops());
-
     public static final RegistryHandle<MachineFENSU> MACHINE_FENSU =
             Reg.blockItem(
                     "machine_fensu",
@@ -784,7 +762,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 6.0F)
                                     .noOcclusion()
                                     .requiresCorrectToolForDrops());
-
     public static final RegistryHandle<MachineCapacitor> CAPACITOR_COPPER =
             Reg.blockItem(
                     "capacitor_copper",
@@ -793,7 +770,8 @@ public final class ModBlocks {
                             BlockBehaviour.Properties.of()
                                     .strength(5.0F, 6.0F)
                                     .requiresCorrectToolForDrops()
-                                    .noOcclusion());
+                                    .noOcclusion(),
+                    ItemCapacitor::new);
     public static final RegistryHandle<Block> PRESS_PREHEATER =
             Reg.blockItem(
                     "press_preheater",
@@ -1052,7 +1030,6 @@ public final class ModBlocks {
                                     .requiresCorrectToolForDrops()
                                     .noOcclusion(),
                     (block, props) -> new DescBlockItem(block, props, 1));
-
     public static final RegistryHandle<CoreComponent> DFC_EMITTER =
             Reg.blockItem(
                     "dfc_emitter",
@@ -1080,7 +1057,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 6.0F)
                                     .noOcclusion()
                                     .requiresCorrectToolForDrops());
-
     public static final RegistryHandle<CoreComponent> DFC_STABILIZER =
             Reg.blockItem(
                     "dfc_stabilizer",
@@ -1090,7 +1066,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 6.0F)
                                     .noOcclusion()
                                     .requiresCorrectToolForDrops());
-
     public static final RegistryHandle<CoreCore> DFC_CORE =
             Reg.blockItem(
                     "dfc_core",
@@ -1127,7 +1102,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 60.0F)
                                     .requiresCorrectToolForDrops()
                                     .noOcclusion());
-
     public static final RegistryHandle<Block> BARRICADE =
             Reg.blockItem(
                     "barricade",
@@ -1460,7 +1434,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 6.0F)
                                     .requiresCorrectToolForDrops()
                                     .noOcclusion());
-
     public static final RegistryHandle<MachineReactorBreeding> MACHINE_REACTOR_BREEDING =
             Reg.blockItem(
                     "machine_reactor",
@@ -1470,7 +1443,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 6.0F)
                                     .requiresCorrectToolForDrops()
                                     .noOcclusion());
-
     public static final RegistryHandle<ReactorResearch> REACTOR_RESEARCH =
             Reg.blockItem(
                     "machine_reactor_small",
@@ -1480,7 +1452,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 6.0F)
                                     .requiresCorrectToolForDrops()
                                     .noOcclusion());
-
     public static final RegistryHandle<MachineTowerSmall> MACHINE_TOWER_SMALL =
             Reg.blockItem(
                             "machine_tower_small",
@@ -1509,7 +1480,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 6.0F)
                                     .requiresCorrectToolForDrops()
                                     .noOcclusion());
-
     public static final RegistryHandle<MachineBigAssTank> MACHINE_BIGASSTANK =
             Reg.blockItem(
                     "machine_bigasstank",
@@ -1645,7 +1615,6 @@ public final class ModBlocks {
                                                     ModDataComponents.HAS_BLADE.get(), true),
                                             3))
                     .state(ModDataComponents.HAS_BLADE);
-
     public static final RegistryHandle<MachineAmmoPress> MACHINE_AMMO_PRESS =
             Reg.blockItem(
                     "machine_ammo_press",
@@ -1667,7 +1636,6 @@ public final class ModBlocks {
                                     .forceSolidOn()
                                     .noLootTable()
                                     .requiresCorrectToolForDrops());
-
     public static final RegistryHandle<BlockEmitter> DECO_EMITTER =
             Reg.blockItem(
                     "deco_emitter",
@@ -1689,7 +1657,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 12.0F)
                                     .requiresCorrectToolForDrops(),
                     (block, props) -> new DescBlockItem(block, props, 1, DescBlockItem.Desc.PLAIN));
-
     public static final RegistryHandle<BlockLoot> LOOT =
             Reg.block(
                     "deco_loot",
@@ -1767,7 +1734,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 12.0F)
                                     .requiresCorrectToolForDrops()
                                     .noOcclusion());
-
     public static final RegistryHandle<Block> OIL_PIPE =
             Reg.block(
                     "oil_pipe",
@@ -1787,7 +1753,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 60.0F)
                                     .requiresCorrectToolForDrops()
                                     .noOcclusion());
-
     public static final RegistryHandle<ZirnoxDestroyed> ZIRNOX_DESTROYED =
             Reg.block(
                     "zirnox_destroyed",
@@ -1869,7 +1834,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 6.0F)
                                     .requiresCorrectToolForDrops()
                                     .noOcclusion());
-
     private static final Map<CellBuckets.Plain, RegistryHandle<? extends BlockMultiblockCell>>
             PLAIN_CELLS = plainCells();
     public static final RegistryHandle<? extends BlockMultiblockCell> MULTIBLOCK_CELL =
@@ -1953,6 +1917,7 @@ public final class ModBlocks {
                                             .strength(0.0F, 0.6F)
                                             .sound(SoundType.STONE)
                                             .noOcclusion()
+                                            .forceSolidOn()
                                             .noLootTable()
                                             .ignitedByLava(),
                             (block, props) -> new ItemBlockCharge(block, props))
@@ -1966,6 +1931,7 @@ public final class ModBlocks {
                                             .strength(0.0F, 0.6F)
                                             .sound(SoundType.STONE)
                                             .noOcclusion()
+                                            .forceSolidOn()
                                             .noLootTable()
                                             .ignitedByLava(),
                             (block, props) -> new ItemBlockCharge(block, props))
@@ -1980,6 +1946,7 @@ public final class ModBlocks {
                                             .strength(0.0F, 0.6F)
                                             .sound(SoundType.STONE)
                                             .noOcclusion()
+                                            .forceSolidOn()
                                             .noLootTable()
                                             .ignitedByLava(),
                             (block, props) -> new ItemBlockCharge(block, props))
@@ -1994,11 +1961,11 @@ public final class ModBlocks {
                                             .strength(0.0F, 0.6F)
                                             .sound(SoundType.STONE)
                                             .noOcclusion()
+                                            .forceSolidOn()
                                             .noLootTable()
                                             .ignitedByLava(),
                             (block, props) -> new ItemBlockCharge(block, props))
                     .bakedBy(() -> new ChargeModel(Library.id("models/blocks/charge_c4.obj")));
-
     public static final RegistryHandle<BlockRedBarrel> RED_BARREL =
             Reg.blockItem(
                             "red_barrel",
@@ -2019,7 +1986,6 @@ public final class ModBlocks {
                                             .noOcclusion()
                                             .requiresCorrectToolForDrops())
                     .bakedBy(() -> new BarrelModel());
-
     public static final RegistryHandle<BlockLoxBarrel> LOX_BARREL =
             Reg.blockItem(
                             "lox_barrel",
@@ -2030,7 +1996,6 @@ public final class ModBlocks {
                                             .noOcclusion()
                                             .requiresCorrectToolForDrops())
                     .bakedBy(() -> new BarrelModel());
-
     public static final RegistryHandle<BlockTaintBarrel> TAINT_BARREL =
             Reg.blockItem(
                             "taint_barrel",
@@ -2063,7 +2028,6 @@ public final class ModBlocks {
                                             .noOcclusion()
                                             .requiresCorrectToolForDrops())
                     .bakedBy(() -> new BarrelModel());
-
     public static final RegistryHandle<BlockLandmineAP> MINE_AP =
             Reg.blockItem(
                             "mine_ap",
@@ -2138,7 +2102,6 @@ public final class ModBlocks {
                                             .noOcclusion()
                                             .requiresCorrectToolForDrops())
                     .bakedBy(() -> new SatelliteReceiverModel());
-
     public static final RegistryHandle<DemonLamp> LAMP_DEMON =
             Reg.block(
                             "lamp_demon",
@@ -2199,7 +2162,6 @@ public final class ModBlocks {
                                             .requiresCorrectToolForDrops())
                     .bakedBy(() -> new SpotlightModel(BlockSpotlight.LightType.HALOGEN))
                     .andThen(h -> DECO_BLOCKS.add(decoItem("spotlight_halogen", h)));
-
     public static final RegistryHandle<BlockSpotlightBeam> SPOTLIGHT_BEAM =
             Reg.block(
                     "spotlight_beam",
@@ -2284,7 +2246,6 @@ public final class ModBlocks {
                                             .requiresCorrectToolForDrops(),
                             ItemBlockBlastInfo::new)
                     .afterRegistration(RadiationSystemNT::markRadResistant);
-
     public static final RegistryHandle<RedstoneLampBlock> REINFORCED_LAMP =
             Reg.block(
                             "reinforced_lamp",
@@ -2320,7 +2281,6 @@ public final class ModBlocks {
                                             .noOcclusion()
                                             .ignitedByLava())
                     .bakedBy(() -> new NtBoxModel.Family(NtBoxModel.Shapes.WOOD_BARRIER));
-
     public static final RegistryHandle<BlockWoodStructure> WOOD_STRUCTURE_ROOF =
             Reg.blockItem(
                             "wood_structure_roof",
@@ -2355,7 +2315,6 @@ public final class ModBlocks {
                                             .noOcclusion()
                                             .ignitedByLava())
                     .bakedBy(() -> new NtBoxModel.Family(NtBoxModel.Shapes.WOOD_CEILING));
-
     public static final RegistryHandle<BlockCharger> CHARGER =
             Reg.blockItem(
                     "charger",
@@ -2394,7 +2353,6 @@ public final class ModBlocks {
                                     .requiresCorrectToolForDrops()
                                     .noOcclusion(),
                     (block, props) -> new DescBlockItem(block, props, 3));
-
     public static final RegistryHandle<MachineDiesel> MACHINE_DIESEL =
             Reg.blockItem(
                     "machine_diesel",
@@ -2512,7 +2470,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 60.0F)
                                     .requiresCorrectToolForDrops()
                                     .noOcclusion());
-
     public static final RegistryHandle<MachinePump> PUMP_STEAM =
             Reg.blockItem(
                     "pump_steam",
@@ -2549,7 +2506,6 @@ public final class ModBlocks {
                             BlockBehaviour.Properties.of()
                                     .strength(5.0F, 6.0F)
                                     .requiresCorrectToolForDrops());
-
     public static final RegistryHandle<StorageDrum> STORAGE_DRUM =
             Reg.blockItem(
                     "machine_storage_drum",
@@ -2585,7 +2541,6 @@ public final class ModBlocks {
                                     .mapColor(MapColor.METAL)
                                     .strength(5.0F, 6.0F)
                                     .requiresCorrectToolForDrops());
-
     public static final RegistryHandle<Block> TELEANCHOR =
             Reg.blockItem(
                     "teleanchor",
@@ -2774,7 +2729,6 @@ public final class ModBlocks {
                                     .mapColor(MapColor.COLOR_GRAY)
                                     .strength(0.5F, 90.0F)
                                     .sound(SoundType.SAND));
-
     public static final RegistryHandle<DigammaMatter> DIGAMMA_MATTER =
             Reg.block(
                     "digamma_matter",
@@ -2830,7 +2784,6 @@ public final class ModBlocks {
                             BlockBehaviour.Properties.of()
                                     .strength(100.0F, 3600.0F)
                                     .requiresCorrectToolForDrops());
-
     public static final RegistryHandle<BlockOutgas> BLOCK_CORIUM_COBBLE =
             Reg.blockItem(
                     "block_corium_cobble",
@@ -2856,7 +2809,8 @@ public final class ModBlocks {
                                     .noLootTable()
                                     .pushReaction(PushReaction.BLOCK));
     public static final RegistryHandle<Block> PWR_CASING = pwrPart("pwr_casing", 2);
-    public static final RegistryHandle<Block> PWR_PORT = pwrPart("pwr_port", 2);
+    public static final RegistryHandle<Block> PWR_PORT =
+            pwrPart("pwr_port", 2, PhysicalPortBlock::fluid);
     public static final RegistryHandle<Block> PWR_REFLECTOR = pwrPart("pwr_reflector", 3);
     public static final RegistryHandle<Block> PWR_FUEL = pwrPart("pwr_fuel", 2);
     public static final RegistryHandle<Block> PWR_CONTROL = pwrPart("pwr_control", 2);
@@ -2865,7 +2819,8 @@ public final class ModBlocks {
     public static final RegistryHandle<Block> PWR_HEATSINK = pwrPart("pwr_heatsink", 3);
     public static final RegistryHandle<Block> PWR_NEUTRON_SOURCE = pwrPart("pwr_neutron_source", 3);
     public static final RegistryHandle<Block> ICF_CASING = icfPart("icf_casing");
-    public static final RegistryHandle<Block> ICF_PORT = icfPart("icf_port");
+    public static final RegistryHandle<Block> ICF_PORT =
+            icfPart("icf_port", PhysicalPortBlock::power);
     public static final RegistryHandle<Block> ICF_CELL = icfPart("icf_cell");
     public static final RegistryHandle<Block> ICF_EMITTER = icfPart("icf_emitter");
     public static final RegistryHandle<Block> ICF_CAPACITOR =
@@ -2877,7 +2832,6 @@ public final class ModBlocks {
             icfPart("icf_component_vessel_welded");
     public static final RegistryHandle<Block> ICF_COMPONENT_STRUCTURE_BOLTED =
             icfPart("icf_component_structure_bolted");
-
     public static final RegistryHandle<BlockToolConversion> ICF_COMPONENT_VESSEL =
             Reg.blockItem(
                     "icf_component_vessel",
@@ -2902,7 +2856,6 @@ public final class ModBlocks {
                     ModBlocks::icfProps);
     public static final RegistryHandle<MachineICFController> ICF_CONTROLLER =
             Reg.blockItem("icf_controller", MachineICFController::new, ModBlocks::icfProps);
-
     public static final RegistryHandle<BlockICF> ICF_BLOCK =
             Reg.block(
                     "icf_block",
@@ -2916,7 +2869,6 @@ public final class ModBlocks {
                                     .pushReaction(PushReaction.BLOCK));
     public static final RegistryHandle<MachineICF> MACHINE_ICF =
             Reg.blockItem("icf", MachineICF::new, () -> icfProps().noOcclusion());
-
     public static final RegistryHandle<BlockICFStruct> STRUCT_ICF_CORE =
             Reg.blockItem(
                     "struct_icf_core",
@@ -3108,7 +3060,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 6.0F)
                                     .requiresCorrectToolForDrops()
                                     .noOcclusion());
-
     public static final RegistryHandle<RadarMastCell> RADAR_MAST_CELL =
             Reg.block(
                             "multiblock_cell_radar_mast",
@@ -3169,6 +3120,11 @@ public final class ModBlocks {
                                     .strength(5.0F, 6.0F)
                                     .requiresCorrectToolForDrops()
                                     .noOcclusion());
+    public static final RegistryHandle<LaunchpadSoyuzAnchorCell> LAUNCHPAD_SOYUZ_ANCHOR =
+            Reg.block(
+                    "multiblock_cell_launchpad_soyuz_anchor",
+                    LaunchpadSoyuzAnchorCell::new,
+                    () -> cellProperties(CellBuckets.Plain.of(5F, 6F, MapColor.METAL)));
     public static final RegistryHandle<LaunchpadSoyuz> LAUNCHPAD_SOYUZ =
             Reg.blockItem(
                     "launchpad_soyuz",
@@ -3271,7 +3227,6 @@ public final class ModBlocks {
                             () -> doorProperties().strength(10.0F, 600.0F))
                     .afterRegistration(ModBlocks::sealsWhileClosed)
                     .bakedBy(() -> new DoorModel());
-
     public static final RegistryHandle<BlastDoor> BLAST_DOOR =
             Reg.blockItem(
                             "blast_door",
@@ -3297,7 +3252,6 @@ public final class ModBlocks {
                             props -> new BlockDoorGeneric(props, DoorDecl.SILO_HATCH_LARGE),
                             ModBlocks::doorProperties)
                     .bakedBy(() -> new DoorModel());
-
     public static final RegistryHandle<DungeonSpawner> DUNGEON_SPAWNER =
             Reg.block(
                             "dungeon_spawner",
@@ -3309,7 +3263,6 @@ public final class ModBlocks {
                                             .sound(SoundType.STONE)
                                             .noLootTable())
                     .andThen(h -> decoItem("dungeon_spawner", h));
-
     public static final RegistryHandle<BlockSkeletonHolder> SKELETON_HOLDER =
             Reg.blockItem(
                     "skeleton_holder",
@@ -3333,7 +3286,6 @@ public final class ModBlocks {
                                             .requiresCorrectToolForDrops()
                                             .noOcclusion())
                     .bakedBy(() -> new StandardBlockModel());
-
     public static final RegistryHandle<BlockBobble> BOBBLEHEAD =
             Reg.<BlockBobble>blockItem(
                     "bobblehead",
@@ -3346,14 +3298,12 @@ public final class ModBlocks {
                                     .noLootTable()
                                     .requiresCorrectToolForDrops(),
                     (block, props) -> new ItemBlockTrinket<>(block, props, BobbleType.NONE));
-
     public static final ItemFamily<BobbleType, ItemBlockTrinket<BobbleType>> BOBBLEHEADS =
             Reg.family(
                     Arrays.copyOfRange(BobbleType.values(), 1, BobbleType.values().length),
                     type -> "bobblehead_" + type.name().toLowerCase(Locale.ROOT),
                     (props, type) -> new ItemBlockTrinket<>(BOBBLEHEAD.get(), props, type),
                     Item.Properties::new);
-
     public static final RegistryHandle<BlockSnowglobe> SNOWGLOBE =
             Reg.<BlockSnowglobe>blockItem(
                     "snowglobe",
@@ -3366,14 +3316,12 @@ public final class ModBlocks {
                                     .noOcclusion()
                                     .noLootTable(),
                     (block, props) -> new ItemBlockTrinket<>(block, props, SnowglobeType.NONE));
-
     public static final ItemFamily<SnowglobeType, ItemBlockTrinket<SnowglobeType>> SNOWGLOBES =
             Reg.family(
                     Arrays.copyOfRange(SnowglobeType.values(), 1, SnowglobeType.values().length),
                     type -> "snowglobe_" + type.name().toLowerCase(Locale.ROOT),
                     (props, type) -> new ItemBlockTrinket<>(SNOWGLOBE.get(), props, type),
                     Item.Properties::new);
-
     public static final RegistryHandle<BlockPlushie> PLUSHIE =
             Reg.<BlockPlushie>blockItem(
                     "plushie",
@@ -3387,14 +3335,12 @@ public final class ModBlocks {
                                     .noLootTable()
                                     .ignitedByLava(),
                     (block, props) -> new ItemBlockPlushie(block, props, PlushieType.NONE));
-
     public static final ItemFamily<PlushieType, ItemBlockPlushie> PLUSHIES =
             Reg.family(
                     Arrays.copyOfRange(PlushieType.values(), 1, PlushieType.values().length),
                     type -> "plushie_" + type.name().toLowerCase(Locale.ROOT),
                     (props, type) -> new ItemBlockPlushie(PLUSHIE.get(), props, type),
                     Item.Properties::new);
-
     public static final RegistryHandle<Floodlight> FLOODLIGHT =
             Reg.blockItem(
                             "floodlight",
@@ -3406,7 +3352,6 @@ public final class ModBlocks {
                                             .requiresCorrectToolForDrops()
                                             .noOcclusion())
                     .bakedBy(() -> new FloodlightModel());
-
     public static final RegistryHandle<FloodlightBeam> FLOODLIGHT_BEAM =
             Reg.block(
                     "floodlight_beam",
@@ -3419,7 +3364,6 @@ public final class ModBlocks {
                                     .replaceable()
                                     .lightLevel(state -> 15)
                                     .noLootTable());
-
     public static final RegistryHandle<MachineRTG> MACHINE_RTG =
             Reg.blockItem(
                             "machine_rtg_grey",
@@ -3431,7 +3375,6 @@ public final class ModBlocks {
                                             .requiresCorrectToolForDrops()
                                             .noOcclusion())
                     .bakedBy(() -> new RTGModel());
-
     public static final RegistryHandle<MachineBoilerOff> MACHINE_BOILER_OFF =
             Reg.blockItem(
                     "machine_boiler_off",
@@ -3483,7 +3426,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 6.0F)
                                     .sound(SoundType.STONE)
                                     .requiresCorrectToolForDrops());
-
     public static final RegistryHandle<TurretSentryDamaged> TURRET_SENTRY_DAMAGED =
             Reg.blockItem(
                     "turret_sentry_damaged",
@@ -3585,7 +3527,6 @@ public final class ModBlocks {
                                     .strength(5.0F, 3.0F)
                                     .noOcclusion()
                                     .requiresCorrectToolForDrops());
-
     public static final RegistryHandle<TurretHowardDamaged> TURRET_HOWARD_DAMAGED =
             Reg.blockItem(
                             "turret_howard_damaged",
@@ -3642,7 +3583,6 @@ public final class ModBlocks {
                                             .isValidSpawn((state, level, pos, type) -> false))
                     .bakedBy(() -> new BedrockOreModel.Family())
                     .andThen(h -> decoItem("ore_bedrock", h));
-
     public static final RegistryHandle<BlockGeysir> GEYSIR_NETHER =
             Reg.block(
                     "geysir_nether",
@@ -3654,7 +3594,6 @@ public final class ModBlocks {
                                     .lightLevel(s -> 15)
                                     .noLootTable()
                                     .requiresCorrectToolForDrops());
-
     public static final RegistryHandle<BlockGeysir> GEYSIR_CHLORINE =
             Reg.block(
                     "geysir_chlorine",
@@ -3666,7 +3605,6 @@ public final class ModBlocks {
                                     .sound(SoundType.STONE)
                                     .noLootTable()
                                     .requiresCorrectToolForDrops());
-
     public static final RegistryHandle<BlockMeteorMolten> BLOCK_METEOR_MOLTEN =
             Reg.block(
                     "block_meteor_molten",
@@ -3854,10 +3792,19 @@ public final class ModBlocks {
     public static final RegistryHandle<BlockSellafieldOre> ORE_SELLAFIELD_RADGEM =
             sellafieldOre("ore_sellafield_radgem", "radgem", () -> ModItems.GEM_RAD.get(), 3, 7);
     public static final RegistryHandle<BlockSellafieldOre> ORE_SELLAFIELD_SCHRABIDIUM =
-            sellafieldOre("ore_sellafield_schrabidium", "schrabidium", null, 0, 0);
+            sellafieldOre(
+                    "ore_sellafield_schrabidium",
+                    "schrabidium",
+                    () -> ModItems.RAW_SCHRABIDIUM.get(),
+                    0,
+                    0);
     public static final RegistryHandle<BlockSellafieldOre> ORE_SELLAFIELD_URANIUM_SCORCHED =
-            sellafieldOre("ore_sellafield_uranium_scorched", "uranium_scorched", null, 0, 0);
-
+            sellafieldOre(
+                    "ore_sellafield_uranium_scorched",
+                    "uranium_scorched",
+                    () -> ModItems.RAW_URANIUM.get(),
+                    0,
+                    0);
     public static final ClassicFluid.Pair SULFURIC_ACID_FLUID =
             Reg.classicFluid(
                     "sulfuric_acid_fluid",
@@ -3875,7 +3822,6 @@ public final class ModBlocks {
                     "sulfuric_acid_block",
                     props -> new BlockSulfuricAcid(SULFURIC_ACID_FLUID.source().get(), props),
                     () -> classicFluidProps(MapColor.WATER));
-
     public static final ClassicFluid.Pair ACID_FLUID =
             Reg.classicFluid(
                     "acid_fluid",
@@ -3896,7 +3842,6 @@ public final class ModBlocks {
                             classicFluidProps(MapColor.COLOR_PURPLE)
                                     .randomTicks()
                                     .lightLevel(state -> BlockFluidClassicBase.light(state, 4, 5)));
-
     public static final ClassicFluid.Pair TOXIC_FLUID =
             Reg.classicFluid(
                     "toxic_fluid",
@@ -3917,7 +3862,6 @@ public final class ModBlocks {
                             classicFluidProps(MapColor.COLOR_GREEN)
                                     .lightLevel(
                                             state -> BlockFluidClassicBase.light(state, 4, 15)));
-
     public static final ClassicFluid.Pair SCHRABIDIC_FLUID =
             Reg.classicFluid(
                     "schrabidic_fluid",
@@ -4020,7 +3964,6 @@ public final class ModBlocks {
                                     .lightLevel(state -> 15)
                                     .noOcclusion()
                                     .requiresCorrectToolForDrops());
-
     public static final ClassicFluid.Pair MUD_FLUID =
             Reg.classicFluid(
                     "mud_fluid",
@@ -4040,10 +3983,8 @@ public final class ModBlocks {
                     () ->
                             classicFluidProps(MapColor.COLOR_ORANGE)
                                     .lightLevel(state -> BlockFluidClassicBase.light(state, 4, 5)));
-
     public static final RegistryHandle<Block> BLOCK_EUPHEMIUM =
             deco("block_euphemium", 5.0F, 36000.0F, SoundType.METAL);
-
     public static final RegistryHandle<TransparentBlock> GLASS_QUARTZ =
             Reg.block(
                             "glass_quartz",
@@ -4058,7 +3999,6 @@ public final class ModBlocks {
                                             .isViewBlocking((state, level, pos) -> false)
                                             .isValidSpawn((state, level, pos, type) -> false))
                     .andThen(h -> DECO_BLOCKS.add(decoItem("glass_quartz", h)));
-
     public static final RegistryHandle<TransparentBlock> GLASS_BORON =
             Reg.block(
                             "glass_boron",
@@ -4075,7 +4015,6 @@ public final class ModBlocks {
                                             .isValidSpawn((state, level, pos, type) -> false))
                     .afterRegistration(RadiationSystemNT::markRadResistant)
                     .andThen(h -> STRUCTURAL_BLOCKS.add(decoItem("glass_boron", h)));
-
     public static final RegistryHandle<TransparentBlock> GLASS_LEAD =
             Reg.block(
                             "glass_lead",
@@ -4127,7 +4066,6 @@ public final class ModBlocks {
                                             .isViewBlocking((state, level, pos) -> false)
                                             .isValidSpawn((state, level, pos, type) -> false))
                     .andThen(h -> STRUCTURAL_BLOCKS.add(decoItem("glass_ash", h)));
-
     public static final RegistryHandle<TransparentBlock> GLASS_POLARIZED =
             Reg.<TransparentBlock>block(
                             "glass_polarized",
@@ -4143,7 +4081,6 @@ public final class ModBlocks {
                                             .isViewBlocking((state, level, pos) -> false)
                                             .isValidSpawn((state, level, pos, type) -> false))
                     .andThen(h -> STRUCTURAL_BLOCKS.add(decoItem("glass_polarized", h)));
-
     public static final RegistryHandle<TransparentBlock> REINFORCED_GLASS =
             Reg.block(
                             "reinforced_glass",
@@ -4160,7 +4097,6 @@ public final class ModBlocks {
                                             .requiresCorrectToolForDrops())
                     .afterRegistration(RadiationSystemNT::markRadResistant)
                     .andThen(h -> DECO_BLOCKS.add(blastItem("reinforced_glass", h)));
-
     public static final RegistryHandle<BlockReinforcedGlassPane> REINFORCED_GLASS_PANE =
             Reg.block(
                             "reinforced_glass_pane",
@@ -4173,7 +4109,6 @@ public final class ModBlocks {
                                             .requiresCorrectToolForDrops())
                     .afterRegistration(RadiationSystemNT::markRadResistant)
                     .andThen(h -> DECO_BLOCKS.add(blastItem("reinforced_glass_pane", h)));
-
     public static final RegistryHandle<TransparentBlock> REINFORCED_LAMINATE =
             Reg.block(
                             "reinforced_laminate",
@@ -4202,7 +4137,6 @@ public final class ModBlocks {
                                             .requiresCorrectToolForDrops())
                     .afterRegistration(RadiationSystemNT::markRadResistant)
                     .andThen(h -> DECO_BLOCKS.add(blastItem("reinforced_laminate_pane", h)));
-
     public static final RegistryHandle<LadderBlock> LADDER_STURDY =
             Reg.block(
                             "ladder_sturdy",
@@ -4258,7 +4192,6 @@ public final class ModBlocks {
                                             .noOcclusion()
                                             .pushReaction(PushReaction.DESTROY))
                     .andThen(h -> DECO_BLOCKS.add(decoItem("ladder_steel", h)));
-
     public static final RegistryHandle<TrapDoorBlock> TRAPDOOR_STEEL =
             Reg.block(
                             "trapdoor_steel",
@@ -4386,7 +4319,6 @@ public final class ModBlocks {
                                             .noOcclusion()
                                             .requiresCorrectToolForDrops())
                     .andThen(h -> DECO_BLOCKS.add(decoItem("steel_beam", h)));
-
     public static final RegistryHandle<BlockSteelWall> STEEL_WALL =
             Reg.block(
                             "steel_wall",
@@ -4437,7 +4369,6 @@ public final class ModBlocks {
                                             .noOcclusion()
                                             .requiresCorrectToolForDrops())
                     .andThen(h -> DECO_BLOCKS.add(decoItem("pole_top", h)));
-
     public static final RegistryHandle<BlockMetalFence> FENCE_METAL =
             Reg.block(
                             "fence_metal",
@@ -4480,7 +4411,6 @@ public final class ModBlocks {
                                             .noOcclusion()
                                             .requiresCorrectToolForDrops())
                     .andThen(h -> DECO_BLOCKS.add(grateItem("steel_grate_wide", h, true)));
-
     public static final RegistryHandle<BlockRailGeneric> RAIL_WOOD =
             Reg.block(
                             "rail_wood",
@@ -4555,7 +4485,6 @@ public final class ModBlocks {
                                             .noOcclusion()
                                             .requiresCorrectToolForDrops())
                     .andThen(h -> DECO_BLOCKS.add(decoItem("deco_computer", h)));
-
     public static final RegistryHandle<BlockDecoCRT> DECO_CRT_CLEAN =
             Reg.block(
                             "deco_crt_clean",
@@ -4722,7 +4651,6 @@ public final class ModBlocks {
                                             .requiresCorrectToolForDrops())
                     .andThen(h -> DECO_BLOCKS.add(pipeItem("deco_pipe_rim_green", h)))
                     .bakedBy(() -> new PipeModel(PipeModel.Kind.RIM));
-
     public static final RegistryHandle<RotatedPillarBlock> DECO_PIPE_RIM =
             Reg.block(
                             "deco_pipe_rim",
@@ -4934,7 +4862,6 @@ public final class ModBlocks {
                     .afterRegistration(RadiationSystemNT::markRadResistant);
     public static final RegistryHandle<BlockCrate> SAFE =
             crate("safe", BlockSafe::new, 7.5F, 6000.0F);
-
     public static final RegistryHandle<BlockMassStorage> MASS_STORAGE_WOOD =
             massStorage("mass_storage_wood", 100, "_wood");
     public static final RegistryHandle<BlockMassStorage> MASS_STORAGE_IRON =
@@ -4961,7 +4888,6 @@ public final class ModBlocks {
                     5.0F,
                     5.0F,
                     BlockBehaviour.Properties::requiresCorrectToolForDrops);
-
     public static final RegistryHandle<BlockOilSpill> OIL_SPILL =
             Reg.block("oil_spill", BlockOilSpill::new, BlockOilSpill::defaultProperties)
                     .andThen(h -> DECO_BLOCKS.add(decoItem("oil_spill", h)));
@@ -4986,10 +4912,8 @@ public final class ModBlocks {
     public static final RegistryHandle<Block> PLANT_DEAD_BIGFLOWER =
             deadPlant("plant_dead_bigflower");
     public static final RegistryHandle<Block> PLANT_DEAD_FERN = deadPlant("plant_dead_fern");
-
     public static final RegistryHandle<BlockNTMFlower> PLANT_FLOWER_FOXGLOVE =
             flower("plant_flower_foxglove", BlockNTMFlower.Variant.FOXGLOVE);
-
     public static final RegistryHandle<BlockNTMFlower> PLANT_FLOWER_TOBACCO =
             tintedFlower("plant_flower_tobacco", BlockNTMFlower.Variant.TOBACCO);
     public static final RegistryHandle<BlockNTMFlower> PLANT_FLOWER_NIGHTSHADE =
@@ -4998,10 +4922,8 @@ public final class ModBlocks {
             tintedFlower("plant_flower_weed", BlockNTMFlower.Variant.WEED);
     public static final RegistryHandle<BlockNTMFlower> PLANT_FLOWER_CD0 =
             flower("plant_flower_cd0", BlockNTMFlower.Variant.CD0);
-
     public static final RegistryHandle<BlockNTMFlower> PLANT_FLOWER_CD1 =
             flower("plant_flower_cd1", BlockNTMFlower.Variant.CD1);
-
     public static final RegistryHandle<BlockCustomMachine> CUSTOM_MACHINE = customMachine();
     public static final RegistryHandle<Block> CM_BLOCK_STEEL = cmCube("cm_block_steel");
     public static final RegistryHandle<Block> CM_BLOCK_ALLOY = cmCube("cm_block_alloy");
@@ -5029,12 +4951,10 @@ public final class ModBlocks {
     public static final RegistryHandle<BlockCMPort> CM_PORT_ALLOY = cmPort("cm_port_alloy");
     public static final RegistryHandle<BlockCMPort> CM_PORT_DESH = cmPort("cm_port_desh");
     public static final RegistryHandle<BlockCMPort> CM_PORT_TCALLOY = cmPort("cm_port_tcalloy");
-
     public static final RegistryHandle<Block> CM_FLUX = cmPillar("cm_flux");
     public static final RegistryHandle<Block> CM_HEAT = cmPillar("cm_heat");
     public static final RegistryHandle<Block> CUSTOM_MACHINE_ANCHOR = cmAnchor();
     public static final RegistryHandle<BlockReeds> PLANT_REEDS = reeds("plant_reeds");
-
     public static final RegistryHandle<BlockTallPlant> PLANT_TALL_WEED =
             tintedTallPlant(
                     "plant_tall_weed", BlockTallPlant.Variant.WEED, "hbm:plant_flower_weed");
@@ -5042,7 +4962,6 @@ public final class ModBlocks {
             tallPlant("plant_tall_cd2", BlockTallPlant.Variant.CD2, "hbm:plant_flower_cd0");
     public static final RegistryHandle<BlockTallPlant> PLANT_TALL_CD3 =
             tallPlant("plant_tall_cd3", BlockTallPlant.Variant.CD3, "hbm:plant_flower_cd0");
-
     public static final RegistryHandle<BlockTallPlant> PLANT_TALL_CD4 =
             tallPlant("plant_tall_cd4", BlockTallPlant.Variant.CD4, "hbm:plant_flower_cd0");
     public static final RegistryHandle<BlockGraphiteDrilled> BLOCK_GRAPHITE_DRILLED =
@@ -5215,6 +5134,7 @@ public final class ModBlocks {
     public static RegistryHandle<Block> STONE_POROUS;
     public static RegistryHandle<Block> STONE_GNEISS;
     public static RegistryHandle<Block> ORE_URANIUM;
+    public static RegistryHandle<Block> ORE_URANIUM_DEEPSLATE;
     public static RegistryHandle<Block> CONCRETE;
     public static RegistryHandle<Block> CONCRETE_SMOOTH;
     public static RegistryHandle<Block> CONCRETE_ASBESTOS;
@@ -5249,7 +5169,6 @@ public final class ModBlocks {
     public static RegistryHandle<Block> BLOCK_BERYLLIUM;
     public static RegistryHandle<Block> BLOCK_DESH;
     public static RegistryHandle<Block> ORE_GNEISS_GAS;
-
     public static RegistryHandle<BlockOreBasalt> ORE_BASALT_ASBESTOS;
     public static RegistryHandle<Block> ORE_BASALT_GEM;
     public static RegistryHandle<BlockHazardFalling> BLOCK_FALLOUT;
@@ -5303,7 +5222,6 @@ public final class ModBlocks {
     public static RegistryHandle<BlockDetNuke> DET_NUKE;
     public static RegistryHandle<BlockDetMiner> DET_MINER;
     public static RegistryHandle<BlockBalefire> BALEFIRE;
-
     public static RegistryHandle<BlockTaint> TAINT;
     public static RegistryHandle<BombFlameWar> FLAME_WAR;
     public static RegistryHandle<BlockEMPBomb> EMP_BOMB;
@@ -5313,7 +5231,6 @@ public final class ModBlocks {
     public static RegistryHandle<Block> CRYSTAL_HARDENED;
     public static RegistryHandle<CrystalVirus> CRYSTAL_VIRUS;
     public static RegistryHandle<CrystalPulsar> CRYSTAL_PULSAR;
-
     public static RegistryHandle<Block> BLOCK_SCHRABIDIUM_CLUSTER;
     public static RegistryHandle<Block> BLOCK_EUPHEMIUM_CLUSTER;
     public static RegistryHandle<Block> ORE_TEKTITE_OSMIRIDIUM;
@@ -5335,7 +5252,6 @@ public final class ModBlocks {
     public static RegistryHandle<BlockJungleMystic> BRICK_JUNGLE_MYSTIC;
     public static RegistryHandle<FragileBrick> BRICK_JUNGLE_FRAGILE;
     public static RegistryHandle<Block> CRATE_JUNGLE;
-
     public static RegistryHandle<LogicBlock> LOGIC_BLOCK;
     public static RegistryHandle<LogicBlockInvis> LOGIC_BLOCK_INVIS;
     public static RegistryHandle<WasteEarth> WASTE_EARTH;
@@ -5393,7 +5309,7 @@ public final class ModBlocks {
     public static RegistryHandle<Block> ASPHALT_LIGHT;
     public static RegistryHandle<Block> BLOCK_FOAM;
     public static RegistryHandle<BlockBoxcar> BOXCAR;
-    public static RegistryHandle<Block> BOAT;
+    public static RegistryHandle<BlockBoat> BOAT;
     public static RegistryHandle<BlockLayering> FOAM_LAYER;
     public static RegistryHandle<ColoredFallingBlock> SAND_BORON;
     public static RegistryHandle<ColoredFallingBlock> SAND_LEAD;
@@ -5460,7 +5376,6 @@ public final class ModBlocks {
                         () -> new Item.Properties());
             }
         }
-
         for (int size = 0; size < 5; size++) {
             String name = "red_cable_box_" + size;
             int s = size;
@@ -5510,7 +5425,6 @@ public final class ModBlocks {
         ore("ore_titanium", Mats.MAT_TITANIUM, 5.0F, 6.0F);
         ore("ore_sulfur", Mats.MAT_SULFUR, 5.0F, 6.0F);
         ore("ore_aluminium", Mats.MAT_ALUMINIUM, 5.0F, 6.0F);
-
         ore("ore_fluorite", Mats.MAT_FLUORITE, 5.0F, 6.0F);
         ore("ore_niter", Mats.MAT_KNO, 5.0F, 6.0F);
         ore("ore_tungsten", Mats.MAT_TUNGSTEN, 5.0F, 6.0F);
@@ -5609,8 +5523,13 @@ public final class ModBlocks {
     }
 
     static {
-        oreOutgasDeepslate(
-                "ore_uranium_deepslate", Mats.MAT_URANIUM, 5.0F, 6.0F, () -> GAS_RADON.get());
+        ORE_URANIUM_DEEPSLATE =
+                oreOutgasDeepslate(
+                        "ore_uranium_deepslate",
+                        Mats.MAT_URANIUM,
+                        5.0F,
+                        6.0F,
+                        () -> GAS_RADON.get());
         oreDeepslate("ore_thorium_deepslate", Mats.MAT_THORIUM, 5.0F, 6.0F);
         oreDeepslate("ore_titanium_deepslate", Mats.MAT_TITANIUM, 5.0F, 6.0F);
         oreDeepslate("ore_sulfur_deepslate", Mats.MAT_SULFUR, 5.0F, 6.0F);
@@ -5647,9 +5566,10 @@ public final class ModBlocks {
                         0.4F,
                         6.0F,
                         UnaryOperator.identity());
-        ORE_OIL = extraOre("ore_oil", 5.0F, 6.0F);
+        ORE_OIL =
+                ModBlocks.<Block>extraOre(
+                        "ore_oil", BlockOreOil::new, 5.0F, 6.0F, UnaryOperator.identity());
         ORE_OIL_EMPTY = extraOre("ore_oil_empty", 5.0F, 6.0F);
-
         ORE_BEDROCK_OIL =
                 extraOre(
                         "ore_bedrock_oil",
@@ -5839,7 +5759,6 @@ public final class ModBlocks {
         BLOCK_LEAD =
                 storage("block_lead", Mats.MAT_LEAD, 5.0F, 30.0F, SoundType.METAL, MapColor.METAL)
                         .afterRegistration(RadiationSystemNT::markRadResistant);
-
         BLOCK_GRAPHITE =
                 Reg.block(
                         "block_graphite",
@@ -6115,7 +6034,6 @@ public final class ModBlocks {
                 decoBlast("brick_concrete_cracked", 15.0F, 36.0F);
         RegistryHandle<Block> brickConcreteBroken =
                 decoBlast("brick_concrete_broken", 15.0F, 27.0F);
-
         BRICK_CONCRETE_MARKED =
                 Reg.<Block>block(
                         "brick_concrete_marked",
@@ -6160,7 +6078,6 @@ public final class ModBlocks {
         RegistryHandle<Block> concreteAsbestos =
                 CONCRETE_ASBESTOS = decoNoSpawnBlast("concrete_asbestos", 15.0F, 90.0F);
         CONCRETE_REBAR = decoNoSpawnBlast("concrete_rebar", 50.0F, 144.0F);
-
         Reg.Handle<Block> ducreteSmooth =
                 decoNoSpawnBlast("ducrete_smooth", 20.0F, 300.0F)
                         .afterRegistration(RadiationSystemNT::markRadResistant);
@@ -6173,7 +6090,6 @@ public final class ModBlocks {
         REINFORCED_DUCRETE =
                 decoNoSpawnBlast("reinforced_ducrete", 20.0F, 600.0F)
                         .afterRegistration(RadiationSystemNT::markRadResistant);
-
         concreteColored("concrete_white");
         concreteColored("concrete_orange");
         concreteColored("concrete_magenta");
@@ -6201,7 +6117,6 @@ public final class ModBlocks {
                                                 .requiresCorrectToolForDrops())
                         .afterRegistration(RadiationSystemNT::markRadResistant);
         DECO_BLOCKS.add(blastItem("concrete_pillar", CONCRETE_PILLAR));
-
         CONCRETE_SUPER =
                 Reg.block(
                         "concrete_super",
@@ -6223,7 +6138,6 @@ public final class ModBlocks {
         CONCRETE_EXT_HAZARD = concreteExt("concrete_ext_hazard");
         CONCRETE_EXT_SAND = concreteExt("concrete_ext_sand");
         CONCRETE_EXT_BRONZE = concreteExt("concrete_ext_bronze");
-
         CONCRETE_EXT_MACHINE_STRIPE = decoNoSpawnBlast("concrete_ext_machine_stripe", 15.0F, 84.0F);
         LIGHTSTONE_UNREFINED = lightstone("lightstone_unrefined");
         LIGHTSTONE_TILE = lightstone("lightstone_tile");
@@ -6233,10 +6147,8 @@ public final class ModBlocks {
         LIGHTSTONE_TILE_STAIRS = decoStairs("lightstone_tile_stairs", LIGHTSTONE_TILE, 2.0F, 9.0F);
         LIGHTSTONE_BRICKS_STAIRS =
                 decoStairs("lightstone_bricks_stairs", LIGHTSTONE_BRICKS, 2.0F, 9.0F);
-
         decoSlab("lightstone_tile_slab", 2.0F, 9.0F);
         decoSlab("lightstone_bricks_slab", 2.0F, 9.0F);
-
         BRICK_FORGOTTEN =
                 Reg.block(
                         "brick_forgotten",
@@ -6259,7 +6171,6 @@ public final class ModBlocks {
                                         .sound(SoundType.STONE)
                                         .noLootTable());
         decoItem("brick_forgotten_lock", BRICK_FORGOTTEN_LOCK);
-
         TILE_LAB = tileLab("tile_lab", false);
         TILE_LAB_CRACKED = tileLab("tile_lab_cracked", false);
         TILE_LAB_BROKEN = tileLab("tile_lab_broken", true);
@@ -6281,7 +6192,6 @@ public final class ModBlocks {
                         () ->
                                 new Item.Properties()
                                         .rarity(Rarity.RARE)));
-
         STONE_POROUS =
                 Reg.block(
                         "stone_porous",
@@ -6302,7 +6212,6 @@ public final class ModBlocks {
         METEOR_BRICK_MOSSY = meteorDeco("meteor_brick_mossy");
         METEOR_BRICK_CRACKED = meteorDeco("meteor_brick_cracked");
         meteorDeco("meteor_brick_chiseled");
-
         METEOR_SPAWNER =
                 Reg.block(
                         "meteor_spawner",
@@ -6317,7 +6226,6 @@ public final class ModBlocks {
                 "meteor_spawner",
                 props -> new BlockItem(METEOR_SPAWNER.get(), props),
                 () -> new Item.Properties());
-
         TESLA =
                 Reg.block(
                         "tesla",
@@ -6331,7 +6239,6 @@ public final class ModBlocks {
                 "tesla",
                 props -> new BlockItem(TESLA.get(), props),
                 () -> new Item.Properties());
-
         CRATE =
                 Reg.block(
                         "crate",
@@ -6358,7 +6265,6 @@ public final class ModBlocks {
                 "crate_red",
                 props -> new BlockItem(CRATE_RED.get(), props),
                 () -> new Item.Properties());
-
         CRATE_WEAPON =
                 Reg.block(
                         "crate_weapon",
@@ -6448,7 +6354,6 @@ public final class ModBlocks {
                         2.5F,
                         3.0F,
                         BlockBehaviour.Properties::requiresCorrectToolForDrops);
-
         BLOCK_SLAG =
                 Reg.block(
                         "block_slag",
@@ -6509,13 +6414,14 @@ public final class ModBlocks {
         BOAT =
                 Reg.block(
                         "boat",
-                        Block::new,
+                        BlockBoat::new,
                         () ->
                                 BlockBehaviour.Properties.of()
                                         .mapColor(MapColor.METAL)
                                         .sound(SoundType.METAL)
                                         .strength(10.0F, 6.0F)
-                                        .requiresCorrectToolForDrops());
+                                        .requiresCorrectToolForDrops()
+                                        .noOcclusion());
         DECO_BLOCKS.add(decoItem("boat", BOAT));
         BLOCK_FOAM =
                 Reg.block(
@@ -6541,7 +6447,6 @@ public final class ModBlocks {
                                         .pushReaction(PushReaction.DESTROY)
                                         .replaceable());
         DECO_BLOCKS.add(decoItem("foam_layer", FOAM_LAYER));
-
         SAND_BORON = sandMix("sand_boron", 0xC9C6A2);
         SAND_LEAD = sandMix("sand_lead", 0x858591);
         SAND_URANIUM = sandMix("sand_uranium", 0xABA792);
@@ -6561,7 +6466,6 @@ public final class ModBlocks {
         DECO_BLOCKS.add(decoItem("sand_boron_layer", SAND_BORON_LAYER));
         FILING_CABINET_GREEN = filingCabinet("filing_cabinet_green", "block/filing_cabinet");
         FILING_CABINET_STEEL = filingCabinet("filing_cabinet_steel", "block/filing_cabinet_steel");
-
         NUKE_CUSTOM =
                 Reg.blockItem(
                         "nuke_custom",
@@ -6572,7 +6476,6 @@ public final class ModBlocks {
                                         .sound(SoundType.STONE)
                                         .requiresCorrectToolForDrops()
                                         .noOcclusion());
-
         NUKE_FSTBMB =
                 Reg.blockItem(
                         "nuke_fstbmb",
@@ -6582,7 +6485,6 @@ public final class ModBlocks {
                                         .strength(5.0F, 120.0F)
                                         .noOcclusion()
                                         .requiresCorrectToolForDrops());
-
         BOMB_MULTI =
                 Reg.blockItem(
                                 "bomb_multi",
@@ -6728,7 +6630,6 @@ public final class ModBlocks {
                 "det_miner",
                 props -> new BlockItem(DET_MINER.get(), props),
                 () -> new Item.Properties());
-
         FLAME_WAR =
                 Reg.block(
                         "flame_war",
@@ -6754,7 +6655,6 @@ public final class ModBlocks {
                 "emp_bomb",
                 props -> new BlockItem(EMP_BOMB.get(), props),
                 () -> new Item.Properties());
-
         FLOAT_BOMB =
                 Reg.block(
                         "float_bomb",
@@ -6820,7 +6720,6 @@ public final class ModBlocks {
                 "balefire",
                 props -> new BlockItem(BALEFIRE.get(), props),
                 () -> new Item.Properties());
-
         METEOR_PILLAR =
                 Reg.block(
                         "meteor_pillar",
@@ -6832,7 +6731,6 @@ public final class ModBlocks {
                                         .sound(SoundType.STONE)
                                         .requiresCorrectToolForDrops());
         DECO_BLOCKS.add(decoItem("meteor_pillar", METEOR_PILLAR));
-
         NTM_DIRT =
                 Reg.block(
                         "dirt",
@@ -6898,7 +6796,6 @@ public final class ModBlocks {
                                         .lightLevel(s -> 5)
                                         .requiresCorrectToolForDrops());
         DECO_BLOCKS.add(decoItem("brick_jungle_mystic", BRICK_JUNGLE_MYSTIC));
-
         BRICK_JUNGLE_FRAGILE =
                 Reg.block(
                         "brick_jungle_fragile",
@@ -6916,7 +6813,6 @@ public final class ModBlocks {
         for (int i = 0; i < 16; i++) {
             deco("brick_jungle_glyph_" + i, 15.0F, 216.0F);
         }
-
         CRATE_JUNGLE = decoUnlisted("crate_jungle", 1.0F, 1.5F, SoundType.STONE);
         for (TrappedBrick.Trap trap : TrappedBrick.Trap.values()) {
             String name = "brick_jungle_trap_" + trap.name().toLowerCase();
@@ -6935,7 +6831,6 @@ public final class ModBlocks {
             DECO_BLOCKS.add(decoItem(name, block));
             JUNGLE_TRAPS.add(block);
         }
-
         for (BlockCrashedBomb.EnumDudType dudType : BlockCrashedBomb.EnumDudType.values()) {
             String skin = dudType.name().toLowerCase();
             String name = "crashed_" + skin;
@@ -6951,7 +6846,6 @@ public final class ModBlocks {
             decoItem(name, block);
             CRASHED_BOMBS.add(block);
         }
-
         LOGIC_BLOCK =
                 Reg.block(
                         "logic_block",
@@ -7025,13 +6919,11 @@ public final class ModBlocks {
         deco("block_smore", 15.0F, 360.0F);
         deco("basalt", 5.0F, 6.0F);
         deco("basalt_smooth", 5.0F, 6.0F);
-
         deco("deco_rbmk", 5.0F, 60.0F);
         deco("deco_rbmk_smooth", 5.0F, 60.0F);
         deco("basalt_brick", 5.0F, 6.0F);
         deco("basalt_polished", 5.0F, 6.0F);
         deco("basalt_tiles", 5.0F, 6.0F);
-
         PINK_LOG =
                 Reg.<Block>block(
                         "pink_log",
@@ -7043,7 +6935,6 @@ public final class ModBlocks {
                                         .sound(SoundType.WOOD)
                                         .ignitedByLava());
         decoItem("pink_log", PINK_LOG);
-
         RegistryHandle<Block> pinkPlanks =
                 Reg.block(
                         "pink_planks",
@@ -7057,7 +6948,6 @@ public final class ModBlocks {
         BLOCK_METEOR = meteorDeco("block_meteor");
         BLOCK_METEOR_COBBLE = meteorDeco("block_meteor_cobble");
         BLOCK_METEOR_BROKEN = meteorDeco("block_meteor_broken");
-
         DECO_BLOCKS.add(decoItem("block_meteor_molten", BLOCK_METEOR_MOLTEN));
         BLOCK_METEOR_TREASURE = meteorDeco("block_meteor_treasure");
         WASTE_PLANKS =
@@ -7070,7 +6960,6 @@ public final class ModBlocks {
                                         .sound(SoundType.WOOD)
                                         .ignitedByLava());
         DECO_BLOCKS.add(decoItem("waste_planks", WASTE_PLANKS));
-
         FROZEN_DIRT =
                 Reg.block(
                         "frozen_dirt",
@@ -7089,7 +6978,6 @@ public final class ModBlocks {
                                         .strength(0.5F, 1.5F)
                                         .sound(SoundType.GLASS));
         DECO_BLOCKS.add(decoItem("frozen_grass", FROZEN_GRASS));
-
         FROZEN_LOG =
                 Reg.block(
                         "frozen_log",
@@ -7131,7 +7019,6 @@ public final class ModBlocks {
                                         .lightLevel(s -> 15)
                                         .randomTicks());
         DECO_BLOCKS.add(decoItem("waste_mycelium", WASTE_MYCELIUM));
-
         BURNING_EARTH =
                 Reg.block(
                         "burning_earth",
@@ -7142,7 +7029,6 @@ public final class ModBlocks {
                                         .sound(SoundType.GRASS)
                                         .randomTicks());
         DECO_BLOCKS.add(decoItem("burning_earth", BURNING_EARTH));
-
         IMPACT_DIRT =
                 Reg.block(
                         "impact_dirt",
@@ -7153,7 +7039,6 @@ public final class ModBlocks {
                                         .sound(SoundType.GRAVEL)
                                         .randomTicks());
         DECO_BLOCKS.add(decoItem("impact_dirt", IMPACT_DIRT));
-
         MUSH =
                 Reg.block(
                         "mush",
@@ -7209,7 +7094,6 @@ public final class ModBlocks {
                         BlockNuclearWaste::new,
                         ModBlocks::wasteBlockProperties);
         DECO_BLOCKS.add(decoItem("block_waste_vitrified", BLOCK_WASTE_VITRIFIED));
-
         GAS_MELTDOWN =
                 Reg.block("gas_meltdown", BlockGasMeltdown::new, BlockGasBase::defaultProperties);
         decoItem("gas_meltdown", GAS_MELTDOWN);
@@ -7232,7 +7116,6 @@ public final class ModBlocks {
                                         .mapColor(MapColor.METAL)
                                         .strength(10.0F, 60.0F)
                                         .requiresCorrectToolForDrops());
-
         SEAL_HATCH =
                 Reg.blockItem(
                         "seal_hatch",
@@ -7257,7 +7140,6 @@ public final class ModBlocks {
         CHLORINE_GAS =
                 Reg.block("chlorine_gas", BlockGasChlorine::new, BlockGasBase::defaultProperties);
         decoItem("chlorine_gas", CHLORINE_GAS);
-
         FIELD_DISTURBER =
                 Reg.block(
                         "field_disturber",
@@ -7279,11 +7161,9 @@ public final class ModBlocks {
                 Reg.block(
                         "gas_radon_tomb", BlockGasRadonTomb::new, BlockGasBase::defaultProperties);
         decoItem("gas_radon_tomb", GAS_RADON_TOMB);
-
         GAS_ASBESTOS =
                 Reg.block("gas_asbestos", BlockGasAsbestos::new, BlockGasBase::defaultProperties);
         decoItem("gas_asbestos", GAS_ASBESTOS);
-
         GAS_FLAMMABLE =
                 Reg.block("gas_flammable", BlockGasFlammable::new, BlockGasBase::defaultProperties);
         decoItem("gas_flammable", GAS_FLAMMABLE);
@@ -7293,7 +7173,6 @@ public final class ModBlocks {
         GAS_MONOXIDE =
                 Reg.block("gas_monoxide", BlockGasMonoxide::new, BlockGasBase::defaultProperties);
         decoItem("gas_monoxide", GAS_MONOXIDE);
-
         GAS_COAL = Reg.block("gas_coal", BlockGasCoal::new, BlockGasBase::defaultProperties);
         decoItem("gas_coal", GAS_COAL);
         SELLAFIELD_SLAKED =
@@ -7310,7 +7189,6 @@ public final class ModBlocks {
         DECO_BLOCKS.add(decoItem("sellafield_bedrock", SELLAFIELD_BEDROCK));
         SELLAFIELD =
                 Reg.block("sellafield", BlockSellafield::new, BlockSellafield::defaultProperties);
-
         Reg.item(
                         "sellafield",
                         props -> new BlockSellafield.SellafieldBlockItem(SELLAFIELD.get(), props),
@@ -7336,10 +7214,8 @@ public final class ModBlocks {
                         BlockWasteTrinitite::new,
                         BlockWasteTrinitite::defaultProperties);
         DECO_BLOCKS.add(decoItem("waste_trinitite_red", WASTE_TRINITITE_RED));
-
         VOLCANO_CORE = volcano("volcano_core");
         VOLCANO_RAD_CORE = volcano("volcano_rad_core");
-
         ORE_VOLCANO =
                 Reg.block(
                         "ore_volcano",
@@ -7353,7 +7229,6 @@ public final class ModBlocks {
                                         .randomTicks()
                                         .noLootTable());
         DECO_BLOCKS.add(decoItem("ore_volcano", ORE_VOLCANO));
-
         VOLCANIC_LAVA_FLUID =
                 Reg.classicFluid(
                         "volcanic_lava_fluid",
@@ -7375,7 +7250,6 @@ public final class ModBlocks {
                                         .lightLevel(
                                                 state ->
                                                         BlockFluidClassicBase.light(state, 4, 15)));
-
         RAD_LAVA_FLUID =
                 Reg.classicFluid(
                         "rad_lava_fluid",
@@ -7397,7 +7271,6 @@ public final class ModBlocks {
                                         .lightLevel(
                                                 state ->
                                                         BlockFluidClassicBase.light(state, 4, 15)));
-
         decoSlab("brick_concrete_slab", 15.0F, 96.0F);
         decoSlab("brick_concrete_mossy_slab", 15.0F, 96.0F);
         decoSlab("brick_concrete_cracked_slab", 15.0F, 36.0F);
@@ -7427,7 +7300,6 @@ public final class ModBlocks {
                                         .sound(SoundType.STONE)
                                         .requiresCorrectToolForDrops());
         DECO_BLOCKS.add(decoItem("asphalt_slab", asphaltSlab));
-
         RegistryHandle<SlabBlock> pinkSlab =
                 Reg.block(
                         "pink_slab",
@@ -7466,7 +7338,6 @@ public final class ModBlocks {
                                         .sound(SoundType.STONE)
                                         .requiresCorrectToolForDrops());
         DECO_BLOCKS.add(decoItem("asphalt_stairs", asphaltStairs));
-
         RegistryHandle<StairBlock> pinkStairs =
                 Reg.<StairBlock>block(
                         "pink_stairs",
@@ -7481,7 +7352,6 @@ public final class ModBlocks {
         MACHINE_TRANSFORMER = structural("machine_transformer", 5.0F, 6.0F);
         STRUCT_LAUNCHER = structural("struct_launcher", 5.0F, 6.0F);
         STRUCT_SCAFFOLD = structural("struct_scaffold", 5.0F, 6.0F);
-
         FUSION_HEATER = structuralUnlisted("fusion_heater", 5.0F, 6.0F);
         FUSION_HATCH = structuralUnlisted("fusion_hatch", FusionHatch::new, 5.0F, 6.0F);
         WATZ_ELEMENT = structural("watz_element", 5.0F, 6.0F);
@@ -7490,7 +7360,6 @@ public final class ModBlocks {
 
     public static RegistryHandle<Block> CONCRETE_RED;
     private static final String[] TURNED_FACINGS = {"north", "south", "west", "east"};
-
     public static final RegistryHandle<RailStandardStraight> RAIL_LARGE_STRAIGHT =
             Reg.blockItem(
                     "rail_large_straight",
@@ -7691,7 +7560,6 @@ public final class ModBlocks {
     private static <B extends BlockGraphiteDrilledBase> Reg.Handle<B> pile(
             String name, Function<BlockBehaviour.Properties, ? extends B> factory) {
         Reg.Handle<B> block = Reg.block(name, factory, BlockGraphiteDrilledBase::pileProperties);
-
         Reg.item(
                 name,
                 props -> new BlockItem(block.get(), props),
@@ -7728,11 +7596,12 @@ public final class ModBlocks {
                                     ResourceLocation base = Library.id("block/" + name + "_base");
                                     return new DroneWaypointModel(base);
                                 });
+        assert descLines == (kind == DroneWaypointBlock.Kind.TRANSPORT ? 5 : 0);
         Reg.item(
                 name,
                 props ->
-                        descLines > 0
-                                ? new DescBlockItem(block.get(), props, descLines)
+                        kind == DroneWaypointBlock.Kind.TRANSPORT
+                                ? new ItemDroneWaypoint(block.get(), props)
                                 : new BlockItem(block.get(), props),
                 () -> new Item.Properties());
         return block;
@@ -7776,7 +7645,6 @@ public final class ModBlocks {
                                         .strength(5.0F, 6.0F)
                                         .sound(SoundType.METAL)
                                         .requiresCorrectToolForDrops());
-
         Reg.item(
                 name,
                 props -> new ContainerBlockItem.WithInfo(block.get(), props),
@@ -7791,7 +7659,6 @@ public final class ModBlocks {
     }
 
     private static Reg.Handle<Block> meteorDeco(String name) {
-
         Reg.Handle<Block> block =
                 Reg.block(
                         name,
@@ -8006,7 +7873,6 @@ public final class ModBlocks {
     }
 
     private static BlockBehaviour.Properties classicFluidProps(MapColor color) {
-
         return BlockBehaviour.Properties.of()
                 .mapColor(color)
                 .replaceable()
@@ -8360,7 +8226,6 @@ public final class ModBlocks {
                         "custom_machine",
                         BlockCustomMachine::new,
                         () -> cmProps().lightLevel(state -> 15));
-
         MACHINE_BLOCKS.add(
                 Reg.<Item>item(
                                 "custom_machine",
@@ -8419,7 +8284,6 @@ public final class ModBlocks {
 
     private static Reg.Handle<Block> fallingCube(
             String name, MapColor color, SoundType sound, float hardness, float resistance) {
-
         return fallingCube(name, color, sound, hardness, resistance, UnaryOperator.identity());
     }
 
@@ -8957,19 +8821,36 @@ public final class ModBlocks {
         for (CellBuckets.Plain key : CellBuckets.plain()) {
             out.put(
                     key,
-                    Reg.block(
+                    declarePlainCell(
+                            Reg.block(
                                     key.name(),
                                     props -> BlockMultiblockCell.create(key, props),
-                                    () -> cellProperties(key))
-                            .afterRegistration(
-                                    cell ->
-                                            RadiationSystemNT.markRadResistant(
-                                                    cell,
-                                                    state ->
-                                                            state.getValue(
-                                                                    BlockMultiblockCell.SEALED))));
+                                    () -> cellProperties(key)),
+                            key.mineable()));
         }
         return out;
+    }
+
+    private static Reg.Handle<BlockMultiblockCell> declarePlainCell(
+            Reg.Handle<BlockMultiblockCell> cell, TagKey<Block> mineable) {
+        return cell.afterRegistration(
+                block ->
+                        RadiationSystemNT.markRadResistant(
+                                block, state -> state.getValue(BlockMultiblockCell.SEALED)));
+    }
+
+    public static RegistryHandle<? extends BlockMultiblockCell> addonPlainCell(
+            Reg.Namespace namespace, String name, CellBuckets.Plain key) {
+        CellBuckets.addAddonPlain(key);
+        RegistryHandle<? extends BlockMultiblockCell> cell =
+                declarePlainCell(
+                        namespace.block(
+                                name,
+                                props -> BlockMultiblockCell.create(key, props),
+                                () -> cellProperties(key)),
+                        key.mineable());
+        PLAIN_CELLS.put(key, cell);
+        return cell;
     }
 
     private static Map<CellBuckets.Geometry, RegistryHandle<BlockMultiblockGeometryCell>>
@@ -8977,14 +8858,12 @@ public final class ModBlocks {
         Map<CellBuckets.Geometry, RegistryHandle<BlockMultiblockGeometryCell>> out =
                 new LinkedHashMap<>();
         for (CellBuckets.Geometry bucket : CellBuckets.geometry()) {
+            TagKey<Block> mineable = bucket.key().mineable();
             RegistryHandle<BlockMultiblockGeometryCell> handle =
                     Reg.block(
                                     bucket.name(),
                                     props -> BlockMultiblockGeometryCell.create(bucket, props),
-                                    () ->
-                                            cellProperties(bucket.key())
-                                                    .dynamicShape()
-                                                    .forceSolidOn())
+                                    () -> cellProperties(bucket.key()).forceSolidOn())
                             .afterRegistration(
                                     cell -> {
                                         if (!bucket.part().seals()) return;
@@ -9000,7 +8879,10 @@ public final class ModBlocks {
     }
 
     public static RegistryHandle<? extends BlockMultiblockCell> plainCell(CellBuckets.Plain key) {
-        return PLAIN_CELLS.get(key);
+        RegistryHandle<? extends BlockMultiblockCell> cell = PLAIN_CELLS.get(key);
+        if (cell == null)
+            throw new IllegalStateException("no plain cell bucket registered for " + key);
+        return cell;
     }
 
     public static RegistryHandle<BlockMultiblockGeometryCell> geometryCell(
@@ -9016,12 +8898,13 @@ public final class ModBlocks {
     }
 
     private static BlockBehaviour.Properties cellProperties(CellBuckets.Plain key) {
-        return BlockBehaviour.Properties.of()
-                .mapColor(key.mapColor())
-                .strength(key.hardness(), key.resistance())
-                .lightLevel(state -> key.light())
-                .requiresCorrectToolForDrops()
-                .noOcclusion();
+        BlockBehaviour.Properties props =
+                BlockBehaviour.Properties.of()
+                        .mapColor(key.mapColor())
+                        .strength(key.hardness(), key.resistance())
+                        .lightLevel(state -> key.light())
+                        .noOcclusion();
+        return key.requiresTool() ? props.requiresCorrectToolForDrops() : props;
     }
 
     private static BlockBehaviour.Properties paProperties() {
@@ -9040,7 +8923,12 @@ public final class ModBlocks {
     }
 
     private static Reg.Handle<Block> icfPart(String name) {
-        Reg.Handle<Block> block = Reg.block(name, Block::new, ModBlocks::icfProps);
+        return icfPart(name, Block::new);
+    }
+
+    private static Reg.Handle<Block> icfPart(
+            String name, Function<BlockBehaviour.Properties, Block> factory) {
+        Reg.Handle<Block> block = Reg.block(name, factory, ModBlocks::icfProps);
         rbmkItem(name, block);
         return block;
     }
@@ -9050,7 +8938,12 @@ public final class ModBlocks {
     }
 
     private static Reg.Handle<Block> pwrPart(String name, int descLines) {
-        Reg.Handle<Block> block = Reg.block(name, Block::new, ModBlocks::pwrProps);
+        return pwrPart(name, descLines, Block::new);
+    }
+
+    private static Reg.Handle<Block> pwrPart(
+            String name, int descLines, Function<BlockBehaviour.Properties, Block> factory) {
+        Reg.Handle<Block> block = Reg.block(name, factory, ModBlocks::pwrProps);
         Reg.item(
                 name,
                 props -> new DescBlockItem(block.get(), props, descLines),
@@ -9150,7 +9043,6 @@ public final class ModBlocks {
 
     private static <B extends Block> RegistryHandle<B> debris(
             String name, String mesh, Function<BlockBehaviour.Properties, B> factory) {
-
         RegistryHandle<B> block =
                 Reg.block(
                         name,

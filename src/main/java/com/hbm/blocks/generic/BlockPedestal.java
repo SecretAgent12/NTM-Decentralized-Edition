@@ -3,13 +3,14 @@
 
 package com.hbm.blocks.generic;
 
+import com.hbm.api.environment.Environment;
+import com.hbm.blockentity.BlockEntityPedestal;
 import com.hbm.blocks.ITickingBlock;
 import com.hbm.extprop.HbmPlayerProps;
 import com.hbm.inventory.recipes.PedestalRecipe;
 import com.hbm.inventory.recipes.PedestalRecipes;
 import com.hbm.particle.helper.ExplosionSmallCreator;
 import com.hbm.stats.ModStats;
-import com.hbm.tileentity.BlockEntityPedestal;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import com.hbm.backport.InteractionResult;
@@ -22,6 +23,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import com.hbm.backport.Orientation;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
+import net.neoforged.neoforge.common.util.TriState;
 import org.jspecify.annotations.Nullable;
 import com.hbm.backport.compat.BlockCompat;
 
@@ -63,10 +65,16 @@ public class BlockPedestal extends BlockCompat implements ITickingBlock {
                             // backport: 1.21.1 moon phase index, 0 = full moon
                             && level.getMoonPhase() == 0;
             case NEW_MOON ->
-                    celestialAngle >= 0.35F
-                            && celestialAngle <= 0.65F
-                            // backport: 1.21.1 moon phase index, 4 = new moon
-                            && level.getMoonPhase() == 4;
+                    {
+                        // backport: 1.21.1 TriState has no toBoolean(fallback)
+                        TriState eclipse = Environment.eclipse(level);
+                        yield eclipse.isDefault()
+                                ? celestialAngle >= 0.35F
+                                        && celestialAngle <= 0.65F
+                                        // backport: 1.21.1 moon phase index, 4 = new moon
+                                        && level.getMoonPhase() == 4
+                                : eclipse.isTrue();
+                    }
             case SUN -> celestialAngle <= 0.15F || celestialAngle >= 0.85F;
             case BAD_KARMA -> hasReputation(level, pos, -10, false);
             case GOOD_KARMA -> hasReputation(level, pos, 10, true);

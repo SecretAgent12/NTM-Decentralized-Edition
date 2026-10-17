@@ -45,7 +45,6 @@ public final class EntityOrbitalLaser extends EntityCompat {
 
     @Override
     public void tick() {
-
         super.tick();
         if (tickCount >= MAX_AGE && !level().isClientSide()) discard();
     }

@@ -16,7 +16,7 @@ import net.minecraft.world.level.levelgen.structure.StructurePiece;
 import net.minecraft.world.level.levelgen.structure.StructureType;
 import net.minecraft.world.level.levelgen.structure.pieces.StructurePiecesBuilder;
 
-public class NtmBunkerStructure extends Structure {
+public class NtmBunkerStructure extends Structure implements ColumnBiome.SelfTested {
 
     public static final MapCodec<NtmBunkerStructure> CODEC = simpleCodec(NtmBunkerStructure::new);
 
@@ -27,7 +27,6 @@ public class NtmBunkerStructure extends Structure {
     private static void generatePieces(
             StructurePiecesBuilder builder, Structure.GenerationContext context, BlockPos origin) {
         RandomSource random = context.random();
-
         int sizeLimit = 7 + random.nextInt(6);
         int distanceLimit = 40;
 
@@ -70,7 +69,7 @@ public class NtmBunkerStructure extends Structure {
         ChunkPos chunkPos = context.chunkPos();
         int x = chunkPos.getBlockX(8);
         int z = chunkPos.getBlockZ(8);
-
+        if (!ColumnBiome.valid(context, x, z)) return Optional.empty();
         BlockPos origin = new BlockPos(x, 64, z);
         return Optional.of(
                 new Structure.GenerationStub(

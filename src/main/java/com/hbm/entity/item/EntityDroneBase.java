@@ -21,7 +21,6 @@ import net.minecraft.world.phys.Vec3;
 import com.hbm.backport.compat.EntityCompat;
 
 public abstract class EntityDroneBase extends EntityCompat {
-
     private static final EntityDataAccessor<Byte> APPEARANCE =
             SynchedEntityData.defineId(EntityDroneBase.class, EntityDataSerializers.BYTE);
 

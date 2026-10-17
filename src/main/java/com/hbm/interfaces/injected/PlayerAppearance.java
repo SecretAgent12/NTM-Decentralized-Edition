@@ -10,15 +10,12 @@ public interface PlayerAppearance {
 
     byte MANLY = 1;
     byte STEALTH = 2;
+    byte ARMOR_FLIGHT = 4;
 
     default byte hbm$appearance() {
-
         throw new AssertionError("backport: implemented by mixin");
-
     }
     default void hbm$setAppearance(byte flags) {
-
         throw new AssertionError("backport: implemented by mixin");
-
     }
 }

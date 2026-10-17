@@ -58,7 +58,7 @@ public final class RotaryFurnacePage extends TablePage<RotaryFurnaceRecipe> {
         }
         if (fluid != null)
             page.input(positions[slot][0], positions[slot][1]).background().fluid(fluid);
-        page.output(102, 24).background().item(ItemScraps.create(recipe.output));
+        page.output(102, 24).background().item(ItemScraps.create(recipe.output, true));
         page.catalyst(75, 31).item(ModBlocks.MACHINE_ROTARY_FURNACE.get());
     }
 

@@ -92,6 +92,11 @@ public abstract class PictureInPictureRenderer<T extends PictureInPictureRenderS
     protected void blitTexture(com.hbm.backport.client.gui.GuiGraphicsExtractor graphics, T state) {
         if (texture == null) return;
         graphics.flush();
+        // backport-fix: BF-095 26.x draws a picture-in-picture at its rectangle on the screen, whatever
+        // pose the screen had when it was submitted (a container screen's labels are translated to
+        // leftPos/topPos); 1.21.1 draws it now, so the 2D part of the pose is reset (its z stays)
+        graphics.pose().pushPose();
+        graphics.pose().set(new org.joml.Matrix3x2f());
         var scissor = state.scissorArea();
         if (scissor != null) graphics.enableScissor(scissor.left(), scissor.top(), scissor.right(), scissor.bottom());
         RenderSystem.setShaderTexture(0, texture.getColorTextureId());
@@ -107,6 +112,7 @@ public abstract class PictureInPictureRenderer<T extends PictureInPictureRenderS
         com.mojang.blaze3d.vertex.BufferUploader.drawWithShader(b.buildOrThrow());
         p.end();
         if (scissor != null) graphics.disableScissor();
+        graphics.pose().popPose();
     }
 
     /** prepare + blit, what 26.x's GuiRenderer does for each submitted state of this renderer. */

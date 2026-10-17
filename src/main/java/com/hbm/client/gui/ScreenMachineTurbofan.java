@@ -3,9 +3,9 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.machine.BlockEntityMachineTurbofan;
 import com.hbm.inventory.container.MenuMachineTurbofan;
 import com.hbm.lib.Library;
-import com.hbm.tileentity.machine.BlockEntityMachineTurbofan;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.client.rendertype.RenderPipelines;
 import net.minecraft.network.chat.Component;

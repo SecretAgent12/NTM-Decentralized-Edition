@@ -3,12 +3,14 @@
 
 package com.hbm.entity.projectile;
 
+import com.hbm.entity.FarVisible;
 import com.hbm.entity.ModEntities;
 import com.hbm.items.EnumGearType;
 import com.hbm.items.ModItems;
 import com.hbm.lib.ModDamageTypes;
 import com.hbm.particle.ParticleGiblet;
 import com.hbm.particle.helper.ParticleCreators;
+import com.hbm.sound.EntitySounds;
 import net.minecraft.core.Direction;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -22,7 +24,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import com.hbm.backport.storage.ValueInput;
 import com.hbm.backport.storage.ValueOutput;
@@ -31,7 +32,7 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
-public class EntityCog extends EntityThrowableInterp {
+public class EntityCog extends EntityThrowableInterp implements FarVisible {
 
     private static final EntityDataAccessor<Integer> ORIENTATION =
             SynchedEntityData.defineId(EntityCog.class, EntityDataSerializers.INT);
@@ -40,7 +41,6 @@ public class EntityCog extends EntityThrowableInterp {
 
     private static final double SETTLE_SPEED = 0.75D;
     private static final int LANDED = 6;
-
     private static final float BREAKABLE_RESISTANCE = 50F;
 
     public EntityCog(EntityType<? extends EntityCog> type, Level level) {
@@ -103,8 +103,8 @@ public class EntityCog extends EntityThrowableInterp {
             e.hurt(damageSources().source(ModDamageTypes.RUBBLE), 1000F);
             if (!e.isAlive() && e instanceof LivingEntity living) {
                 ParticleCreators.giblets(server, living, ParticleGiblet.TYPE_MEAT, 5);
-                server.playSound(
-                        null,
+                EntitySounds.play(
+                        living,
                         living.getX(),
                         living.getY(),
                         living.getZ(),

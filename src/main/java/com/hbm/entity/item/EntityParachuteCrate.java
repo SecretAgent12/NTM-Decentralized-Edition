@@ -3,9 +3,10 @@
 
 package com.hbm.entity.item;
 
+import com.hbm.blockentity.machine.storage.BlockEntityCrateSupply;
 import com.hbm.blocks.ModBlocks;
+import com.hbm.entity.FarVisible;
 import com.hbm.interfaces.StoredItems;
-import com.hbm.tileentity.machine.storage.BlockEntityCrateSupply;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -21,7 +22,7 @@ import com.hbm.backport.storage.ValueInput;
 import com.hbm.backport.storage.ValueOutput;
 import com.hbm.backport.compat.EntityCompat;
 
-public class EntityParachuteCrate extends EntityCompat implements StoredItems {
+public class EntityParachuteCrate extends EntityCompat implements StoredItems, FarVisible {
 
     private final InterpolationHandler interpolation = new InterpolationHandler(this);
     public List<ItemStack> items = new ArrayList<>();
@@ -77,7 +78,6 @@ public class EntityParachuteCrate extends EntityCompat implements StoredItems {
             if (level().getBlockEntity(above) instanceof BlockEntityCrateSupply crate) {
                 int slot = 0;
                 for (ItemStack stack : this.items) {
-
                     if (stack.isEmpty() || slot >= crate.inventory.size()) continue;
                     crate.inventory.set(slot++, stack);
                 }

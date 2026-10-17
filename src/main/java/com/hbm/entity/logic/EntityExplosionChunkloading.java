@@ -24,7 +24,6 @@ public abstract class EntityExplosionChunkloading extends EntityCompat {
     @Override
     public void tick() {
         super.tick();
-
         ChunkUtil.holdOwnChunk(this);
     }
 

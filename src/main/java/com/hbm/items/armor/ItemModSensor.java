@@ -5,6 +5,7 @@ package com.hbm.items.armor;
 
 import com.hbm.blocks.ModBlocks;
 import com.hbm.handler.ArmorModHandler;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import java.util.List;
 import java.util.function.Consumer;
@@ -24,7 +25,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
 
 public class ItemModSensor extends ItemArmorMod {
-
     private static final int REACH = 3, HEIGHT = 1, STRIDE = 2;
     private static final int CADENCE = 20;
 
@@ -56,6 +56,11 @@ public class ItemModSensor extends ItemArmorMod {
     }
 
     @Override
+    public boolean ticksServer() {
+        return true;
+    }
+
+    @Override
     public void modUpdate(LivingEntity entity, ItemStack armor) {
         Level level = entity.level();
         if (level.isClientSide() || level.getGameTime() % CADENCE != 0) return;
@@ -81,8 +86,8 @@ public class ItemModSensor extends ItemArmorMod {
 
         if (explosive) return;
         if (poison) {
-            level.playSound(
-                    null,
+            EntitySounds.play(
+                    entity,
                     entity.blockPosition(),
                     ModSounds.TECH_BOOP.get(),
                     SoundSource.PLAYERS,

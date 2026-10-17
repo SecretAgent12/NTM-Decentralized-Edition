@@ -87,6 +87,41 @@ public abstract class SquidCompat extends net.minecraft.world.entity.animal.Squi
         else super.lerpTo(x, y, z, yRot, xRot, steps);
     }
 
+    // backport-fix: BF-091 the handler's target, as 26.x fills a half-empty move packet
+    @Override
+    public double lerpTargetX() {
+        com.hbm.backport.InterpolationHandler h = getInterpolation();
+        return h != null && h.hasActiveInterpolation() ? h.position().x : super.lerpTargetX();
+    }
+
+    // backport-fix: BF-091 the handler's target, as 26.x fills a half-empty move packet
+    @Override
+    public double lerpTargetY() {
+        com.hbm.backport.InterpolationHandler h = getInterpolation();
+        return h != null && h.hasActiveInterpolation() ? h.position().y : super.lerpTargetY();
+    }
+
+    // backport-fix: BF-091 the handler's target, as 26.x fills a half-empty move packet
+    @Override
+    public double lerpTargetZ() {
+        com.hbm.backport.InterpolationHandler h = getInterpolation();
+        return h != null && h.hasActiveInterpolation() ? h.position().z : super.lerpTargetZ();
+    }
+
+    // backport-fix: BF-091 the handler's target, as 26.x fills a half-empty move packet
+    @Override
+    public float lerpTargetXRot() {
+        com.hbm.backport.InterpolationHandler h = getInterpolation();
+        return h != null && h.hasActiveInterpolation() ? h.xRot() : super.lerpTargetXRot();
+    }
+
+    // backport-fix: BF-091 the handler's target, as 26.x fills a half-empty move packet
+    @Override
+    public float lerpTargetYRot() {
+        com.hbm.backport.InterpolationHandler h = getInterpolation();
+        return h != null && h.hasActiveInterpolation() ? h.yRot() : super.lerpTargetYRot();
+    }
+
     public com.hbm.backport.@Nullable InterpolationHandler getInterpolation() {
         return null;
     }

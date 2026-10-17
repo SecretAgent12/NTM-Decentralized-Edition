@@ -3,9 +3,9 @@
 
 package com.hbm.compat.computercraft.machine;
 
+import com.hbm.blockentity.machine.BlockEntityMachineLargeTurbine;
 import com.hbm.compat.computercraft.SteamTypes;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
-import com.hbm.tileentity.machine.BlockEntityMachineLargeTurbine;
 import dan200.computercraft.api.lua.LuaFunction;
 
 public final class LargeTurbinePeripheral
@@ -32,7 +32,9 @@ public final class LargeTurbinePeripheral
 
     @LuaFunction(mainThread = true)
     public final Object[] setType(int type) {
-        machine().tanks[0].setTankType(SteamTypes.fromInt(type));
+        BlockEntityMachineLargeTurbine machine = machine();
+        machine.tanks[0].setTankType(SteamTypes.fromInt(type));
+        machine.markChanged();
         return new Object[] {};
     }
 

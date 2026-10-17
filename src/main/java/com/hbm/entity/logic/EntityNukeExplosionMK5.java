@@ -8,7 +8,9 @@ import com.hbm.advancement.AwardRegions;
 import com.hbm.advancement.DetonationTrigger;
 import com.hbm.advancement.HbmCriteria;
 import com.hbm.backport.SubLevelNuke;
+import com.hbm.api.explosion.NukeDetonations;
 import com.hbm.config.BombConfig;
+import com.hbm.config.NeoForgeHbmConfig;
 import com.hbm.data.ExplosionData;
 import com.hbm.entity.ModEntities;
 import com.hbm.entity.effect.EntityFalloutRain;
@@ -17,13 +19,13 @@ import com.hbm.explosion.ExplosionNukeRayBatched;
 import com.hbm.explosion.ExplosionNukeRayParallelized;
 import com.hbm.handler.threading.BombForkJoinPool;
 import com.hbm.interfaces.IExplosionRay;
-import com.hbm.platform.Services;
 import com.hbm.saveddata.satellites.SatelliteDetector;
 import com.hbm.util.ContaminationUtil;
 import com.hbm.util.SectionGeneration;
 import java.util.UUID;
 import java.util.concurrent.ForkJoinPool;
 import net.minecraft.core.UUIDUtil;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
@@ -31,8 +33,10 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import com.hbm.backport.storage.ValueInput;
 import com.hbm.backport.storage.ValueOutput;
+import org.jspecify.annotations.Nullable;
 
 public class EntityNukeExplosionMK5 extends EntityExplosionChunkloading
         implements BombForkJoinPool.IJobCancellable {
@@ -42,6 +46,7 @@ public class EntityNukeExplosionMK5 extends EntityExplosionChunkloading
     private int algorithm;
     private boolean fallout = true;
     private int falloutAdd = 0;
+    private @Nullable Block falloutLayer;
 
     private IExplosionRay explosion;
     private boolean initialized = false;
@@ -56,7 +61,7 @@ public class EntityNukeExplosionMK5 extends EntityExplosionChunkloading
     }
 
     public static EntityNukeExplosionMK5 statFac(Level level, int r, double x, double y, double z) {
-        if (!level.isClientSide() && Services.CONFIG.runtime().extendedLogging()) {
+        if (!level.isClientSide() && NeoForgeHbmConfig.runtime().extendedLogging()) {
             NuclearTech.LOGGER.info(
                     "[NUKE] Initialized explosion at {} / {} / {} with strength {}!", x, y, z, r);
         }
@@ -90,6 +95,11 @@ public class EntityNukeExplosionMK5 extends EntityExplosionChunkloading
 
     public EntityNukeExplosionMK5 moreFallout(int fallout) {
         this.falloutAdd = fallout;
+        return this;
+    }
+
+    public EntityNukeExplosionMK5 falloutLayer(Block layer) {
+        this.falloutLayer = layer;
         return this;
     }
 
@@ -153,6 +163,7 @@ public class EntityNukeExplosionMK5 extends EntityExplosionChunkloading
                         SatelliteDetector.BurstIntensity.HIGH,
                         getX(),
                         getZ());
+                NukeDetonations.detonated(server, getX(), getZ(), radius);
             }
             initialized = true;
         }
@@ -162,7 +173,7 @@ public class EntityNukeExplosionMK5 extends EntityExplosionChunkloading
         } else if (!explosion.isComplete()) {
             explosion.update(BombConfig.mk5);
         } else {
-            if (Services.CONFIG.runtime().extendedLogging()) {
+            if (NeoForgeHbmConfig.runtime().extendedLogging()) {
                 NuclearTech.LOGGER.info(
                         "[NUKE] Explosion complete. Time elapsed: {}ms",
                         System.currentTimeMillis() - explosionStart);
@@ -174,7 +185,6 @@ public class EntityNukeExplosionMK5 extends EntityExplosionChunkloading
 
     private void spawnFallout() {
         if (!fallout) return;
-
         int falloutScale =
                 Math.max(
                         1,
@@ -183,6 +193,7 @@ public class EntityNukeExplosionMK5 extends EntityExplosionChunkloading
                                 / 100);
         EntityFalloutRain rain =
                 EntityFalloutRain.statFac(level(), falloutScale, getX(), getY(), getZ());
+        if (falloutLayer != null) rain.falloutLayer(falloutLayer);
         // backport-fix: BF-050 the rain only works world columns; burn and contaminate the builds too
         if (level() instanceof ServerLevel server)
             SubLevelNuke.fallout(server, getX(), getY(), getZ(), falloutScale);
@@ -227,6 +238,8 @@ public class EntityNukeExplosionMK5 extends EntityExplosionChunkloading
         algorithm = input.getIntOr("algorithm", BombConfig.explosionAlgorithm);
         fallout = input.getBooleanOr("fallout", true);
         detonator = input.read("detonator", UUIDUtil.CODEC).orElse(null);
+        falloutLayer =
+                input.read("fallout_layer", BuiltInRegistries.BLOCK.byNameCodec()).orElse(null);
     }
 
     @Override
@@ -237,5 +250,7 @@ public class EntityNukeExplosionMK5 extends EntityExplosionChunkloading
         output.putInt("algorithm", algorithm);
         output.putBoolean("fallout", fallout);
         if (detonator != null) output.store("detonator", UUIDUtil.CODEC, detonator);
+        if (falloutLayer != null)
+            output.store("fallout_layer", BuiltInRegistries.BLOCK.byNameCodec(), falloutLayer);
     }
 }

@@ -1,0 +1,59 @@
+// SPDX-FileCopyrightText: 2026 movblock <admin@movblock.mov>
+// SPDX-License-Identifier: LGPL-3.0-only
+
+package com.hbm.particle;
+
+import java.util.List;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.particle.Particle;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import com.hbm.backport.client.particle.ParticleCompat;
+
+public abstract class LegacyMoveParticle extends ParticleCompat {
+
+    protected LegacyMoveParticle(ClientLevel level, double x, double y, double z) {
+        super(level, x, y, z);
+    }
+
+    protected LegacyMoveParticle(
+            ClientLevel level, double x, double y, double z, double xa, double ya, double za) {
+        super(level, x, y, z, xa, ya, za);
+    }
+
+    // backport-fix: BF-005 (DE 2026-09-29, commit 20b7ed09) DE reset vanilla's stoppedByCollision latch and
+    // zeroed the resting fall speed in ParticleGiblet/Skeleton/Ashes (gibs, bones and ashes froze in mid-air).
+    // NEXT 1.0.1 (2026-10-05) fixed the same bug here for all legacy particles (collide every tick, zero the
+    // blocked axis, as 1.7.10 moveEntity); NEXT's code kept.
+    @Override
+    public void move(double xa, double ya, double za) {
+        double originalXa = xa;
+        double originalYa = ya;
+        double originalZa = za;
+        if (this.hasPhysics
+                && (xa != 0.0 || ya != 0.0 || za != 0.0)
+                && xa * xa + ya * ya + za * za < MAXIMUM_COLLISION_VELOCITY_SQUARED) {
+            Vec3 movement =
+                    Entity.collideBoundingBox(
+                            (net.minecraft.world.entity.Entity) null,
+                            new Vec3(xa, ya, za),
+                            this.getBoundingBox(),
+                            this.level,
+                            List.of());
+            xa = movement.x;
+            ya = movement.y;
+            za = movement.z;
+        }
+
+        if (xa != 0.0 || ya != 0.0 || za != 0.0) {
+            this.setBoundingBox(this.getBoundingBox().move(xa, ya, za));
+            this.setLocationFromBoundingbox();
+        }
+
+        this.onGround = originalYa != ya && originalYa < 0.0;
+        if (originalXa != xa) this.xd = 0.0;
+        if (originalYa != ya) this.yd = 0.0;
+        if (originalZa != za) this.zd = 0.0;
+    }
+}

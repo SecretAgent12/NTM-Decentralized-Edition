@@ -15,11 +15,12 @@ import com.hbm.items.weapon.sedna.factory.GunFactory.EnumAmmo;
 import com.hbm.items.weapon.sedna.mags.MagazineFullReload;
 import com.hbm.particle.SpentCasing.CasingType;
 import com.hbm.particle.SpentCasing;
-import com.hbm.registration.IRegistrar;
+import com.hbm.registration.NeoForgeRegistrar;
 import com.hbm.render.anim.AnimationEnums.GunAnimation;
 import com.hbm.render.anim.BusAnimation;
 import com.hbm.render.anim.BusAnimationKeyframe.IType;
 import com.hbm.render.anim.BusAnimationSequence;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -66,16 +67,15 @@ public class XFactory10ga {
                         rec.getOnFire(stack).accept(stack, ctx);
 
                         if (rec.getFireSound(stack) != null)
-                            entity.level()
-                                    .playSound(
-                                            null,
-                                            entity.getX(),
-                                            entity.getY(),
-                                            entity.getZ(),
-                                            rec.getFireSound(stack).get(),
-                                            SoundSource.PLAYERS,
-                                            rec.getFireVolume(stack),
-                                            rec.getFirePitch(stack));
+                            EntitySounds.play(
+                                    entity,
+                                    entity.getX(),
+                                    entity.getY(),
+                                    entity.getZ(),
+                                    rec.getFireSound(stack).get(),
+                                    SoundSource.PLAYERS,
+                                    rec.getFireVolume(stack),
+                                    rec.getFirePitch(stack));
 
                         ItemGunBaseNT.setState(stack, index, GunState.COOLDOWN);
                         ItemGunBaseNT.setTimer(stack, index, rec.getDelayAfterFire(stack));
@@ -207,7 +207,7 @@ public class XFactory10ga {
                 return null;
             };
 
-    public static void init(IRegistrar r) {
+    public static void init() {
 
         float buckshotSpread = 0.035F;
         g10 =
@@ -285,7 +285,7 @@ public class XFactory10ga {
                         .setOnImpact(LAMBDA_TINY_EXPLODE);
 
         ModItems.GUN_DOUBLE_BARREL =
-                r.registerItem(
+                NeoForgeRegistrar.registerItem(
                         "gun_double_barrel",
                         props ->
                                 new ItemGunBaseNT(
@@ -336,7 +336,7 @@ public class XFactory10ga {
                         Item.Properties::new);
 
         ModItems.GUN_DOUBLE_BARREL_SACRED_DRAGON =
-                r.registerItem(
+                NeoForgeRegistrar.registerItem(
                         "gun_double_barrel_sacred_dragon",
                         props ->
                                 new ItemGunBaseNT(
@@ -388,7 +388,7 @@ public class XFactory10ga {
                         Item.Properties::new);
 
         ModItems.GUN_AUTOSHOTGUN_HERETIC =
-                r.registerItem(
+                NeoForgeRegistrar.registerItem(
                         "gun_autoshotgun_heretic",
                         props ->
                                 new ItemGunBaseNT(

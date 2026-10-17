@@ -9,13 +9,11 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingInput;
-import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
-import com.hbm.backport.recipe.CustomRecipeCompat;
 import com.hbm.backport.RecipeSerializers;
 
-public final class GrenadeCraftingRecipe extends CustomRecipeCompat {
+public final class GrenadeCraftingRecipe extends HbmCustomRecipe {
 
     public static final GrenadeCraftingRecipe INSTANCE = new GrenadeCraftingRecipe();
     public static final MapCodec<GrenadeCraftingRecipe> MAP_CODEC = MapCodec.unit(INSTANCE);
@@ -69,7 +67,7 @@ public final class GrenadeCraftingRecipe extends CustomRecipeCompat {
     }
 
     @Override
-    public boolean matches(CraftingInput input, Level level) {
+    protected boolean matchesInput(CraftingInput input, Level level) {
         Parts parts = read(input);
         return parts != null && compatible(parts.shell, parts.filling);
     }

@@ -8,7 +8,10 @@ import com.hbm.inventory.material.Mats;
 import com.hbm.items.ModItems;
 import com.hbm.items.machine.EnumAshType;
 import com.hbm.items.machine.EnumBriquetteType;
-import com.hbm.platform.Services;
+import com.hbm.registration.NeoForgeRegistrar;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.ObjIntConsumer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
@@ -17,14 +20,30 @@ import net.minecraft.world.level.Level;
 public final class FuelHandler {
 
     private static final int SINGLE = 200;
+    private static final List<Consumer<ObjIntConsumer<ItemLike>>> ADDONS = new ArrayList<>();
 
     private FuelHandler() {}
 
     public static int getBurnTime(Level level, ItemStack fuel) {
-        return Services.PLATFORM.burnTime(fuel);
+        // backport: 1.21.1 burn times take no FuelValues
+        return fuel.getBurnTime(null);
+    }
+
+    public static void addon(Consumer<ObjIntConsumer<ItemLike>> fuels) {
+        NeoForgeRegistrar.assertOpen("FuelHandler.addon");
+        ADDONS.add(fuels);
+    }
+
+    public static void forEachAddonFuel(ObjIntConsumer<ItemLike> out) {
+        for (Consumer<ObjIntConsumer<ItemLike>> fuels : ADDONS) fuels.accept(out);
     }
 
     public static void forEachUniformFuel(ObjIntConsumer<ItemLike> out) {
+        forEachNtmFuel(out);
+        forEachAddonFuel(out);
+    }
+
+    public static void forEachNtmFuel(ObjIntConsumer<ItemLike> out) {
         out.accept(ModItems.SOLID_FUEL.get(), SINGLE * 16);
         out.accept(ModItems.SOLID_FUEL_PRESTO.get(), SINGLE * 40);
         out.accept(ModItems.SOLID_FUEL_PRESTO_TRIPLET.get(), SINGLE * 200);
@@ -43,7 +62,6 @@ public final class FuelHandler {
         out.accept(ModItems.LIGNITE.get(), 1200);
         out.accept(ModItems.powder(Mats.MAT_LIGNITE), 1200);
         for (var coke : ModItems.COKE) out.accept(coke.get(), SINGLE * 16);
-
         out.accept(ModBlocks.BLOCK_COKE_COAL.get(), SINGLE * 160);
         out.accept(ModBlocks.BLOCK_COKE_LIGNITE.get(), SINGLE * 160);
         out.accept(ModBlocks.BLOCK_COKE_PETROLEUM.get(), SINGLE * 160);
@@ -55,7 +73,6 @@ public final class FuelHandler {
         out.accept(ModItems.BRIQUETTE.get(EnumBriquetteType.COAL), SINGLE * 10);
         out.accept(ModItems.BRIQUETTE.get(EnumBriquetteType.LIGNITE), SINGLE * 8);
         out.accept(ModItems.BRIQUETTE.get(EnumBriquetteType.WOOD), SINGLE * 2);
-
         out.accept(ModItems.POWDER_ASH.get(EnumAshType.WOOD), SINGLE / 2);
         out.accept(ModItems.POWDER_ASH.get(EnumAshType.COAL), SINGLE);
         out.accept(ModItems.POWDER_ASH.get(EnumAshType.MISC), SINGLE / 2);

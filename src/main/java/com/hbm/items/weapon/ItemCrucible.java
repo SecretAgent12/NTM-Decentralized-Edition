@@ -9,12 +9,13 @@ import com.hbm.handler.threading.TargetPoint;
 import com.hbm.items.IAnimatedItem;
 import com.hbm.items.ISwingReceiver;
 import com.hbm.items.tool.ItemSwordAbility;
+import com.hbm.packet.PacketWire;
 import com.hbm.packet.toclient.BlockDustBurstPayload;
-import com.hbm.platform.Services;
 import com.hbm.render.anim.AnimationEnums.ToolAnimation;
 import com.hbm.render.anim.BusAnimation;
 import com.hbm.render.anim.BusAnimationSequence;
 import com.hbm.render.anim.HbmAnimations;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
@@ -56,16 +57,15 @@ public final class ItemCrucible extends ItemSwordAbility implements IAnimatedIte
     @Override
     public void onEquip(Player player, ItemStack stack) {
         if (!(player instanceof ServerPlayer server) || !canOperate(stack)) return;
-        player.level()
-                .playSound(
-                        null,
-                        player.getX(),
-                        player.getY(),
-                        player.getZ(),
-                        ModSounds.CRUCIBLE_DEPLOY.get(),
-                        SoundSource.PLAYERS,
-                        1.0F,
-                        1.0F);
+        EntitySounds.play(
+                player,
+                player.getX(),
+                player.getY(),
+                player.getZ(),
+                ModSounds.CRUCIBLE_DEPLOY.get(),
+                SoundSource.PLAYERS,
+                1.0F,
+                1.0F);
         playAnimation(server, ToolAnimation.EQUIP);
     }
 
@@ -84,20 +84,19 @@ public final class ItemCrucible extends ItemSwordAbility implements IAnimatedIte
             }
             return;
         }
-        attacker.level()
-                .playSound(
-                        null,
-                        victim.getX(),
-                        victim.getY(),
-                        victim.getZ(),
-                        SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR,
-                        SoundSource.PLAYERS,
-                        1.0F,
-                        0.75F + victim.getRandom().nextFloat() * 0.2F);
+        EntitySounds.play(
+                victim,
+                victim.getX(),
+                victim.getY(),
+                victim.getZ(),
+                SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR,
+                SoundSource.PLAYERS,
+                1.0F,
+                0.75F + victim.getRandom().nextFloat() * 0.2F);
         if (victim.level() instanceof ServerLevel level && !victim.isAlive()) {
             int count = Math.min((int) Math.ceil(victim.getMaxHealth() / 3.0D), 250) * 4;
             double y = victim.getY() + victim.getBbHeight() * 0.5D;
-            Services.NETWORK.sendToAllAround(
+            PacketWire.sendToAllAround(
                     new BlockDustBurstPayload(
                             Blocks.REDSTONE_BLOCK.defaultBlockState(),
                             victim.getX(),
@@ -119,7 +118,6 @@ public final class ItemCrucible extends ItemSwordAbility implements IAnimatedIte
         if (wear == 0) return;
         int damage = Math.min(stack.getDamageValue() + wear, CHARGES);
         if (player != null) CriteriaTriggers.ITEM_DURABILITY_CHANGED.trigger(player, stack, damage);
-
         stack.setDamageValue(damage);
     }
 

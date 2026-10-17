@@ -3,12 +3,17 @@
 
 package com.hbm.blocks.machine.storage;
 
+import com.hbm.blockentity.machine.storage.BlockEntityCrate;
+import com.hbm.blockentity.machine.storage.CrateType;
+import com.hbm.blocks.ModBlockEntities;
 import com.hbm.blocks.machine.BlockMachineBase;
+import com.hbm.capability.ICapabilityBlock;
+import com.hbm.capability.MachineCaps;
+import com.hbm.interfaces.ILookOverlay;
 import com.hbm.items.ModItems;
 import com.hbm.items.tool.ItemLock;
-import com.hbm.tileentity.machine.storage.BlockEntityCrate;
-import com.hbm.tileentity.machine.storage.CrateType;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import com.hbm.backport.InteractionResult;
@@ -20,7 +25,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jspecify.annotations.Nullable;
 
-public class BlockCrate extends BlockMachineBase {
+public class BlockCrate extends BlockMachineBase implements ICapabilityBlock, ILookOverlay {
 
     private final CrateType crateType;
 
@@ -31,6 +36,19 @@ public class BlockCrate extends BlockMachineBase {
 
     public CrateType crateType() {
         return crateType;
+    }
+
+    @Override
+    public MachineCaps caps() {
+        return MachineCaps.of(
+                        switch (crateType) {
+                            case IRON -> ModBlockEntities.CRATE_IRON;
+                            case STEEL -> ModBlockEntities.CRATE_STEEL;
+                            case DESH -> ModBlockEntities.CRATE_DESH;
+                            case TUNGSTEN -> ModBlockEntities.CRATE_HOT;
+                            case SAFE -> ModBlockEntities.SAFE;
+                        })
+                .items();
     }
 
     @Override
@@ -60,7 +78,6 @@ public class BlockCrate extends BlockMachineBase {
         if (!level.isClientSide()
                 && level.getBlockEntity(pos) instanceof BlockEntityCrate crate
                 && crate.canAccess(player)) {
-
             player.openMenu(crate);
             crate.releaseSpiders(player);
         }
@@ -74,5 +91,12 @@ public class BlockCrate extends BlockMachineBase {
     @Override
     protected boolean hasAnalogOutputSignal(BlockState state) {
         return true;
+    }
+
+    @Override
+    public void buildLookOverlay(Level level, BlockPos pos, ILookOverlay.LookInfo info) {
+        if (!(level.getBlockEntity(pos) instanceof BlockEntityCrate crate)) return;
+        Component name = crate.getCustomName();
+        if (name != null) info.titleOnly(name, 0xffff00, 0x404000);
     }
 }

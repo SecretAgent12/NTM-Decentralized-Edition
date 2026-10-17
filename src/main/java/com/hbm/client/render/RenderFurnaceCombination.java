@@ -3,9 +3,9 @@
 
 package com.hbm.client.render;
 
+import com.hbm.blockentity.machine.BlockEntityFurnaceCombination;
 import com.hbm.lib.Library;
 import com.hbm.render.util.Vertices;
-import com.hbm.tileentity.machine.BlockEntityFurnaceCombination;
 import com.hbm.backport.client.rendertype.PrimitiveTopology;
 import com.hbm.backport.client.rendertype.BlendFunction;
 import com.hbm.backport.client.rendertype.ColorTargetState;
@@ -122,7 +122,6 @@ public class RenderFurnaceCombination
         float uMax = uMin + f0;
 
         ps.pushPose();
-
         ps.translate(0.5, 1.75, 0.5);
         ps.mulPose(Axis.YP.rotationDegrees(-camera.yRot));
 

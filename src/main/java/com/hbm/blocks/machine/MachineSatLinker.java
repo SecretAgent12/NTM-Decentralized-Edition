@@ -3,11 +3,11 @@
 
 package com.hbm.blocks.machine;
 
+import com.hbm.blockentity.machine.BlockEntityMachineSatLinker;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.capability.ICapabilityBlock;
 import com.hbm.capability.MachineCaps;
 import com.hbm.inventory.IGUIProvider;
-import com.hbm.tileentity.machine.BlockEntityMachineSatLinker;
 import net.minecraft.core.BlockPos;
 import com.hbm.backport.InteractionResult;
 import net.minecraft.world.MenuProvider;
@@ -35,7 +35,6 @@ public class MachineSatLinker extends BlockCompat implements EntityBlock, ICapab
     @Override
     protected InteractionResult backport$useWithoutItem(
             BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-
         if (player.isSecondaryUseActive()) return InteractionResult.PASS;
         if (!level.isClientSide() && level.getBlockEntity(pos) instanceof MenuProvider provider) {
             IGUIProvider.openBlockMenu(player, provider, pos);

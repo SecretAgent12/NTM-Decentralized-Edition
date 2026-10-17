@@ -3,18 +3,14 @@
 
 package com.hbm.world.structure;
 
+import com.hbm.world.gen.WorldgenHeight;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.List;
 import java.util.Optional;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
-import net.minecraft.core.QuartPos;
-import net.minecraft.tags.BiomeTags;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.levelgen.FlatLevelSource;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.VerticalAnchor;
@@ -26,7 +22,7 @@ import net.minecraft.world.level.levelgen.structure.StructureType;
 import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
 import net.minecraft.world.level.levelgen.structure.structures.JigsawStructure;
 
-public final class SinglePieceStructure extends JigsawStructure {
+public final class SinglePieceStructure extends JigsawStructure implements ColumnBiome.SelfTested {
     public static final MapCodec<SinglePieceStructure> CODEC =
             RecordCodecBuilder.<SinglePieceStructure>mapCodec(
                             instance ->
@@ -51,7 +47,11 @@ public final class SinglePieceStructure extends JigsawStructure {
                                                             .optionalFieldOf("max_height", 128)
                                                             .forGetter(
                                                                     structure ->
-                                                                            structure.maxHeight))
+                                                                            structure.maxHeight),
+                                                    Codec.BOOL
+                                                            .optionalFieldOf("aquatic", false)
+                                                            .forGetter(
+                                                                    structure -> structure.aquatic))
                                             .apply(instance, SinglePieceStructure::new))
                     .validate(
                             structure ->
@@ -70,14 +70,15 @@ public final class SinglePieceStructure extends JigsawStructure {
     private final int heightOffset;
     private final int minHeight;
     private final int maxHeight;
+    private final boolean aquatic;
 
     public SinglePieceStructure(
             Structure.StructureSettings settings,
             Holder<StructureTemplatePool> pool,
             int heightOffset,
             int minHeight,
-            int maxHeight) {
-
+            int maxHeight,
+            boolean aquatic) {
         super(
                 settings,
                 pool,
@@ -94,18 +95,18 @@ public final class SinglePieceStructure extends JigsawStructure {
         this.heightOffset = heightOffset;
         this.minHeight = minHeight;
         this.maxHeight = maxHeight;
+        this.aquatic = aquatic;
     }
 
     @Override
     public Optional<GenerationStub> findGenerationPoint(GenerationContext context) {
-        // backport-fix: BF-011 the piece is now positioned eagerly so a flooded footprint can reject the start
-        // (the old deferred lambda could only move the piece, never cancel it)
         return super.findGenerationPoint(context)
+                // backport-fix: BF-011 (DE 2026-09-29, commit e7f8730d) DE gated starts on the biome at the start
+                // position. NEXT 1.0.3 (2026-10-12) gates on the biome column (ColumnBiome) and an aquatic flag;
+                // NEXT's gate kept, DE's flooded-footprint check below stays.
+                .filter(stub -> ColumnBiome.valid(stub, context))
                 .flatMap(
                         stub -> {
-                            // backport-fix: BF-011 biome gate first (vanilla checks it after this method), so the
-                            // footprint sampling below only runs for starts that can actually spawn
-                            if (!validBiomeAt(context, stub.position())) return Optional.empty();
                             var pieces = stub.getPiecesBuilder().build().pieces();
                             if (pieces.size() != 1)
                                 throw new IllegalStateException(
@@ -117,53 +118,37 @@ public final class SinglePieceStructure extends JigsawStructure {
                             PoolElementStructurePiece piece =
                                     (PoolElementStructurePiece) pieces.getFirst();
                             BoundingBox footprint = piece.getBoundingBox();
-                            // backport-fix: BF-011 land structures (factory, crane, planes, forest_chem, ...) may start
-                            // in a beach/swamp/plains column next to an ocean, river or pond; averaging OCEAN_FLOOR_WG
-                            // then sinks them into the water. Skip starts whose footprint is noticeably flooded.
-                            // Water structures (all biomes ocean/beach/river) keep the old behaviour.
-                            if (!isWaterStructure() && flooded(context, footprint))
+                            if (!aquatic
+                                    && getLowestY(
+                                                    context,
+                                                    footprint.minX(),
+                                                    footprint.minZ(),
+                                                    footprint.getXSpan() - 1,
+                                                    footprint.getZSpan() - 1)
+                                            < context.chunkGenerator().getSeaLevel())
                                 return Optional.empty();
-                            int y = averageGround(context, footprint) + heightOffset;
-                            if (!(context.chunkGenerator() instanceof FlatLevelSource))
-                                y = Math.clamp(y, minHeight, maxHeight);
-                            piece.move(0, y - footprint.minY(), 0);
+                            // backport-fix: BF-011 land structures (factory, crane, planes, forest_chem, ...) may
+                            // also start next to a river or pond above sea level; averaging OCEAN_FLOOR_WG then
+                            // sinks them into the water. Skip starts whose footprint is noticeably flooded.
+                            // (1.0.3's ColumnBiome gate and aquatic flag replace the BF-011 biome gate and
+                            // water-structure heuristic.)
+                            if (!aquatic && flooded(context, footprint)) return Optional.empty();
                             return Optional.of(
                                     new GenerationStub(
-                                            stub.position(), output -> output.addPiece(piece)));
+                                            stub.position(),
+                                            output -> {
+                                                int y =
+                                                        WorldgenHeight.averageBaseHeight(
+                                                                        context,
+                                                                        piece.getBoundingBox())
+                                                                + heightOffset;
+                                                if (!(context.chunkGenerator()
+                                                        instanceof FlatLevelSource))
+                                                    y = Math.clamp(y, minHeight, maxHeight);
+                                                piece.move(0, y - piece.getBoundingBox().minY(), 0);
+                                                output.addPiece(piece);
+                                            }));
                         });
-    }
-
-    private static boolean validBiomeAt(GenerationContext context, BlockPos pos) {
-        return context.validBiome()
-                .test(
-                        context.chunkGenerator()
-                                .getBiomeSource()
-                                .getNoiseBiome(
-                                        QuartPos.fromBlock(pos.getX()),
-                                        QuartPos.fromBlock(pos.getY()),
-                                        QuartPos.fromBlock(pos.getZ()),
-                                        context.randomState().sampler()));
-    }
-
-    // backport-fix: BF-011 a structure whose every biome is ocean/beach/river/shore is meant to touch water
-    // (aircraft_carrier, oil_rig, lighthouse, beached_patrol)
-    private Boolean waterStructure;
-
-    private boolean isWaterStructure() {
-        if (waterStructure == null) {
-            boolean water = biomes().size() > 0;
-            for (Holder<Biome> biome : biomes()) {
-                if (!(biome.is(BiomeTags.IS_OCEAN)
-                        || biome.is(BiomeTags.IS_BEACH)
-                        || biome.is(BiomeTags.IS_RIVER)
-                        || biome.is(Biomes.STONY_SHORE))) {
-                    water = false;
-                    break;
-                }
-            }
-            waterStructure = water;
-        }
-        return waterStructure;
     }
 
     // backport-fix: BF-011 a footprint counts as flooded when more than 1/8 of its columns (sampled on a 2-block grid)
@@ -194,23 +179,6 @@ public final class SinglePieceStructure extends JigsawStructure {
             }
         }
         return wet * 8 > samples;
-    }
-
-    private static int averageGround(GenerationContext context, BoundingBox footprint) {
-        long total = 0;
-        for (int z = footprint.minZ(); z <= footprint.maxZ(); z++) {
-            for (int x = footprint.minX(); x <= footprint.maxX(); x++) {
-                total +=
-                        context.chunkGenerator()
-                                .getBaseHeight(
-                                        x,
-                                        z,
-                                        Heightmap.Types.OCEAN_FLOOR_WG,
-                                        context.heightAccessor(),
-                                        context.randomState());
-            }
-        }
-        return (int) (total / ((long) footprint.getXSpan() * footprint.getZSpan()));
     }
 
     @Override

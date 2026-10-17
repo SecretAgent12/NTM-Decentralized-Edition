@@ -110,9 +110,7 @@ public abstract class MixinClientLevel implements IClientLevelExtension, IClient
         hbm$geometry.lightChanged(x, z);
     }
 
-    // backport: 26.x setSectionRangeDirty (whole-chunk light data) does not exist in 1.21.1: the
-    // client packet listener marks each section through setSectionDirtyWithNeighbors (hooked
-    // above). 26.x update() (light applied) is 1.21.1 LevelRenderer.renderLevel's
+    // backport: 26.x update() (light applied) is 1.21.1 LevelRenderer.renderLevel's
     // runLightUpdates, hooked in MixinLevelExtractor.
 
     @Inject(method = "unload", at = @At("HEAD"))

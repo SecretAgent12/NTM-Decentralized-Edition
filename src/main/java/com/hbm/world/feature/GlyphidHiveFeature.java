@@ -7,14 +7,12 @@ import com.hbm.blocks.ModBlocks;
 import com.hbm.blocks.generic.BlockLoot;
 import com.hbm.data.MobData;
 import com.hbm.entity.mob.glyphid.EntityGlyphid;
-import com.hbm.platform.Services;
 import com.hbm.util.LootGenerator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SkullBlock;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
@@ -121,7 +119,7 @@ public class GlyphidHiveFeature extends Feature<NoneFeatureConfiguration> {
     @Override
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> ctx) {
         if (!MobData.ENABLE_HIVES.get()) return false;
-        if (!Services.CONFIG.runtime().glyphidsEnabled()) return false; // backport: glyphids.enabled
+        if (!com.hbm.config.NeoForgeHbmConfig.runtime().glyphidsEnabled()) return false; // backport: glyphids.enabled
         if (ctx.random().nextInt(MobData.HIVE_SPAWN.get()) != 0) return false;
 
         WorldGenLevel level = ctx.level();
@@ -155,7 +153,7 @@ public class GlyphidHiveFeature extends Feature<NoneFeatureConfiguration> {
             boolean infected,
             boolean loot) {
         // backport: glyphids.enabled - also stops a scout already in the world from building a hive
-        if (!Services.CONFIG.runtime().glyphidsEnabled()) return;
+        if (!com.hbm.config.NeoForgeHbmConfig.runtime().glyphidsEnabled()) return;
         int subtype = infected ? EntityGlyphid.TYPE_INFECTED : EntityGlyphid.TYPE_NORMAL;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
@@ -204,6 +202,7 @@ public class GlyphidHiveFeature extends Feature<NoneFeatureConfiguration> {
 
     private static void placeLootPile(
             WorldGenLevel level, RandomSource rand, BlockPos pos, String pool) {
-        BlockLoot.place(level, pos, LootGenerator.roll(pool, rand, level.getSeed()));
+        BlockLoot.place(
+                level, pos, LootGenerator.roll(pool, level.getLevel(), rand, level.getSeed()));
     }
 }

@@ -4,7 +4,7 @@
 package com.hbm.integration.jei;
 
 import com.hbm.client.gui.ScreenMachineAutocrafter;
-import com.hbm.tileentity.machine.BlockEntityMachineAutocrafter;
+import com.hbm.blockentity.machine.BlockEntityMachineAutocrafter;
 import java.util.ArrayList;
 import java.util.List;
 import mezz.jei.api.constants.VanillaTypes;

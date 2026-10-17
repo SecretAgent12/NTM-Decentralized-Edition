@@ -3,11 +3,11 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.bomb.BlockEntityLaunchPadBase;
 import com.hbm.inventory.container.MenuLaunchPadBase;
 import com.hbm.items.ModItems;
 import com.hbm.items.weapon.ItemMissile;
 import com.hbm.lib.Library;
-import com.hbm.tileentity.bomb.BlockEntityLaunchPadBase;
 import java.util.List;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.client.rendertype.RenderPipelines;
@@ -39,6 +39,11 @@ public class ScreenLaunchPad extends ScreenInfoContainer<MenuLaunchPadBase<?>> {
     private static final int PREVIEW_CX = 70, PREVIEW_CY = 120, PREVIEW_HW = 34, PREVIEW_HH = 102;
     private @Nullable Item previewItem;
     private @Nullable Entity previewEntity;
+    private final List<ItemStack> designators =
+            List.of(
+                    new ItemStack(ModItems.DESIGNATOR.get()),
+                    new ItemStack(ModItems.DESIGNATOR_RANGE.get()),
+                    new ItemStack(ModItems.DESIGNATOR_MANUAL.get()));
 
     public ScreenLaunchPad(MenuLaunchPadBase<?> menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title, 176, 236);
@@ -132,17 +137,7 @@ public class ScreenLaunchPad extends ScreenInfoContainer<MenuLaunchPadBase<?>> {
             return;
         }
         GUIElements.drawCyclingStackText(
-                graphics,
-                this.font,
-                null,
-                List.of(
-                        new ItemStack(ModItems.DESIGNATOR.get()),
-                        new ItemStack(ModItems.DESIGNATOR_RANGE.get()),
-                        new ItemStack(ModItems.DESIGNATOR_MANUAL.get())),
-                mouseX,
-                mouseY,
-                this.width,
-                this.height);
+                graphics, this.font, null, designators, mouseX, mouseY, this.width, this.height);
     }
 
     private void drawStatusText(GuiGraphicsExtractor graphics, BlockEntityLaunchPadBase be) {
@@ -155,7 +150,6 @@ public class ScreenLaunchPad extends ScreenInfoContainer<MenuLaunchPadBase<?>> {
                 text = Component.translatable("desc.gui.launchPad.loading");
                 color = 0xFFFF8000;
             }
-
             case BlockEntityLaunchPadBase.STATE_READY -> {
                 scale = 0.8F;
                 text = Component.translatable("desc.gui.launchPad.ready");
@@ -231,6 +225,7 @@ public class ScreenLaunchPad extends ScreenInfoContainer<MenuLaunchPadBase<?>> {
                     item == null
                             ? null
                             : BlockEntityLaunchPadBase.createPreview(item, this.minecraft.level);
+            if (previewEntity != null) previewEntity.setId(-1);
         }
         if (previewEntity == null) return;
 

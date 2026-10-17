@@ -62,7 +62,6 @@ public class ItemCanteen extends ItemCompat {
     @Override
     public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity entity) {
         CONSUMABLE.emitParticlesAndSounds(entity.getRandom(), entity, stack, 16);
-
         stack.set(ModDataComponents.CANTEEN_COOLDOWN.get(), COOLDOWN_SECONDS);
         entity.addEffect(
                 new MobEffectInstance(MobEffects.CONFUSION, 10 * SharedConstants.TICKS_PER_SECOND, 0));

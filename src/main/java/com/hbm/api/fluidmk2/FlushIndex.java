@@ -3,20 +3,16 @@
 
 package com.hbm.api.fluidmk2;
 
-import com.hbm.platform.Services;
+import com.hbm.platform.NeoForgeServerEvents;
 import com.hbm.uninos.graph.LevelNodeGraph;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
-import java.util.Map;
-import java.util.WeakHashMap;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.chunk.LevelChunk;
 import org.jspecify.annotations.Nullable;
 
 public final class FlushIndex {
-
-    private static final Map<ServerLevel, FlushIndex> BY_LEVEL = new WeakHashMap<>();
 
     private final Long2ObjectMap<ReferenceOpenHashSet<FlushRegister>> byChunk =
             new Long2ObjectOpenHashMap<>();
@@ -24,22 +20,37 @@ public final class FlushIndex {
     private FlushIndex() {}
 
     public static void init() {
-        Services.SERVER.onServerStopping(server -> BY_LEVEL.clear());
-        Services.SERVER.onChunkUnload(
+        NeoForgeServerEvents.onChunkUnload(
                 (level, chunk) -> {
-                    FlushIndex index = BY_LEVEL.get(level);
+                    FlushIndex index = level.hbm$flushIndex();
                     if (index != null) index.evict(chunk.getPos().toLong());
                 });
     }
 
     static FlushIndex of(ServerLevel level) {
-        return BY_LEVEL.computeIfAbsent(level, l -> new FlushIndex());
+        FlushIndex index = level.hbm$flushIndex();
+        if (index == null) level.hbm$flushIndex(index = new FlushIndex());
+        return index;
+    }
+
+    public static void invalidateAll(ServerLevel level) {
+        FlushIndex index = level.hbm$flushIndex();
+        if (index == null) return;
+        for (ReferenceOpenHashSet<FlushRegister> bucket : index.byChunk.values()) {
+            for (FlushRegister register : bucket) register.invalidate();
+        }
     }
 
     public static void invalidateAt(ServerLevel level, long posKey) {
         ReferenceOpenHashSet<FlushRegister> bucket = bucket(level, LevelNodeGraph.chunkOf(posKey));
         if (bucket == null) return;
         for (FlushRegister register : bucket) register.invalidateAt(posKey);
+    }
+
+    public static void invalidateChunk(ServerLevel level, long chunkKey) {
+        ReferenceOpenHashSet<FlushRegister> bucket = bucket(level, chunkKey);
+        if (bucket == null) return;
+        for (FlushRegister register : bucket) register.invalidateChunk(chunkKey);
     }
 
     public static void onChunkFull(ServerLevel level, LevelChunk chunk) {
@@ -50,7 +61,7 @@ public final class FlushIndex {
 
     private static @Nullable ReferenceOpenHashSet<FlushRegister> bucket(
             ServerLevel level, long chunkKey) {
-        FlushIndex index = BY_LEVEL.get(level);
+        FlushIndex index = level.hbm$flushIndex();
         return index == null ? null : index.byChunk.get(chunkKey);
     }
 

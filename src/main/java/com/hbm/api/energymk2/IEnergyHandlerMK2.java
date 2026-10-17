@@ -4,6 +4,8 @@
 package com.hbm.api.energymk2;
 
 import com.hbm.uninos.IBufferedEndpoint;
+import com.hbm.util.ChunkUtil;
+import net.minecraft.world.level.block.entity.BlockEntity;
 
 public interface IEnergyHandlerMK2 extends IBufferedEndpoint {
 
@@ -15,6 +17,7 @@ public interface IEnergyHandlerMK2 extends IBufferedEndpoint {
 
     default void usePower(long power) {
         this.setPower(this.getPower() - power);
+        if (power != 0) energyChanged();
     }
 
     default long getProviderSpeed() {
@@ -23,13 +26,23 @@ public interface IEnergyHandlerMK2 extends IBufferedEndpoint {
 
     default long transferPower(long power, boolean simulate) {
         if (power + this.getPower() <= this.getMaxPower()) {
-            if (!simulate) this.setPower(power + this.getPower());
+            if (!simulate) {
+                this.setPower(power + this.getPower());
+                if (power != 0) energyChanged();
+            }
             return 0;
         }
         long capacity = this.getMaxPower() - this.getPower();
         long overshoot = power - capacity;
-        if (!simulate) this.setPower(this.getMaxPower());
+        if (!simulate) {
+            this.setPower(this.getMaxPower());
+            if (capacity != 0) energyChanged();
+        }
         return overshoot;
+    }
+
+    default void energyChanged() {
+        if (this instanceof BlockEntity be) ChunkUtil.markUnsaved(be);
     }
 
     default long getReceiverSpeed() {

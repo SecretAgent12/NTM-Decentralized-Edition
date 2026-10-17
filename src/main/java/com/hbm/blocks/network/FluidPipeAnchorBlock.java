@@ -3,8 +3,8 @@
 
 package com.hbm.blocks.network;
 
+import com.hbm.blockentity.network.BlockEntityPipeAnchor;
 import com.hbm.blocks.ITickingBlock;
-import com.hbm.tileentity.network.BlockEntityPipeAnchor;
 import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -57,9 +57,10 @@ public class FluidPipeAnchorBlock extends FluidDuctBlockBase
     }
 
     @Override
-    public boolean canConnectFluid(Level level, BlockPos pos, Direction side, Fluid fluid) {
-        return side == level.getBlockState(pos).getValue(FACING).getOpposite()
-                && super.canConnectFluid(level, pos, side, fluid);
+    public boolean hasFluidContact(
+            Level level, BlockPos pos, BlockState state, Direction side, Fluid fluid) {
+        return side == state.getValue(FACING).getOpposite()
+                && super.hasFluidContact(level, pos, state, side, fluid);
     }
 
     private static VoxelShape[] buildShapes() {

@@ -3,9 +3,9 @@
 
 package com.hbm.blocks.rail;
 
+import com.hbm.blockentity.BlockEntityRail;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.blocks.multiblock.MultiblockSurface;
-import com.hbm.tileentity.BlockEntityRail;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -24,8 +24,6 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jspecify.annotations.Nullable;
 
 public abstract class BlockRailNTM extends BlockMultiblockCore
@@ -85,7 +83,6 @@ public abstract class BlockRailNTM extends BlockMultiblockCore
         public Direction facing;
         public BlockRailNTM rail;
         private final BlockPos.MutableBlockPos probe = new BlockPos.MutableBlockPos();
-
         private final BlockPos.MutableBlockPos core = new BlockPos.MutableBlockPos();
 
         boolean matches(BlockPos pos) {
@@ -98,7 +95,6 @@ public abstract class BlockRailNTM extends BlockMultiblockCore
     }
 
     public static boolean railAt(Level level, BlockPos pos, Owner out) {
-
         if (out.rail != null) {
             BlockPos core = out.core.set(out.coreX, out.coreY, out.coreZ);
             if (out.matches(pos) || MultiblockSurface.coreClaims(level, core, pos)) {
@@ -130,12 +126,6 @@ public abstract class BlockRailNTM extends BlockMultiblockCore
         }
         BlockPos core = MultiblockSurface.clientCoreOf(level, pos);
         return core == null ? MultiblockSurface.NO_CORE : core.asLong();
-    }
-
-    @Override
-    public @Nullable VoxelShape cellShape(
-            int lx, int ly, int lz, Direction facing, boolean open, boolean forCollision) {
-        return Shapes.create(0, 0, 0, 1, 0.125, 1);
     }
 
     @Override

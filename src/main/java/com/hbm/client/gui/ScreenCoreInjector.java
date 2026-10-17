@@ -3,9 +3,9 @@
 
 package com.hbm.client.gui;
 
+import com.hbm.blockentity.machine.BlockEntityCoreInjector;
 import com.hbm.inventory.container.MenuCoreInjector;
 import com.hbm.lib.Library;
-import com.hbm.tileentity.machine.BlockEntityCoreInjector;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
 import com.hbm.backport.client.rendertype.RenderPipelines;
 import net.minecraft.network.chat.Component;

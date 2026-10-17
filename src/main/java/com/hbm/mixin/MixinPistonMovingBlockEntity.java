@@ -7,10 +7,16 @@ import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.interfaces.RigidPistonStructure;
 import com.hbm.interfaces.StoredItems;
 import com.hbm.interfaces.injected.MovedBlockEntityData;
+import com.hbm.inventory.CarriedInventoryOwner;
+import com.hbm.inventory.CarriedSlotSource;
+import com.hbm.inventory.InventoryChanges;
+import com.hbm.inventory.SlotSource;
+import com.hbm.inventory.TrackedStorage;
 import com.hbm.items.special.CarriedBlockItems;
-import com.hbm.tileentity.BlockEntityMachineBase;
+import com.hbm.blockentity.BlockEntityMachineBase;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -38,7 +44,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.hbm.backport.BlockEntityCompat;
 
 @Mixin(PistonMovingBlockEntity.class)
-public abstract class MixinPistonMovingBlockEntity implements MovedBlockEntityData, StoredItems {
+public abstract class MixinPistonMovingBlockEntity
+        implements MovedBlockEntityData, StoredItems, TrackedStorage, CarriedInventoryOwner {
 
     @Unique private static final Logger HBM$LOGGER = LoggerFactory.getLogger("NTM");
 
@@ -47,6 +54,30 @@ public abstract class MixinPistonMovingBlockEntity implements MovedBlockEntityDa
     @Unique private @Nullable CompoundTag hbm$carried;
 
     @Unique private @Nullable BlockEntity hbm$carriedInventory;
+
+    @Override
+    public void inventorySources(Consumer<Object> sources) {
+        if (hbm$carried == null || !(hbm$self().getLevel() instanceof ServerLevel server)) return;
+        if (hbm$carriedInventory == null)
+            hbm$carriedInventory =
+                    CarriedBlockItems.load(
+                            getMovedState(),
+                            hbm$self().getBlockPos(),
+                            hbm$carried,
+                            server.registryAccess());
+        if (hbm$carriedInventory == null) return;
+        ((TrackedStorage) hbm$carriedInventory)
+                .inventorySources(
+                        source ->
+                                sources.accept(
+                                        new CarriedSlotSource(hbm$self(), (SlotSource) source)));
+    }
+
+    @Override
+    public void carriedInventoryChanged() {
+        ServerLevel level = (ServerLevel) hbm$self().getLevel();
+        hbm$carried = hbm$carriedInventory.saveCustomOnly(level.registryAccess());
+    }
 
     @Override
     public void visitStoredItems(Visitor visitor) {
@@ -96,6 +127,7 @@ public abstract class MixinPistonMovingBlockEntity implements MovedBlockEntityDa
         if (level == null) return;
         this.hbm$carried = source.saveCustomOnly(level.registryAccess());
         this.hbm$carriedInventory = null;
+        InventoryChanges.storageLayoutChanged(hbm$self());
     }
 
     @Override
@@ -180,5 +212,6 @@ public abstract class MixinPistonMovingBlockEntity implements MovedBlockEntityDa
         this.hbm$carried =
                 tag.contains(HBM$CARRIED, Tag.TAG_COMPOUND) ? tag.getCompound(HBM$CARRIED) : null;
         this.hbm$carriedInventory = null;
+        InventoryChanges.storageLayoutChanged(hbm$self());
     }
 }

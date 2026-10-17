@@ -12,6 +12,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -83,6 +84,18 @@ public class ItemArmorMod extends ItemCompat {
         tooltip.add(stack.getHoverName());
     }
 
+    public boolean ticksServer() {
+        return false;
+    }
+
+    public boolean ticksClient() {
+        return false;
+    }
+
+    public boolean hasAttributes() {
+        return false;
+    }
+
     public void modUpdate(LivingEntity entity, ItemStack armor) {}
 
     public void modUpdateClient(LivingEntity entity, ItemStack armor) {}
@@ -93,7 +106,7 @@ public class ItemArmorMod extends ItemCompat {
     }
 
     public void collectModifiers(
-            ItemStack armor,
+            EquipmentSlot slot,
             ResourceLocation id,
             BiConsumer<Holder<Attribute>, AttributeModifier> adder) {}
 

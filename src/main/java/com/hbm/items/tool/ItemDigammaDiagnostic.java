@@ -3,6 +3,7 @@
 
 package com.hbm.items.tool;
 
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
 import com.hbm.util.ContaminationUtil;
 import net.minecraft.sounds.SoundSource;
@@ -22,8 +23,8 @@ public class ItemDigammaDiagnostic extends ItemCompat {
     @Override
     public InteractionResult backport$use(Level level, Player player, InteractionHand hand) {
         if (!level.isClientSide()) {
-            level.playSound(
-                    null,
+            EntitySounds.play(
+                    player,
                     player.getX(),
                     player.getY(),
                     player.getZ(),

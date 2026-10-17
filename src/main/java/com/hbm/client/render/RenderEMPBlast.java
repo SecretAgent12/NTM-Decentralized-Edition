@@ -17,7 +17,6 @@ import net.minecraft.client.renderer.LightTexture;
 
 public class RenderEMPBlast extends EntityRenderer<EntityEMPBlast, RenderEMPBlast.State>
         implements ConcurrentRenderStateExtraction {
-
     private static final RenderType TYPE = VortexRenderTypes.cutout(ResourceManager.emp_ring_tex);
 
     public RenderEMPBlast(EntityRendererProvider.Context context) {

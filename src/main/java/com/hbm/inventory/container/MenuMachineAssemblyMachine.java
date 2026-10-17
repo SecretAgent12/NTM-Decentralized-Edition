@@ -4,12 +4,13 @@
 package com.hbm.inventory.container;
 
 import com.hbm.api.energymk2.IBatteryItem;
+import com.hbm.blockentity.machine.BlockEntityMachineAssemblyMachine;
 import com.hbm.inventory.slot.SlotFiltered;
 import com.hbm.inventory.slot.SlotRecipeOutput;
 import com.hbm.inventory.slot.SlotUpgrade;
+import com.hbm.items.ModItems;
 import com.hbm.items.machine.ItemBlueprints;
 import com.hbm.items.machine.upgrade.ItemMachineUpgrade;
-import com.hbm.tileentity.machine.BlockEntityMachineAssemblyMachine;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -47,8 +48,9 @@ public class MenuMachineAssemblyMachine extends BlockEntityMenu<BlockEntityMachi
                         BlockEntityMachineAssemblyMachine.SLOT_BATTERY,
                         152,
                         81,
-                        IBatteryItem::isBattery));
-
+                        stack ->
+                                IBatteryItem.isBattery(stack)
+                                        || stack.is(ModItems.METEORITE_SWORD_ALLOYED.get())));
         addSlot(
                 new SlotFiltered(
                         container,
@@ -59,8 +61,9 @@ public class MenuMachineAssemblyMachine extends BlockEntityMenu<BlockEntityMachi
         addSlot(
                 new SlotUpgrade(
                         container, BlockEntityMachineAssemblyMachine.SLOT_UPGRADE_START, 152, 108));
-        // backport-fix: BF-021 the second upgrade slot sits under the first (152, 126), as in 1.7.10
-        // (addSlots(assembler, 2, 152, 108, 2, 1)) and on the GUI texture; NEXT put it at 170, 108
+        // backport-fix: BF-021 (DE 2026-10-01, commit 5a20727b) the second upgrade slot sits under the first
+        // (152, 126), as in 1.7.10 (addSlots(assembler, 2, 152, 108, 2, 1)) and on the GUI texture; NEXT 1.0.0
+        // put it at 170, 108. NEXT 1.0.1 (2026-10-05) has the same change.
         addSlot(
                 new SlotUpgrade(
                         container,

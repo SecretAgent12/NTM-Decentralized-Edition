@@ -17,7 +17,11 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.GoalSelector;
@@ -25,10 +29,10 @@ import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.storage.loot.LootTable;
 import org.jspecify.annotations.Nullable;
 
 public final class MobUtil {
-
     private static final Random RAND = new Random();
 
     public static final Map<EquipmentSlot, List<WeightedItem>> SLOT_POOL_COMMON =
@@ -89,7 +93,6 @@ public final class MobUtil {
                             w(ModItems.WRENCH_FLIPPED, 2),
                             w(ModItems.WRENCH, 20),
                             none(1000)));
-
     public static final Map<EquipmentSlot, List<WeightedItem>> SLOT_POOL_MASKS = Map.of();
     public static final Map<EquipmentSlot, List<WeightedItem>> SLOT_POOL_RANGED =
             Map.of(
@@ -165,7 +168,6 @@ public final class MobUtil {
                             w(ModItems.T51_BOOTS, 4),
                             w(ModItems.HAZMAT_BOOTS, 6),
                             w(ModItems.ROBES_BOOTS, 8)));
-
     public static final Map<EquipmentSlot, List<WeightedItem>> SLOT_POOL_ADV =
             withMainHand(
                     SLOT_POOL_ADV_RANGED,
@@ -187,7 +189,6 @@ public final class MobUtil {
             soot(SLOT_POOL_COMMON, 10000, 7000, 7000, 7000, 8000);
     public static final Map<EquipmentSlot, List<WeightedItem>> SLOT_POOL_RANGED_SOOT =
             soot(SLOT_POOL_RANGED, 0, 10000, 7000, 7000, 8000);
-
     public static final Map<Double, List<WeightedItem>> SLOT_POOL_GUNS =
             Map.of(
                     0.3D,
@@ -273,7 +274,6 @@ public final class MobUtil {
             Item item = choose(entry.getValue(), random);
             if (item == null) continue;
             ItemStack stack = new ItemStack(item);
-
             if (item == ModItems.GAS_MASK_M65.get()
                     || item == ModItems.GAS_MASK_OLDE.get()
                     || item == ModItems.GAS_MASK_MONO.get()) {
@@ -344,7 +344,6 @@ public final class MobUtil {
 
     public static void addFireTask(Mob entity, EntityAIFireGun gunTask) {
         entity.setDropChance(EquipmentSlot.MAINHAND, 0F);
-
         GoalSelector goalSelector = entity.goalSelector; // backport: field widened by AT (26.x getter)
         if (goalSelector.getAvailableGoals().stream()
                 .anyMatch(goal -> goal.getGoal() instanceof EntityAIFireGun)) return;
@@ -353,6 +352,15 @@ public final class MobUtil {
 
     public static double oldAiWalkSpeed(double legacy) {
         return Math.sqrt(0.1D * Math.min(0.98D * legacy, 1D));
+    }
+
+    public static ResourceKey<LootTable> lootVariant(EntityType<?> type, String variant) {
+        return ResourceKey.create(
+                Registries.LOOT_TABLE,
+                BuiltInRegistries.ENTITY_TYPE
+                        .getKey(type)
+                        .withPrefix("entities/")
+                        .withSuffix("/" + variant));
     }
 
     private static WeightedItem w(RegistryHandle<? extends Item> item, int weight) {

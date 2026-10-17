@@ -79,8 +79,10 @@ public class ItemScraps extends ItemCompat {
         MaterialStack contents = getMats(stack);
         if (contents != null) {
             adder.accept(
-                    Component.literal(
-                            Mats.formatAmount(contents.amount, ModifierKeys.leftShiftHeld())));
+                    Component.empty()
+                            .append(
+                                    Mats.formatAmount(
+                                            contents.amount, ModifierKeys.detailsHeld())));
 
             if (isLiquid(stack) && contents.material.smeltable == SmeltingBehavior.ADDITIVE) {
                 adder.accept(

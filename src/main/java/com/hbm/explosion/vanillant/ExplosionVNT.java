@@ -7,7 +7,6 @@ package com.hbm.explosion.vanillant;
 import com.hbm.backport.SubLevelBlast;
 import com.hbm.explosion.vanillant.interfaces.*;
 import com.hbm.explosion.vanillant.standard.*;
-import com.hbm.platform.Services;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -16,6 +15,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -33,9 +33,7 @@ public class ExplosionVNT extends Explosion {
     public double posZ;
     public float size;
     public Entity exploder;
-
     public HashSet<BlockPos> affectedBlocks;
-
     public List<BlockPos> allocatedBlocks = List.of();
     private IBlockAllocator blockAllocator;
     private IEntityProcessor entityProcessor;
@@ -136,7 +134,7 @@ public class ExplosionVNT extends Explosion {
     }
 
     public float blockResistance(Level world, BlockPos pos, BlockState state) {
-        float resistance = Services.PLATFORM.explosionResistance(world, pos, state, this);
+        float resistance = state.getExplosionResistance((BlockGetter) world, pos, (Explosion) this);
         return exploder == null
                 ? resistance
                 : exploder.getBlockExplosionResistance(

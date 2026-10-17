@@ -6,6 +6,7 @@ package com.hbm.items.tool;
 import com.hbm.blocks.ModBlocks;
 import com.hbm.items.ModDataComponents;
 import com.hbm.items.machine.ItemBattery;
+import com.hbm.sound.EntitySounds;
 import com.hbm.util.BobMathUtil;
 import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
@@ -25,7 +26,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class ItemAnchorRemote extends ItemBattery {
-
     private static final long JUMP_COST = 10_000;
     private static final float ARRIVAL_BLAST = 2F;
     private static final int PORTAL_PARTICLES = 32;
@@ -54,7 +54,6 @@ public class ItemAnchorRemote extends ItemBattery {
         if (packed == null || getCharge(stack) < JUMP_COST) return refuse(sl, player);
 
         BlockPos target = BlockPos.of(packed);
-
         sl.getChunk(target);
         BlockState state = sl.getBlockState(target);
         if (!state.is(ModBlocks.TELEANCHOR.get())) return refuse(sl, player);
@@ -67,8 +66,8 @@ public class ItemAnchorRemote extends ItemBattery {
                 target.getZ() + 0.5,
                 ARRIVAL_BLAST,
                 Level.ExplosionInteraction.NONE);
-        sl.playSound(
-                null,
+        EntitySounds.play(
+                player,
                 player.getX(),
                 player.getY(),
                 player.getZ(),
@@ -96,8 +95,8 @@ public class ItemAnchorRemote extends ItemBattery {
     }
 
     private static InteractionResult refuse(ServerLevel level, Player player) {
-        level.playSound(
-                null,
+        EntitySounds.play(
+                player,
                 player.blockPosition(),
                 SoundEvents.EXPERIENCE_ORB_PICKUP,
                 SoundSource.PLAYERS,

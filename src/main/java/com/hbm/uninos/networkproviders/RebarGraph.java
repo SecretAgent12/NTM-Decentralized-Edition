@@ -10,18 +10,17 @@ import com.hbm.uninos.graph.LevelNodeGraph;
 import com.hbm.uninos.graph.NodeNetwork;
 import com.mojang.serialization.Codec;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Unit;
-import net.minecraft.world.level.block.state.BlockState;
-import com.hbm.backport.SavedDataType;
 
 public final class RebarGraph implements IGraphProvider<Unit> {
 
     public static final RebarGraph PROVIDER = new RebarGraph();
 
-    public static final SavedDataType<LevelNodeGraph<Unit>> TYPE =
-            LevelNodeGraph.type(PROVIDER, "rebar_graph");
+    public static final LevelNodeGraph.Kind<Unit> TYPE =
+            LevelNodeGraph.kind(PROVIDER, "rebar_graph");
 
     public static final int OPEN_ALL = 0b111111;
 
@@ -44,18 +43,13 @@ public final class RebarGraph implements IGraphProvider<Unit> {
     }
 
     @Override
-    public Unit createData(BlockState state) {
-        return Unit.INSTANCE;
-    }
-
-    @Override
     public boolean dataCompatible(Unit a, Unit b) {
         return true;
     }
 
     @Override
-    public Codec<Unit> dataCodec() {
-        return Unit.CODEC;
+    public Codec<List<Unit>> dataTableCodec() {
+        return Unit.CODEC.listOf();
     }
 
     private static final class Layer {

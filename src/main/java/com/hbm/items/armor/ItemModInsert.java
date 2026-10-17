@@ -6,6 +6,8 @@ package com.hbm.items.armor;
 import com.hbm.extprop.HbmLivingProps;
 import com.hbm.handler.ArmorModHandler;
 import com.hbm.items.ModItems;
+import com.hbm.lib.Library;
+import com.hbm.registration.OverridePoint;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -17,6 +19,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -53,8 +56,12 @@ public class ItemModInsert extends ItemArmorMod {
         return String.valueOf(Math.round((1F - mod) * 100F));
     }
 
+    public static final OverridePoint<BiConsumer<ItemStack, Consumer<Component>>> EXTRA_LINES =
+            OverridePoint.of(Library.id("armor_insert_extra_lines"), (stack, adder) -> {});
+
     @Override
     protected void addSpecificTooltip(ItemStack stack, Consumer<Component> adder) {
+        EXTRA_LINES.get().accept(stack, adder);
         if (damageMod != 1F)
             adder.accept(
                     Component.translatable(
@@ -103,7 +110,6 @@ public class ItemModInsert extends ItemArmorMod {
                     body,
                     Component.translatable(
                             "desc.item.armorMod.insert.short.explosion", percent(explosionMod)));
-
         if (speed != 1F)
             append(
                     body,
@@ -159,14 +165,24 @@ public class ItemModInsert extends ItemArmorMod {
     }
 
     @Override
+    public boolean ticksServer() {
+        return this == ModItems.INSERT_POLONIUM.get();
+    }
+
+    @Override
     public void modUpdate(LivingEntity entity, ItemStack armor) {
         if (!entity.level().isClientSide() && this == ModItems.INSERT_POLONIUM.get())
             HbmLivingProps.incrementRadiation(entity, 100D);
     }
 
     @Override
+    public boolean hasAttributes() {
+        return true;
+    }
+
+    @Override
     public void collectModifiers(
-            ItemStack armor,
+            EquipmentSlot slot,
             ResourceLocation id,
             BiConsumer<Holder<Attribute>, AttributeModifier> adder) {
         if (speed == 1F) return;

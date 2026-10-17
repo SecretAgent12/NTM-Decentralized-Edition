@@ -10,7 +10,9 @@ import com.hbm.entity.logic.EntityNukeExplosionMK3;
 import com.hbm.entity.projectile.EntityB92Beam;
 import com.hbm.items.ModDataComponents;
 import com.hbm.main.Polaroid;
+import com.hbm.sound.EntitySounds;
 import com.hbm.sound.ModSounds;
+import com.hbm.util.KeyHints;
 import java.util.function.Consumer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -63,8 +65,8 @@ public class GunB92 extends ItemCompat {
                 }
                 server.addFreshEntity(beam);
             }
-            server.playSound(
-                    null,
+            EntitySounds.play(
+                    player,
                     player.getX(),
                     player.getY(),
                     player.getZ(),
@@ -87,8 +89,8 @@ public class GunB92 extends ItemCompat {
         setAnimation(stack, frame < ANIMATION_END ? frame + 1 : 0);
         if (frame != RELOAD_FRAME) return;
 
-        level.playSound(
-                null,
+        EntitySounds.play(
+                entity,
                 entity.getX(),
                 entity.getY(),
                 entity.getZ(),
@@ -104,8 +106,8 @@ public class GunB92 extends ItemCompat {
                 EntityNukeExplosionMK3.statFacFleija(
                         level, entity.getX(), entity.getY(), entity.getZ(), 50);
         if (blast.isRemoved()) return;
-        level.playSound(
-                null,
+        EntitySounds.play(
+                entity,
                 entity.getX(),
                 entity.getY(),
                 entity.getZ(),
@@ -158,7 +160,11 @@ public class GunB92 extends ItemCompat {
         }
         adder.accept(Component.empty());
         adder.accept(Component.translatable("desc.item.gunB92.projectilesExplodeOn"));
-        adder.accept(Component.translatable("desc.item.gunB92.sneakWhileHolding"));
+        adder.accept(
+                Component.translatable(
+                        "tooltip.hbm.b92.charge",
+                        KeyHints.key("key.sneak", "key.keyboard.left.shift"),
+                        KeyHints.key("key.use", "key.mouse.right")));
         adder.accept(Component.translatable("desc.item.gunB92.toChargeAdditional"));
         adder.accept(Component.translatable("desc.item.gunB92.theMoreEnergy"));
         adder.accept(Component.translatable("desc.item.gunB92.theBeamsBecome"));
