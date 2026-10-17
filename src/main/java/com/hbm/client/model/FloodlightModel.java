@@ -15,7 +15,6 @@ import com.hbm.backport.client.blockmodel.ResolvedModel;
 import com.hbm.backport.client.blockmodel.QuadCollection;
 import com.hbm.backport.client.blockmodel.Material;
 import com.hbm.backport.client.blockmodel.TextureSlots;
-import com.hbm.backport.Octahedral;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -27,14 +26,14 @@ public record FloodlightModel() implements BlockModel<HFRWavefrontObject> {
 
     private static OctahedralGroup rotationFor(int meta) {
         return switch (meta) {
-            case 0 -> Octahedral.blockRot('x', 180);
+            case 0 -> com.hbm.backport.Octahedral.blockRot('x', 180);
             case 1 -> OctahedralGroup.IDENTITY;
-            case 2 -> Octahedral.blockRot('x', 90).compose(Octahedral.blockRot('y', 0).compose(Octahedral.blockRot('z', 270)));
-            case 3 -> Octahedral.blockRot('x', 270).compose(Octahedral.blockRot('y', 0).compose(Octahedral.blockRot('z', 270)));
-            case 4 -> Octahedral.blockRot('z', 270);
-            case 5 -> Octahedral.blockRot('x', 180).compose(Octahedral.blockRot('z', 90));
-            case 6 -> Octahedral.blockRot('x', 180).compose(Octahedral.blockRot('y', 270));
-            case 7 -> Octahedral.blockRot('y', 270);
+            case 2 -> com.hbm.backport.Octahedral.blockRot('x', 90).compose(com.hbm.backport.Octahedral.blockRot('y', 90));
+            case 3 -> com.hbm.backport.Octahedral.blockRot('x', 270).compose(com.hbm.backport.Octahedral.blockRot('y', 270));
+            case 4 -> com.hbm.backport.Octahedral.blockRot('z', 270);
+            case 5 -> com.hbm.backport.Octahedral.blockRot('x', 180).compose(com.hbm.backport.Octahedral.blockRot('z', 90));
+            case 6 -> com.hbm.backport.Octahedral.blockRot('x', 180).compose(com.hbm.backport.Octahedral.blockRot('y', 270));
+            case 7 -> com.hbm.backport.Octahedral.blockRot('y', 270);
             default -> throw new IllegalStateException("Unexpected floodlight facing: " + meta);
         };
     }
