@@ -63,11 +63,17 @@ public final class LockedContents {
                                             Codec.FLOAT
                                                     .fieldOf("radiation")
                                                     .forGetter(LockedContents::radiation),
+                                            // backport-fix: BF-101 NTM: NEXT 1.0.3 added these two fields as
+                                            // required; crates and other sealed containers picked up before the
+                                            // update (DE 1.0.0-beta.10 and earlier) don't have them, failed to load
+                                            // ("Tried to load invalid item") and vanished with everything inside.
+                                            // Missing = what the 3-argument constructor assumes: no deadline, no
+                                            // references, both recomputed when the container is opened.
                                             Codec.LONG
-                                                    .fieldOf("minimum_deadline")
+                                                    .optionalFieldOf("minimum_deadline", Long.MAX_VALUE)
                                                     .forGetter(LockedContents::minimumDeadline),
                                             Codec.BOOL
-                                                    .fieldOf("has_references")
+                                                    .optionalFieldOf("has_references", false)
                                                     .forGetter(LockedContents::hasReferences))
                                     .apply(i, LockedContents::new));
     public static final StreamCodec<ByteBuf, LockedContents> STREAM_CODEC =
