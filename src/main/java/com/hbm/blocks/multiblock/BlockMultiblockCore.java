@@ -932,7 +932,12 @@ public abstract class BlockMultiblockCore extends BlockCompat
     }
 
     public final void updateComparatorOutput(ServerLevel level, BlockPos core) {
-        Direction facing = level.getBlockState(core).getValue(FACING);
+        BlockState state = level.getBlockState(core);
+        // backport-fix: BF-100 the core can already be gone when its block entity asks for this in the same
+        // tick (seen with the battery socket after a radiovoltaic discharge, Lithium and Create installed):
+        // reading FACING off air crashed the server ("Ticking block entity"). Nothing to notify then.
+        if (!state.is(this)) return;
+        Direction facing = state.getValue(FACING);
         maskTable(facing)
                 .forEachLocalCell(
                         (lx, ly, lz) -> {
