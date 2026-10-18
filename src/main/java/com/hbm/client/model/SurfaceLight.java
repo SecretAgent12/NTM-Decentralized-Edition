@@ -50,7 +50,11 @@ final class SurfaceLight {
 
     int light(float x, float y, float z, float nx, float ny, float nz, int emission) {
         if (emission >= 15) return LightTexture.FULL_BRIGHT;
-        int bx = Mth.floor(x), by = Mth.floor(y), bz = Mth.floor(z);
+        // backport-fix: BF-099 a quad clipped at a section edge (SectionGeometryLayout cut path) can land a
+        // hair outside the section after the float offset is added (-1e-7 floors to -1); its 3x3x3 lookup then
+        // reaches past the 19^3 cache and the chunk build crashed (ArrayIndexOutOfBounds, "Batching sections").
+        // The cache covers -1..17, so keep the centre cell within 0..16. Same code in NTM: NEXT.
+        int bx = Mth.clamp(Mth.floor(x), 0, 16), by = Mth.clamp(Mth.floor(y), 0, 16), bz = Mth.clamp(Mth.floor(z), 0, 16);
         boolean open = false;
         for (int dy = -1, i = 0; dy <= 1; dy++) {
             for (int dz = -1; dz <= 1; dz++) {
@@ -69,7 +73,7 @@ final class SurfaceLight {
             sky = around[13] >> 4 & 15;
         } else {
             float scale = 1 / (float) Math.sqrt(length);
-            float fx = x - bx, fy = y - by, fz = z - bz;
+            float fx = Mth.clamp(x - bx, 0F, 1F), fy = Mth.clamp(y - by, 0F, 1F), fz = Mth.clamp(z - bz, 0F, 1F);
             float totalBlock = 0, totalSky = 0;
             for (int axis = 0; axis < 3; axis++) {
                 float n = (axis == 0 ? nx : axis == 1 ? ny : nz) * scale;
