@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.WeakHashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -202,14 +203,42 @@ public final class ChunkUtil {
         level.getChunk(pos.x, pos.z);
         ChunkHolder holder = level.getChunkSource().chunkMap.getVisibleChunkIfPresent(pos.toLong());
         CompletableFuture<ChunkResult<LevelChunk>> ticking = holder.getEntityTickingChunkFuture();
-        level.getServer().managedBlock(ticking::isDone);
+        waitPumpingChunkTasks(level, ticking::isDone);
         ChunkResult<LevelChunk> result = ticking.join();
         result.orElseThrow(
                 () ->
                         new IllegalStateException(
                                 "entity-ticking chunk " + pos + ": " + result.getError()));
         // backport: 26.x ServerLevel.waitForEntities(pos, 0)
-        level.getServer().managedBlock(() -> level.areEntitiesLoaded(pos.toLong()));
+        // backport-fix: BF-098 1.21.1 marks freshly loaded entity sections as loaded only in
+        // entityManager.tick(), i.e. in the level tick this call usually runs inside (a plane spawned
+        // from a flare, a satellite strike), so a bare areEntitiesLoaded wait never ended. Drain the
+        // pending loads while waiting, as 26.x does.
+        waitPumpingChunkTasks(
+                level,
+                () -> {
+                    level.entityManager.processPendingLoads();
+                    return level.areEntitiesLoaded(pos.toLong());
+                });
+    }
+
+    /**
+     * backport-fix: BF-098 a wait on the server thread from inside a tick that keeps both task queues
+     * moving. 1.21.1's MinecraftServer.managedBlock runs the server's own tasks (entity sections are
+     * deserialized there) but polls chunk tasks only while the server "has time" (haveTime), which an
+     * overdue tick doesn't, so the entity-ticking future never completed; the chunk cache's own
+     * managedBlock runs chunk tasks but not the server's, so the entities never arrived. Wait on the
+     * server loop and drain the chunk tasks on every check.
+     */
+    @ServerThread
+    private static void waitPumpingChunkTasks(ServerLevel level, BooleanSupplier done) {
+        ServerChunkCache chunks = level.getChunkSource();
+        level.getServer()
+                .managedBlock(
+                        () -> {
+                            while (chunks.pollTask()) {}
+                            return done.getAsBoolean();
+                        });
     }
 
     @ServerThread
