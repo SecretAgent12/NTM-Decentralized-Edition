@@ -138,7 +138,7 @@ public class MenuItemBox extends NtmContainerMenu {
         if (type == ModMenus.CASING_BAG.get()) return false;
         if (!(stack.canFitInsideContainerItems()
                 && !stack.is(HbmItemTags.NO_CONTAINER_NESTING)
-                && !stack.has(DataComponents.CONTAINER)
+                && !com.hbm.backport.ContainerNesting.holdsItems(stack) /* backport-fix: BF-102 */
                 && !stack.has(DataComponents.BUNDLE_CONTENTS)
                 && (stack.isEmpty()
                         || stack.getCapability(Capabilities.Item.ITEM, ItemAccess.forStack(stack))

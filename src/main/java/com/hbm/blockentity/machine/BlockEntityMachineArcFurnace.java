@@ -182,7 +182,7 @@ public class BlockEntityMachineArcFurnace extends BlockEntityMachineBase
                 || type.isEmpty()
                 || !(type.canFitInsideContainerItems()
                         && !type.is(HbmItemTags.NO_CONTAINER_NESTING)
-                        && !type.has(DataComponents.CONTAINER)
+                        && !com.hbm.backport.ContainerNesting.holdsItems(type) /* backport-fix: BF-102 */
                         && !type.has(DataComponents.BUNDLE_CONTENTS)
                         && (type.isEmpty()
                                 || type.getCapability(

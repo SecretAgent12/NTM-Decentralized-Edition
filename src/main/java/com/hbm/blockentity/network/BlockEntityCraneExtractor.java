@@ -223,7 +223,7 @@ public class BlockEntityCraneExtractor extends BlockEntityCraneBase
     private int bufferSpace(ItemStack stack, int limit) {
         if (!(stack.canFitInsideContainerItems()
                 && !stack.is(HbmItemTags.NO_CONTAINER_NESTING)
-                && !stack.has(DataComponents.CONTAINER)
+                && !com.hbm.backport.ContainerNesting.holdsItems(stack) /* backport-fix: BF-102 */
                 && !stack.has(DataComponents.BUNDLE_CONTENTS)
                 && (stack.isEmpty()
                         || stack.getCapability(Capabilities.Item.ITEM, ItemAccess.forStack(stack))

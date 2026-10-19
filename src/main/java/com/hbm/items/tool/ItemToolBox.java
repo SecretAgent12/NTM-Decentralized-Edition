@@ -103,7 +103,7 @@ public class ItemToolBox extends ItemCompat {
             if (!carried.isEmpty()
                     && !(carried.canFitInsideContainerItems()
                             && !carried.is(HbmItemTags.NO_CONTAINER_NESTING)
-                            && !carried.has(DataComponents.CONTAINER)
+                            && !com.hbm.backport.ContainerNesting.holdsItems(carried) /* backport-fix: BF-102 */
                             && !carried.has(DataComponents.BUNDLE_CONTENTS)
                             && (carried.isEmpty()
                                     || carried.getCapability(

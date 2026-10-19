@@ -8,6 +8,7 @@ import com.hbm.blockentity.machine.storage.CrateType;
 import com.hbm.platform.SophisticatedCoreNesting;
 import com.hbm.tags.HbmItemTags;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -46,7 +47,7 @@ public class MenuCrate extends NtmContainerMenu {
                             public boolean mayPlace(ItemStack stack) {
                                 return (stack.canFitInsideContainerItems()
                                                 && !stack.is(HbmItemTags.NO_CONTAINER_NESTING)
-                                                && !stack.has(DataComponents.CONTAINER)
+                                                && !com.hbm.backport.ContainerNesting.holdsItems(stack) /* backport-fix: BF-102 */
                                                 && !stack.has(DataComponents.BUNDLE_CONTENTS)
                                                 && (stack.isEmpty()
                                                         || stack.getCapability(
@@ -75,7 +76,35 @@ public class MenuCrate extends NtmContainerMenu {
         for (int col = 0; col < 9; col++) {
             addSlot(new Slot(playerInv, col, type.playerInventoryX + col * 18, type.hotbarY));
         }
+        if (!playerInv.player.level().isClientSide()) returnRefused(playerInv.player, type.slots);
         container.startOpen(playerInv.player);
+    }
+
+    /**
+     * backport-fix: BF-103 since NTM: NEXT 1.0.3 crate slots refuse nested storage (shulker boxes, bundles,
+     * backpacks, filled chests, NTM's own crates), but crates filled before that (DE 1.0.0-beta.10 and earlier)
+     * can still hold such items. Inventory sorters that put a refused item back slot by slot (Inventory Sorter
+     * clears a slot first, then asks mayPlace, and keeps trying the next slots) then wiped everything sorted after
+     * it. Whatever the slots refuse is handed to the player opening the crate (dropped at their feet if their
+     * inventory is full), so a crate's contents always pass its own slot rules.
+     */
+    private void returnRefused(Player player, int crateSlots) {
+        boolean returned = false;
+        for (int i = 0; i < crateSlots; i++) {
+            Slot slot = slots.get(i);
+            ItemStack stack = slot.getItem();
+            if (stack.isEmpty() || slot.mayPlace(stack)) continue;
+            slot.set(ItemStack.EMPTY);
+            player.getInventory().placeItemBackInInventory(stack);
+            returned = true;
+        }
+        if (returned) {
+            player.displayClientMessage(
+                    Component.translatableWithFallback(
+                            "message.hbm.crate.refused_returned",
+                            "Items this crate can't hold any more were moved to your inventory"),
+                    false);
+        }
     }
 
     public CrateType getCrateType() {
