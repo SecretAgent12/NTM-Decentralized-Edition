@@ -29,8 +29,8 @@ public record FloodlightModel() implements BlockModel<HFRWavefrontObject> {
         return switch (meta) {
             case 0 -> Octahedral.blockRot('x', 180);
             case 1 -> OctahedralGroup.IDENTITY;
-            case 2 -> Octahedral.blockRot('x', 90).compose(Octahedral.blockRot('z', 270)));
-            case 3 -> Octahedral.blockRot('x', 270).compose(Octahedral.blockRot('z', 270)));
+            case 2 -> Octahedral.blockRot('x', 90).compose(Octahedral.blockRot('z', 270));
+            case 3 -> Octahedral.blockRot('x', 270).compose(Octahedral.blockRot('z', 270));
             case 4 -> Octahedral.blockRot('z', 270);
             case 5 -> Octahedral.blockRot('x', 180).compose(Octahedral.blockRot('z', 90));
             case 6 -> Octahedral.blockRot('x', 180).compose(Octahedral.blockRot('y', 270));
