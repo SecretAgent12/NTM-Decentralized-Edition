@@ -3,6 +3,7 @@
 
 package com.hbm.capability;
 
+import com.hbm.backport.SpreadInput;
 import com.hbm.blockentity.BlockEntityMachineBase;
 import com.hbm.capability.port.ItemPort;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -11,6 +12,7 @@ import java.util.Arrays;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 import com.hbm.lib.neotransfer.ResourceHandler;
+import com.hbm.lib.neotransfer.TransferPreconditions;
 import com.hbm.lib.neotransfer.item.ItemResource;
 import com.hbm.lib.neotransfer.item.VanillaContainerWrapper;
 import com.hbm.lib.neotransfer.transaction.TransactionContext;
@@ -136,7 +138,31 @@ public final class MachineItemHandler implements ResourceHandler<ItemResource> {
                 access != null
                         ? access.canInsert(index, incoming)
                         : machine.canPlaceItemThroughFace(index, incoming, side);
-        return allowed ? core.insert(index, resource, amount, transaction) : 0;
+        if (!allowed) return 0;
+        if (machine instanceof SpreadInput spread && spread.spreadsInput(index))
+            amount = Math.min(amount, 1); // backport-fix: BF-104
+        return core.insert(index, resource, amount, transaction);
+    }
+
+    // backport-fix: BF-104 machines with SpreadInput slots take a stack round-robin, one item per slot per pass,
+    // so the stack ends up spread over the slots instead of landing in the first free one.
+    @Override
+    public int insert(ItemResource resource, int amount, TransactionContext transaction) {
+        if (!(live() instanceof SpreadInput)) return ResourceHandler.super.insert(resource, amount, transaction);
+        TransferPreconditions.checkNonEmptyNonNegative(resource, amount);
+        int inserted = 0;
+        boolean moved = true;
+        while (moved && inserted < amount) {
+            moved = false;
+            for (int index = 0; index < size() && inserted < amount; index++) {
+                int n = insert(index, resource, amount - inserted, transaction);
+                if (n > 0) {
+                    inserted += n;
+                    moved = true;
+                }
+            }
+        }
+        return inserted;
     }
 
     @Override

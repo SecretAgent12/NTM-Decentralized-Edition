@@ -6,6 +6,7 @@ package com.hbm.blockentity.machine;
 import com.hbm.api.energymk2.IBatteryItem;
 import com.hbm.api.energymk2.IEnergyHandlerMK2;
 import com.hbm.api.energymk2.ItemEnergyTransfer;
+import com.hbm.backport.SpreadInput;
 import com.hbm.blockentity.Audible;
 import com.hbm.blockentity.BlockEntityMachineBase;
 import com.hbm.blocks.ModBlockEntities;
@@ -30,7 +31,7 @@ import com.hbm.backport.storage.ValueOutput;
 import org.jspecify.annotations.Nullable;
 
 public class BlockEntityMachineShredder extends BlockEntityMachineBase
-        implements Audible, IEnergyHandlerMK2, MenuProvider {
+        implements Audible, IEnergyHandlerMK2, MenuProvider, SpreadInput /* backport-fix: BF-104 */ {
 
     public static final int SLOT_INPUT_START = 0;
     public static final int SLOT_INPUT_END = 9;
@@ -104,6 +105,12 @@ public class BlockEntityMachineShredder extends BlockEntityMachineBase
         if (slot == SLOT_BLADE_LEFT || slot == SLOT_BLADE_RIGHT)
             return stack.getItem() instanceof ItemBlades;
         return false;
+    }
+
+    // backport-fix: BF-104 automated input is spread over the 9 input slots, whatever the stack size
+    @Override
+    public boolean spreadsInput(int slot) {
+        return slot < SLOT_INPUT_END;
     }
 
     @Override
