@@ -125,7 +125,10 @@ public final class NuclearTechNeoForgeClient {
         modBus.addListener(
                 (RegisterPictureInPictureRenderersEvent event) ->
                         event.register(JarRenderState.class, JarSceneRenderer::new));
-        CtmEngine ctm = CtmEngine.selected();
+        // backport-fix: BF-105 connected textures are built in, as in 1.7.10 (no Continuity/Fusion needed);
+        // the CTM resource packs are not added any more, they would draw over the built-in ones
+        com.hbm.backport.client.ct.ConnectedTextures.register(modBus);
+        CtmEngine ctm = CtmEngine.NONE;
         if (ctm != CtmEngine.NONE) {
             modBus.addListener(
                     (AddPackFindersEvent event) -> {

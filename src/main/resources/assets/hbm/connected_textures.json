@@ -1,0 +1,211 @@
+{
+  "hbm:deco_aluminium": {
+    "connect": [
+      "hbm:deco_aluminium"
+    ],
+    "textures": {
+      "hbm:block/deco_aluminium": "hbm:block/ct/deco_aluminium_ct"
+    }
+  },
+  "hbm:deco_beryllium": {
+    "connect": [
+      "hbm:deco_beryllium"
+    ],
+    "textures": {
+      "hbm:block/deco_beryllium": "hbm:block/ct/deco_beryllium_ct"
+    }
+  },
+  "hbm:deco_lead": {
+    "connect": [
+      "hbm:deco_lead"
+    ],
+    "textures": {
+      "hbm:block/deco_lead": "hbm:block/ct/deco_lead_ct"
+    }
+  },
+  "hbm:deco_red_copper": {
+    "connect": [
+      "hbm:deco_red_copper"
+    ],
+    "textures": {
+      "hbm:block/deco_red_copper": "hbm:block/ct/deco_red_copper_ct"
+    }
+  },
+  "hbm:deco_rusty_steel": {
+    "connect": [
+      "hbm:deco_rusty_steel",
+      "hbm:deco_steel"
+    ],
+    "textures": {
+      "hbm:block/deco_rusty_steel": "hbm:block/ct/deco_rusty_steel_ct"
+    }
+  },
+  "hbm:deco_steel": {
+    "connect": [
+      "hbm:deco_steel",
+      "hbm:deco_rusty_steel"
+    ],
+    "textures": {
+      "hbm:block/deco_steel": "hbm:block/ct/deco_steel_ct"
+    }
+  },
+  "hbm:deco_tungsten": {
+    "connect": [
+      "hbm:deco_tungsten"
+    ],
+    "textures": {
+      "hbm:block/deco_tungsten": "hbm:block/ct/deco_tungsten_ct"
+    }
+  },
+  "hbm:glass_ash": {
+    "connect": [
+      "hbm:glass_ash"
+    ],
+    "textures": {
+      "hbm:block/glass_ash": "hbm:block/ct/glass_ash_ct"
+    }
+  },
+  "hbm:glass_boron": {
+    "connect": [
+      "hbm:glass_boron"
+    ],
+    "textures": {
+      "hbm:block/glass_boron": "hbm:block/ct/glass_boron_ct"
+    }
+  },
+  "hbm:glass_lead": {
+    "connect": [
+      "hbm:glass_lead"
+    ],
+    "textures": {
+      "hbm:block/glass_lead": "hbm:block/ct/glass_lead_ct"
+    }
+  },
+  "hbm:glass_polarized": {
+    "connect": [
+      "hbm:glass_polarized"
+    ],
+    "textures": {
+      "hbm:block/glass_polarized": "hbm:block/ct/glass_polarized_ct"
+    }
+  },
+  "hbm:glass_polonium": {
+    "connect": [
+      "hbm:glass_polonium"
+    ],
+    "textures": {
+      "hbm:block/glass_polonium": "hbm:block/ct/glass_polonium_ct"
+    }
+  },
+  "hbm:glass_quartz": {
+    "connect": [
+      "hbm:glass_quartz"
+    ],
+    "textures": {
+      "hbm:block/glass_quartz": "hbm:block/ct/glass_quartz_ct"
+    }
+  },
+  "hbm:glass_trinitite": {
+    "connect": [
+      "hbm:glass_trinitite"
+    ],
+    "textures": {
+      "hbm:block/glass_trinitite": "hbm:block/ct/glass_trinitite_ct"
+    }
+  },
+  "hbm:glass_uranium": {
+    "connect": [
+      "hbm:glass_uranium"
+    ],
+    "textures": {
+      "hbm:block/glass_uranium": "hbm:block/ct/glass_uranium_ct"
+    }
+  },
+  "hbm:hadron_coil_alloy": {
+    "connect": [
+      "hbm:hadron_coil_alloy"
+    ],
+    "textures": {
+      "hbm:block/hadron_coil_alloy": "hbm:block/ct/hadron_coil_alloy_ct"
+    }
+  },
+  "hbm:icf_block": {
+    "connect": [
+      "hbm:icf_block",
+      "hbm:icf_controller"
+    ],
+    "textures": {
+      "hbm:block/icf_block": "hbm:block/ct/icf_block_ct",
+      "hbm:block/icf_block_port": "hbm:block/ct/icf_block_port_ct"
+    }
+  },
+  "hbm:pile_block": {
+    "connect": [
+      "hbm:pile_block"
+    ],
+    "textures": {
+      "hbm:block/pile_block": "hbm:block/ct/pile_block_ct",
+      "hbm:block/pile_block_control_top": "hbm:block/ct/pile_block_control_top_ct",
+      "hbm:block/pile_block_core": "hbm:block/ct/pile_block_core_ct",
+      "hbm:block/pile_block_input": "hbm:block/ct/pile_block_input_ct",
+      "hbm:block/pile_block_output": "hbm:block/ct/pile_block_output_ct",
+      "hbm:block/pile_block_top": "hbm:block/ct/pile_block_top_ct"
+    }
+  },
+  "hbm:platemetal": {
+    "connect": [
+      "hbm:platemetal"
+    ],
+    "textures": {
+      "hbm:block/platemetal.base": "hbm:block/ct/platemetal.base_ct",
+      "hbm:block/platemetal.black": "hbm:block/ct/platemetal.black_ct",
+      "hbm:block/platemetal.blue": "hbm:block/ct/platemetal.blue_ct",
+      "hbm:block/platemetal.cyan": "hbm:block/ct/platemetal.cyan_ct",
+      "hbm:block/platemetal.green": "hbm:block/ct/platemetal.green_ct",
+      "hbm:block/platemetal.light_blue": "hbm:block/ct/platemetal.light_blue_ct",
+      "hbm:block/platemetal.light_gray": "hbm:block/ct/platemetal.light_gray_ct",
+      "hbm:block/platemetal.lime": "hbm:block/ct/platemetal.lime_ct",
+      "hbm:block/platemetal.magenta": "hbm:block/ct/platemetal.magenta_ct",
+      "hbm:block/platemetal.orange": "hbm:block/ct/platemetal.orange_ct",
+      "hbm:block/platemetal.pink": "hbm:block/ct/platemetal.pink_ct",
+      "hbm:block/platemetal.purple": "hbm:block/ct/platemetal.purple_ct",
+      "hbm:block/platemetal.red": "hbm:block/ct/platemetal.red_ct",
+      "hbm:block/platemetal.white": "hbm:block/ct/platemetal.white_ct",
+      "hbm:block/platemetal.yellow": "hbm:block/ct/platemetal.yellow_ct"
+    }
+  },
+  "hbm:pwr_block": {
+    "connect": [
+      "hbm:pwr_block",
+      "hbm:pwr_controller"
+    ],
+    "textures": {
+      "hbm:block/pwr_block": "hbm:block/ct/pwr_block_ct",
+      "hbm:block/pwr_casing_port": "hbm:block/ct/pwr_casing_port_ct"
+    }
+  },
+  "hbm:red_wire_coated": {
+    "connect": [
+      "hbm:red_wire_coated"
+    ],
+    "textures": {
+      "hbm:block/red_wire_coated": "hbm:block/ct/red_wire_coated_ct"
+    }
+  },
+  "hbm:reinforced_glass": {
+    "connect": [
+      "hbm:reinforced_glass"
+    ],
+    "textures": {
+      "hbm:block/reinforced_glass": "hbm:block/ct/reinforced_glass_ct"
+    }
+  },
+  "hbm:reinforced_laminate": {
+    "connect": [
+      "hbm:reinforced_laminate"
+    ],
+    "textures": {
+      "hbm:block/reinforced_laminate": "hbm:block/ct/reinforced_laminate_ct"
+    }
+  }
+}
