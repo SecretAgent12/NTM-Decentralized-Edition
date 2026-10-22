@@ -29,8 +29,12 @@ public record FloodlightModel() implements BlockModel<HFRWavefrontObject> {
         return switch (meta) {
             case 0 -> Octahedral.blockRot('x', 180);
             case 1 -> OctahedralGroup.IDENTITY;
-            case 2 -> Octahedral.blockRot('x', 90).compose(Octahedral.blockRot('z', 270));
-            case 3 -> Octahedral.blockRot('x', 270).compose(Octahedral.blockRot('z', 270));
+            // backport-fix: BF-107 (GitHub #26, PR #31 by noli-visko) the base on the south (2) and north (3) walls:
+            // 1.21.1's OctahedralGroup.compose takes its operands in the other order than 26.x (as BF-079/080), so
+            // ntm-next's X_90.compose(Y_90) came out wrong. Its rotations multiplied in the right order match the
+            // 1.7.10 RenderFloodlight (glRotate x 90, z 180, y 90 / x 90, y 90), checked by matrices for all 8 metas
+            case 2 -> Octahedral.product(Octahedral.blockRot('x', 90), Octahedral.blockRot('y', 90));
+            case 3 -> Octahedral.product(Octahedral.blockRot('x', 270), Octahedral.blockRot('y', 270));
             case 4 -> Octahedral.blockRot('z', 270);
             case 5 -> Octahedral.blockRot('x', 180).compose(Octahedral.blockRot('z', 90));
             case 6 -> Octahedral.blockRot('x', 180).compose(Octahedral.blockRot('y', 270));
