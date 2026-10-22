@@ -82,7 +82,11 @@ public class BlockEntityMachineBlastFurnace extends BlockEntityMachineBase
     public static final int FUEL_COAL = 200 * 8;
     public static final int FUEL_RATE = 200 * 4;
     public static final int MAX_FUEL = FUEL_COAL * 24;
-    public static final int FLUE_GAS = 8;
+    // backport-fix: BF-109 (GitHub #17) flue gas as in the released 1.7.10 build: 100 mB per finished operation.
+    // NTM: NEXT took Bob's unreleased dev change (8 mB per tick of the operation, put in all at once when it
+    // finishes): 8 * duration / speed is several thousand mB per operation against a 1 000 mB tank, so most of
+    // it was spilled as soot every time, flare or not. The other values of that change are reverted too.
+    public static final int FLUE_GAS = 100; // per finished operation, not per tick
 
     private static final int[] ACCESSIBLE_SLOTS = {1, 2, 0, 3, 4};
     private static final int[] OUTPUT_SLOTS = {SLOT_OUTPUT_1, SLOT_OUTPUT_2};
@@ -159,7 +163,7 @@ public class BlockEntityMachineBlastFurnace extends BlockEntityMachineBase
                 && hasQuantities(recipe)
                 && canOutput(recipe)
                 && breatheAir(1)) {
-            this.speed = Mth.clamp(1F + tanks[0].getFill() * 8F / tanks[0].getMaxFill(), 1F, 5F);
+            this.speed = Mth.clamp(0.5F + tanks[0].getFill() * 8F / tanks[0].getMaxFill(), 0.5F, 5F); // backport-fix: BF-109
             this.processing = true;
             this.progress += speed / recipe.duration;
             markChanged();
@@ -168,7 +172,7 @@ public class BlockEntityMachineBlastFurnace extends BlockEntityMachineBase
                 process(recipe);
                 progress = 0F;
                 fuel -= FUEL_RATE;
-                int flue = (int) (tanks[1].getFill() + FLUE_GAS * (recipe.duration / speed));
+                int flue = tanks[1].getFill() + FLUE_GAS; // backport-fix: BF-109
                 if (flue > tanks[1].getMaxFill()) {
                     FluidTrait.onRelease(
                             level,
@@ -178,7 +182,7 @@ public class BlockEntityMachineBlastFurnace extends BlockEntityMachineBase
                             FluidTrait.FluidReleaseType.SPILL,
                             flue - tanks[1].getMaxFill());
                 }
-                tanks[1].setFill(flue);
+                tanks[1].setFill(Math.min(flue, tanks[1].getMaxFill())); // backport-fix: BF-109
             }
 
             if (level.getRandom().nextInt(10) == 0 && !isMuffled()) {
@@ -213,7 +217,7 @@ public class BlockEntityMachineBlastFurnace extends BlockEntityMachineBase
         double pz = worldPosition.getZ() + 0.25 + level.getRandom().nextDouble() * 0.5;
         level.addParticle(ParticleTypes.LAVA, px, worldPosition.getY() + 7.25, pz, 0, 0, 0);
 
-        if (tanks[1].getFill() >= 1_000) CLIENT_TOWER.accept(this);
+        if (tanks[1].getFill() >= 100) CLIENT_TOWER.accept(this); // backport-fix: BF-109
     }
 
     private int getBurnTime(ItemStack stack) {
@@ -331,7 +335,7 @@ public class BlockEntityMachineBlastFurnace extends BlockEntityMachineBase
 
     @Override
     public long getProviderSpeed(Fluid type, int pressure) {
-        return Math.max(tanks[1].getFill() * 50L / tanks[1].getMaxFill(), 8L);
+        return Math.max(tanks[1].getFill() * 50L / tanks[1].getMaxFill(), 1L); // backport-fix: BF-109
     }
 
     @Override
