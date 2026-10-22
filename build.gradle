@@ -175,6 +175,10 @@ dependencies {
     compileOnly "maven.modrinth:Ps1zyz6x:9KuFoPhC"
     // Traveler's Backpack 10.x for 1.21.1: radiation of backpack contents, the worn backpack (com.hbm.neoforge.hazard)
     implementation "curse.maven:travelers-backpack-321117:8762814"
+    // Applied Energistics 2 19.2.18 for 1.21.1 NeoForge (Discord #5: Pattern Provider next to multiblock cells);
+    // GuideME 21.1.19 is the guidebook library AE2 requires at runtime
+    implementation "maven.modrinth:ae2:19.2.18"
+    runtimeOnly "maven.modrinth:guideme:21.1.19"
     // Dev runs get one of two stacks (gradle.properties: dev_stack): Sable 2.x refuses to start next to
     // ScalableLux of any version, so they can't share a run. Neither ends up in the jar or our dependencies.
     if (project.findProperty('dev_stack') == 'scalablelux') {

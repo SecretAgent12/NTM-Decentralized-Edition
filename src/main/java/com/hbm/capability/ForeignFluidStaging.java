@@ -8,7 +8,9 @@ import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.inventory.fluid.tank.FluidTankAccess;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
@@ -41,7 +43,28 @@ public final class ForeignFluidStaging {
     }
 
     public static FluidTankAccess tanksOf(@Nullable IFluidHandlerMK2 machine) {
-        return FluidTankAccess.of(machine);
+        FluidTankAccess tanks = FluidTankAccess.of(machine);
+        if (machine == null || tanks.tankCount() > 0) return tanks;
+        // backport-fix: BF-108 NEXT 1.0.3 reads the tanks of a machine only through FluidTankAccess, which
+        // ~37 fluid machines don't implement (chemical plant and factory, assembly machine and factory, PUREX,
+        // RBMK boilers/coolers, ZIRNOX, ICF, fusion parts, ...): they lost the 1.21.1 fluid capability, so other
+        // mods' pipes, AE2 export buses and pattern providers couldn't reach their tanks. NEXT 1.0.2 (DE beta.10)
+        // used getAllTanks(); its successor forEachTank() (receiving tanks first, then sending) is the fallback.
+        List<FluidTankNTM> all = new ArrayList<>();
+        machine.forEachTank(all::add);
+        if (all.isEmpty()) return FluidTankAccess.EMPTY;
+        FluidTankNTM[] array = all.toArray(new FluidTankNTM[0]);
+        return new FluidTankAccess() {
+            @Override
+            public int tankCount() {
+                return array.length;
+            }
+
+            @Override
+            public FluidTankNTM tank(int index) {
+                return array[index];
+            }
+        };
     }
 
     public int tanks() {

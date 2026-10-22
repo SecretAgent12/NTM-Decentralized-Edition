@@ -59,7 +59,7 @@ public final class MachineFluidHandler implements ResourceHandler<FluidResource>
 
     private static Journal journalFor(BlockEntity owner, IFluidHandlerMK2 machine) {
         ForeignBridges bridges = ForeignBridges.of(owner);
-        int tanks = FluidTankAccess.of(machine).tankCount();
+        int tanks = ForeignFluidStaging.tanksOf(machine).tankCount(); // backport-fix: BF-108
         Journal journal =
                 bridges.fluid(machine) instanceof Journal held && held.staging.tanks() == tanks
                         ? held
@@ -69,7 +69,7 @@ public final class MachineFluidHandler implements ResourceHandler<FluidResource>
     }
 
     private FluidTankAccess tanks() {
-        FluidTankAccess tanks = FluidTankAccess.of(machine);
+        FluidTankAccess tanks = ForeignFluidStaging.tanksOf(machine); // backport-fix: BF-108
         return tanks.tankCount() == journal.staging.tanks() ? tanks : FluidTankAccess.EMPTY;
     }
 
