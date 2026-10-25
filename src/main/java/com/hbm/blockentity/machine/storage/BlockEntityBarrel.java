@@ -15,6 +15,7 @@ import com.hbm.api.fluidmk2.PipeData;
 import com.hbm.api.redstoneoverradio.IRORInteractive;
 import com.hbm.api.redstoneoverradio.IRORValueProvider;
 import com.hbm.blockentity.BlockEntityMachineBase;
+import com.hbm.blockentity.ChunkPublication;
 import com.hbm.blockentity.IFluidCopiable;
 import com.hbm.blockentity.PersistentDrop;
 import com.hbm.blocks.ModBlockEntities;
@@ -49,6 +50,7 @@ import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -150,6 +152,21 @@ public class BlockEntityBarrel extends BlockEntityMachineBase
         Fluid type = tank.getDeclaredFluid();
         if (mode == MODE_BUFFER && type != null) {
             addBufferNodes(FluidPipeGraph.get(server, type), new PipeData(type));
+        }
+        // backport-fix: BF-114 inside a chunk's load-time publication (its FULL task) the arms are set
+        // a task later: a block write there runs other mods' block-change hooks (Sable's physics
+        // reads the neighbouring chunks and waits for one that can't finish loading before this one:
+        // the server hung). The arms are only looks; one task later nobody sees the difference
+        if (ChunkPublication.publishing(server, worldPosition)) {
+            MinecraftServer host = server.getServer();
+            host.tell(
+                    host.wrapRunnable(
+                            () -> {
+                                if (graphReady && !isRemoved())
+                                    refreshConnectors(
+                                            server, false, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
+                            }));
+            return;
         }
         refreshConnectors(server, false, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
     }

@@ -3,7 +3,6 @@
 
 package com.hbm.blockentity.machine;
 
-import com.hbm.blockentity.ChunkPublication;
 import com.hbm.blockentity.GraphResident;
 import com.hbm.blocks.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -34,10 +33,9 @@ public class BlockEntityFloodlightBeam extends BlockEntityCompat implements Grap
 
     @Override
     public void onGraphLoad(ServerLevel server) {
-        if (ChunkPublication.publishing(server, worldPosition)) {
-            check(server);
-            return;
-        }
+        // backport-fix: BF-114 not inside the chunk's load-time publication either: check() may
+        // remove the beam block, and a block write there can hang the server with Sable (see
+        // BlockEntityBarrel.onGraphLoad); a task later is just as good
         MinecraftServer host = server.getServer();
         host.tell(host.wrapRunnable(() -> check(server)));
     }
