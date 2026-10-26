@@ -6,6 +6,7 @@ package com.hbm.blockentity.machine;
 import com.hbm.api.control.IControlReceiver;
 import com.hbm.api.energymk2.IEnergyHandlerMK2;
 import com.hbm.api.energymk2.ItemEnergyTransfer;
+import com.hbm.backport.FelBeamFrames;
 import com.hbm.blockentity.AudioLoop;
 import com.hbm.blockentity.BlockEntityMachineBase;
 import com.hbm.blocks.ModBlockEntities;
@@ -168,6 +169,10 @@ public class BlockEntityFEL extends BlockEntityMachineBase
         }
 
         if (isOn && power >= req && mode != EnumWavelengths.NULL) {
+            // Sable compat: null unless the FEL stands on a physics build or one is near its beam
+            FelBeamFrames frames = FelBeamFrames.of(level, worldPosition, dir, RANGE);
+            // Sable compat: SILEXes in another space already fed by this shot (see FelBeamFrames)
+            java.util.Set<BlockPos> fedAcross = null;
             int dist = distance - 1;
             double x0 = worldPosition.getX();
             double y0 = worldPosition.getY();
@@ -179,9 +184,19 @@ public class BlockEntityFEL extends BlockEntityMachineBase
             double blz = Math.min(z0, z0 + (double) dir.getStepZ() * dist) + 0.2;
             double buz = Math.max(z0, z0 + (double) dir.getStepZ() * dist) + 0.8;
 
-            for (LivingEntity entity :
-                    level.getEntitiesOfClass(
-                            LivingEntity.class, new AABB(blx, bly, blz, bux, buy, buz))) {
+            // Sable compat: on a build the beam is drawn in the world, so are the entities it hits
+            java.util.List<LivingEntity> inBeam =
+                    frames != null && frames.onBuild()
+                            ? frames.entitiesAlong(
+                                    level,
+                                    new net.minecraft.world.phys.Vec3(x0 + 0.5, y0 + 1.5, z0 + 0.5),
+                                    new net.minecraft.world.phys.Vec3(
+                                            x0 + 0.5 + dir.getStepX() * dist,
+                                            y0 + 1.5,
+                                            z0 + 0.5 + dir.getStepZ() * dist))
+                            : level.getEntitiesOfClass(
+                                    LivingEntity.class, new AABB(blx, bly, blz, bux, buy, buz));
+            for (LivingEntity entity : inBeam) {
                 if (mode == EnumWavelengths.VISIBLE) {
                     entity.addEffect(
                             new MobEffectInstance(MobEffects.BLINDNESS, 60 * 60 * 65536, 0));
@@ -201,6 +216,50 @@ public class BlockEntityFEL extends BlockEntityMachineBase
             for (int i = 3; i < RANGE; i++) {
                 BlockPos beam = worldPosition.offset(dir.getStepX() * i, 1, dir.getStepZ() * i);
                 BlockState b = level.getBlockState(beam);
+                // Sable compat: an empty cell in the FEL's own space may have a world block or
+                // another build's block drawn at it; the beam goes on in that space
+                boolean sameSpace = true;
+                if (frames != null && b.isAir()) {
+                    FelBeamFrames.Hit hit = frames.at(level, beam);
+                    if (hit != null) {
+                        beam = hit.pos();
+                        b = hit.state();
+                        sameSpace = false;
+                    }
+                }
+
+                if (!sameSpace && isSilexSurface(level, beam, b)) {
+                    // Sable compat: a SILEX in another space (FelBeamFrames): fed once per shot
+                    // when the beam runs along its axis; burnt from the side or too close, as in
+                    // one space; a build swinging a few degrees off only stops the beam
+                    BlockPos core = FelBeamFrames.silexCore(level, beam, b);
+                    if (core == null
+                            || !(level.getBlockEntity(core) instanceof BlockEntitySILEX silex)) {
+                        this.distance = i;
+                        break;
+                    }
+                    if (fedAcross != null && fedAcross.contains(core)) continue;
+                    Direction silexDir = level.getBlockState(core).getValue(BlockMultiblockCore.FACING);
+                    FelBeamFrames.SilexHit meet = frames.meet(level, core, silexDir);
+                    if (meet == FelBeamFrames.SilexHit.WRONG_SIDE
+                            || (meet == FelBeamFrames.SilexHit.FEEDS && i < 5)) {
+                        level.destroyBlock(core, true);
+                        continue;
+                    }
+                    if (meet == FelBeamFrames.SilexHit.PASSES) continue;
+                    if (meet == FelBeamFrames.SilexHit.BLOCKED) {
+                        this.distance = i;
+                        break;
+                    }
+                    if (fedAcross == null) fedAcross = new java.util.HashSet<>();
+                    fedAcross.add(core);
+                    armedSilex = true;
+                    if (silex.mode != this.mode) {
+                        silex.setMode(this.mode);
+                        silex.setChanged();
+                    }
+                    continue;
+                }
 
                 if (isSilexSurface(level, beam, b)) {
                     BlockPos silexCore = beam.offset(dir.getStepX(), -1, dir.getStepZ());
