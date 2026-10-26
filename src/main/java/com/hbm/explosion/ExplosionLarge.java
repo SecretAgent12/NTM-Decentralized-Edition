@@ -235,6 +235,9 @@ public final class ExplosionLarge {
             Level level, double x, double y, double z, int strength, int count, double vel) {
         RandomSource rand = level.getRandom();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        // Sable compat: rays that find world air also look for physics build blocks drawn there
+        com.hbm.backport.SubLevelBlast builds =
+                com.hbm.backport.SubLevelBlast.around(level, x, y, z, strength + 1);
         for (int n = 0; n < count; n++) {
             double phi = rand.nextDouble() * Math.PI * 2;
             double cosTheta = rand.nextDouble() * 2 - 1;
@@ -248,6 +251,13 @@ public final class ExplosionLarge {
                 int bz = (int) Math.floor(z + dz * i);
                 pos.set(bx, by, bz);
                 BlockState state = level.getBlockState(pos);
+                if (state.isAir() && !builds.isEmpty()) {
+                    BlockPos plot = builds.plotBlock(level, bx + 0.5, by + 0.5, bz + 0.5);
+                    if (plot != null) {
+                        pos.set(plot);
+                        state = level.getBlockState(pos);
+                    }
+                }
                 if (state.liquid()) {
                     level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
                     continue;

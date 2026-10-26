@@ -11,6 +11,8 @@ import com.hbm.advancement.HbmCriteria;
 import com.hbm.config.BombConfig;
 import com.hbm.config.NeoForgeHbmConfig;
 import com.hbm.entity.ModEntities;
+import com.hbm.backport.SubLevelShapes;
+import com.hbm.blocks.generic.BlockStatueElbF;
 import com.hbm.explosion.ExplosionFleija;
 import com.hbm.explosion.ExplosionHurtUtil;
 import com.hbm.explosion.ExplosionNukeGeneric;
@@ -201,6 +203,34 @@ public class EntityNukeExplosionMK3 extends EntityExplosionChunkloading {
                             this.destructionRange,
                             this.coefficient,
                             this.coefficient2);
+        if (level() instanceof ServerLevel server) shapeOnBuilds(server, x, y, z);
+    }
+
+    /**
+     * Sable compat (not in ntm-next): the physics builds in reach get the same cut as the world, in
+     * one pass (SubLevelShapes): FLEIJA removes what's inside, Solinium does its block conversion.
+     * The shape is the engines' column rule, asked at the world cell where a build block is drawn.
+     */
+    private void shapeOnBuilds(ServerLevel server, int x, int y, int z) {
+        int r2 = destructionRange * destructionRange;
+        float c1 = coefficient, c2 = coefficient2;
+        SubLevelShapes.Shape shape =
+                (wx, wy, wz) -> {
+                    int dx = (int) Math.floor(wx) - x, dz = (int) Math.floor(wz) - z;
+                    int dist = r2 - (dx * dx + dz * dz);
+                    if (dist <= 0) return false;
+                    dist = (int) Math.sqrt(dist);
+                    int dy = (int) Math.floor(wy) - y;
+                    return dy <= (int) (dist / c2) && dy > -dist / c1;
+                };
+        Vec3 center = new Vec3(x + 0.5, y + 0.5, z + 0.5);
+        double reach = destructionRange * Math.max(1F, Math.max(1F / c1, 1F / c2)) + 1.0103;
+        if (extType == 0)
+            SubLevelShapes.clear(server, center, reach, shape, s -> s.getBlock() instanceof BlockStatueElbF);
+        if (extType == 1)
+            SubLevelShapes.forEach(
+                    server, center, reach, shape,
+                    (lvl, plot, state, world) -> ExplosionNukeGeneric.solinium(lvl, plot));
     }
 
     public EntityNukeExplosionMK3 makeSol() {

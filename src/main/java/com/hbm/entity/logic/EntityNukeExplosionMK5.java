@@ -8,6 +8,7 @@ import com.hbm.advancement.AwardRegions;
 import com.hbm.advancement.DetonationTrigger;
 import com.hbm.advancement.HbmCriteria;
 import com.hbm.backport.SubLevelNuke;
+import com.hbm.backport.SubLevelPush;
 import com.hbm.api.explosion.NukeDetonations;
 import com.hbm.config.BombConfig;
 import com.hbm.config.NeoForgeHbmConfig;
@@ -157,6 +158,8 @@ public class EntityNukeExplosionMK5 extends EntityExplosionChunkloading
                 // backport-fix: BF-050 the ray engine only sees world chunks; physics builds in
                 // reach get a pass of their own
                 SubLevelNuke.crater(server, getX(), getY(), getZ(), strength, radius);
+                // Sable compat: and the shock wave throws what survives, out to twice the crater
+                SubLevelPush.blast(server, position(), radius * 2, radius);
                 SatelliteDetector.reportEvent(
                         server,
                         SatelliteDetector.DURATION_HIGH,

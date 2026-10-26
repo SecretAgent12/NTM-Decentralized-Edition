@@ -5,6 +5,7 @@
 package com.hbm.explosion.vanillant;
 
 import com.hbm.backport.SubLevelBlast;
+import com.hbm.backport.SubLevelPush;
 import com.hbm.explosion.vanillant.interfaces.*;
 import com.hbm.explosion.vanillant.standard.*;
 import java.util.HashMap;
@@ -68,6 +69,8 @@ public class ExplosionVNT extends Explosion {
         posX = origin.x;
         posY = origin.y;
         posZ = origin.z;
+        // Sable compat: the blast also shoves the physics builds around it (Sable does it for vanilla)
+        SubLevelPush.blast(world, origin, size * 2.0061, size);
 
         boolean processBlocks = blockAllocator != null && blockProcessor != null;
         boolean processEntities = entityProcessor != null && playerProcessor != null;

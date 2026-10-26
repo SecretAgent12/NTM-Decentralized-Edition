@@ -216,7 +216,7 @@ public final class SubLevelNuke {
         }
     }
 
-    private static List<SubLevelAccess> intersecting(ServerLevel level, Vec3 at, double reach) {
+    static List<SubLevelAccess> intersecting(ServerLevel level, Vec3 at, double reach) {
         BoundingBox3d box =
                 new BoundingBox3d(
                         at.x - reach, at.y - reach, at.z - reach,
@@ -228,7 +228,7 @@ public final class SubLevelNuke {
     }
 
     /** Only the cells of this build's own plot (its bounds, turned back into the plot, overreach). */
-    private static final class Owner {
+    static final class Owner {
         private final ServerLevel level;
         private final UUID id;
         private int chunkX = Integer.MIN_VALUE, chunkZ = Integer.MIN_VALUE;
@@ -252,7 +252,7 @@ public final class SubLevelNuke {
     }
 
     /** The plot cells under a build's world bounds. */
-    private record Box(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+    record Box(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
 
         static Box of(SubLevelAccess sub) {
             BoundingBox3dc world = sub.boundingBox();

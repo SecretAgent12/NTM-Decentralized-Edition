@@ -3,6 +3,8 @@
 
 package com.hbm.entity.effect;
 
+import com.hbm.backport.SubLevelBlast;
+import com.hbm.backport.SubLevelPush;
 import com.hbm.entity.ModEntities;
 import com.hbm.entity.projectile.EntityRubble;
 import com.hbm.items.ModItems;
@@ -80,6 +82,9 @@ public class EntityBlackHole extends EntityCompat {
         if (level() instanceof ServerLevel server && breaksBlocks) {
             consumeBlocks(server, size);
         }
+        // Sable compat: physics builds in range are drawn in like everything else (a fixed speed
+        // change per tick, as for entities: 0.1 block/tick = 2 m/s)
+        if (level() instanceof ServerLevel server) SubLevelPush.pull(server, position(), size * 15D, 2.0061D);
 
         double range = size * 15D;
         for (Entity entity :
@@ -150,6 +155,9 @@ public class EntityBlackHole extends EntityCompat {
     }
 
     private void consumeBlocks(ServerLevel level, float size) {
+        // Sable compat: a ray that finds world air asks whether a physics build's block is drawn
+        // there, and eats that one instead (SubLevelBlast, as the VNT allocators do)
+        SubLevelBlast builds = SubLevelBlast.around(level, getX(), getY(), getZ(), size * 15F + 1);
         for (int k = 0; k < size * 2F; k++) {
             double phi = random.nextDouble() * Math.PI * 2D;
             double cosineTheta = random.nextDouble() * 2D - 1D;
@@ -172,7 +180,20 @@ public class EntityBlackHole extends EntityCompat {
                     level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
                     state = level.getBlockState(pos);
                 }
-                if (state.isAir()) continue;
+                if (state.isAir()) {
+                    if (builds.isEmpty()) continue;
+                    BlockPos plot =
+                            builds.plotBlock(
+                                    level, getX() + ray.x * i, getY() + ray.y * i, getZ() + ray.z * i);
+                    if (plot == null) continue;
+                    BlockState eaten = level.getBlockState(plot);
+                    EntityRubble debris =
+                            new EntityRubble(level, pos.getX() + 0.5F, pos.getY(), pos.getZ() + 0.5F);
+                    debris.setBlockState(eaten);
+                    level.addFreshEntity(debris);
+                    level.setBlock(plot, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+                    break;
+                }
 
                 EntityRubble rubble =
                         new EntityRubble(level, pos.getX() + 0.5F, pos.getY(), pos.getZ() + 0.5F);
