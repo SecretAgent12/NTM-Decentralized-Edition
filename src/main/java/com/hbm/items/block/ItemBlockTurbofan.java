@@ -4,6 +4,7 @@
 package com.hbm.items.block;
 
 import com.hbm.inventory.fluid.trait.FT_Combustible.FuelGrade;
+import com.hbm.items.DescBlockItem;
 import com.hbm.items.ItemPistons;
 import java.util.function.Consumer;
 import net.minecraft.network.chat.Component;
@@ -15,10 +16,11 @@ import com.hbm.backport.TooltipDisplay;
 import net.minecraft.world.level.block.Block;
 import com.hbm.backport.compat.BlockItemCompat;
 
-public class ItemBlockTurbofan extends BlockItemCompat {
+public class ItemBlockTurbofan extends DescBlockItem {
 
     public ItemBlockTurbofan(Block block, Properties properties) {
-        super(block, properties);
+        // backport: desc.hbm.machine_turbofan.line1-2 (control modes), shown like the crane inserter's
+        super(block, properties, 2);
     }
 
     @Override

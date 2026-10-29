@@ -103,5 +103,15 @@ public class ScreenMachineTurbofan extends ScreenInfoContainer<MenuMachineTurbof
                 BlockEntityMachineTurbofan.MAX_POWER);
 
         super.extractLabels(graphics, mouseX, mouseY);
+
+        // backport: control mode and throttle, right of the inventory label
+        Component mode =
+                be.controlMode == BlockEntityMachineTurbofan.MODE_THROTTLE
+                        ? Component.translatable(
+                                "block.hbm.machine_turbofan.gui.throttle",
+                                Math.round(be.throttle * 100F))
+                        : Component.translatable("block.hbm.machine_turbofan.gui.classic");
+        graphics.text(
+                font, mode, imageWidth - 8 - font.width(mode), inventoryLabelY, -12566464, false);
     }
 }
