@@ -25,6 +25,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.jspecify.annotations.Nullable;
 
@@ -138,6 +139,10 @@ public final class PipeAnchorVisual extends HbmBlockEntityVisual<BlockEntityPipe
         }
         var level = blockEntity.getLevel();
         for (int i = 0; i < connections.length; i++) {
+            // backport: Sable compat - a pipe to another space moves with the build: redraw every tick
+            if (level != null
+                    && com.hbm.backport.SubLevelLinks.crosses(level, pos, BlockPos.of(connections[i])))
+                changed = true;
             BlockEntityPipeAnchor peer =
                     level != null
                                     && ChunkUtil.blockEntityIfLoaded(
@@ -164,8 +169,14 @@ public final class PipeAnchorVisual extends HbmBlockEntityVisual<BlockEntityPipe
             if (other == null || lastPeerFluids[i] != lastFluid) continue;
             BlockPos otherPos = BlockPos.of(lastConnections[i]);
             if (!dominant(pos, otherPos)) continue;
-            double dx = otherPos.getX() - pos.getX(), dy = otherPos.getY() - pos.getY();
-            double dz = otherPos.getZ() - pos.getZ();
+            // backport: Sable compat - the other anchor where it is drawn, in this anchor's frame
+            // (same space: the plain offset, as before)
+            Vec3 rel =
+                    com.hbm.backport.SubLevelLinks.relative(
+                                    level, pos, otherPos, Vec3.atCenterOf(otherPos))
+                            .subtract(0.5D, 0.5D, 0.5D);
+            double dx = rel.x, dy = rel.y, dz = rel.z;
+            BlockPos drawnAt = BlockPos.containing(pos.getX() + dx, pos.getY() + dy, pos.getZ() + dz);
             double horizontal = Mth.length(dx, dz);
             if (runCount == runs.size()) runs.add(new Run());
             runs.get(runCount++)
@@ -175,7 +186,7 @@ public final class PipeAnchorVisual extends HbmBlockEntityVisual<BlockEntityPipe
                             (float) Mth.length(dx, dy, dz),
                             color,
                             pos,
-                            otherPos);
+                            drawnAt);
         }
     }
 

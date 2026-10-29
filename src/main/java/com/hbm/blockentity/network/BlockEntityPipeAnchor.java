@@ -72,6 +72,10 @@ public class BlockEntityPipeAnchor extends BlockEntityCompat
         if (node != null) {
             this.fluid = node.data.fluid();
             this.connections = node.hasRemoteLinks() ? node.remoteLinks.toLongArray() : new long[0];
+            // backport: Sable compat - pipes to or from a physics build snap when it pulls too far
+            for (long peer : connections)
+                com.hbm.backport.SubLevelLinkWatch.track(
+                        sl, worldPosition.asLong(), peer, com.hbm.backport.SubLevelLinkWatch.Kind.FLUID);
         } else {
             PipeData data = graph == null ? null : graph.dataAt(worldPosition.asLong());
             this.fluid = data == null ? Fluids.EMPTY : data.fluid();

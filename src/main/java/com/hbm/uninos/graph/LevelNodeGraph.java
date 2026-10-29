@@ -1595,6 +1595,29 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         }
     }
 
+    /**
+     * backport: Sable compat - drops the one remote link between {@code a} and {@code b} (a wire or a
+     * pipe stretched too far between a physics build and the world), splitting the network if it
+     * held it together. Rebuilt the way {@link #replaceNode} rebuilds a node, minus that link.
+     */
+    public void cutRemoteLink(long a, long b) {
+        GraphNode<D> node = nodesByPos.get(a);
+        if (node == null || node.remoteLinks == null || !node.remoteLinks.contains(b)) {
+            forgetLink(b, a);
+            return;
+        }
+        try (var batch = PhysicalGraph.begin(ownerLevel)) {
+            long[] links = node.remoteLinks.toLongArray();
+            GraphNode<D> replacement = new GraphNode<>(a, node.data, node.openConnections);
+            replacement.device = node.device;
+            replacement.machineOwned = node.machineOwned;
+            replacement.selfEndpoint = node.selfEndpoint;
+            removeNode(a);
+            addNode(replacement);
+            for (long peer : links) if (peer != b) addRemoteLink(a, peer);
+        }
+    }
+
     public void addRemoteLink(long a, long b) {
         GraphNode<D> na = firstClass(a);
         GraphNode<D> nb = firstClass(b);

@@ -57,9 +57,10 @@ public final class SubLevelMoves {
         int turns = quarterTurns(state, moved);
 
         // 1.0.3: hbm$graphs() is an array indexed by graph kind; unloaded kinds are null slots
+        Batch batch = batch(resulting);
         for (LevelNodeGraph<?> graph : origin.hbm$graphs())
             if (graph != null)
-                moveNode(graph, origin, from.asLong(), to.asLong(), turns, origin == resulting);
+                moveNode(graph, origin, from.asLong(), to.asLong(), turns, origin == resulting, batch);
 
         if (state.getBlock() instanceof BlockMultiblockCell || state.getBlock() instanceof BlockMultiblockCore)
             BlockMultiblockCore.unindexCell(origin, from);
@@ -114,9 +115,15 @@ public final class SubLevelMoves {
     private static final class Batch {
         final java.util.List<BlockPos> moved = new java.util.ArrayList<>();
         final java.util.List<BlockPos> cores = new java.util.ArrayList<>();
+        // Sable compat: wires and pipes of the moved blocks, put back once every end has moved
+        final it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap fromTo =
+                new it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap();
+        final java.util.List<LinkMove> links = new java.util.ArrayList<>();
     }
 
-    private static void schedule(ServerLevel level, BlockPos to, boolean core) {
+    private record LinkMove(LevelNodeGraph<?> graph, long to, long[] peers) {}
+
+    private static Batch batch(ServerLevel level) {
         Batch batch = BATCHES.get(level);
         if (batch == null) {
             Batch fresh = new Batch();
@@ -125,12 +132,18 @@ public final class SubLevelMoves {
             server.tell(server.wrapRunnable(() -> finish(level, fresh)));
             batch = fresh;
         }
+        return batch;
+    }
+
+    private static void schedule(ServerLevel level, BlockPos to, boolean core) {
+        Batch batch = batch(level);
         batch.moved.add(to);
         if (core) batch.cores.add(to);
     }
 
     private static void finish(ServerLevel level, Batch batch) {
         if (BATCHES.get(level) == batch) BATCHES.remove(level);
+        relink(level, batch);
         // the cells were moved one by one before or after their core: index them now, like
         // FoldedCoreResident.onLoad does for a loaded core
         for (BlockPos core : batch.cores) {
@@ -147,8 +160,37 @@ public final class SubLevelMoves {
         }
     }
 
+    /**
+     * Sable compat: puts the wires and pipes of the moved blocks back - between two moved ends at
+     * their new places, from a moved end to one that stayed (now across spaces, watched by
+     * SubLevelLinkWatch: too long and it snaps). Before this, assembling or disassembling a build
+     * cut every wire and pipe of it.
+     */
+    private static void relink(ServerLevel level, Batch batch) {
+        if (batch.links.isEmpty()) return;
+        it.unimi.dsi.fastutil.longs.LongOpenHashSet touched = new it.unimi.dsi.fastutil.longs.LongOpenHashSet();
+        for (LinkMove move : batch.links) {
+            if (!move.graph().containsCell(move.to())) continue;
+            for (long peer : move.peers()) {
+                long now = batch.fromTo.containsKey(peer) ? batch.fromTo.get(peer) : peer;
+                if (now == move.to() || !move.graph().containsCell(now)) continue;
+                move.graph().addRemoteLink(move.to(), now);
+                touched.add(now);
+            }
+            touched.add(move.to());
+        }
+        for (it.unimi.dsi.fastutil.longs.LongIterator it = touched.iterator(); it.hasNext(); )
+            BlockEntityPylonBase.refreshIfLoaded(level, it.nextLong());
+    }
+
     private static <D> void moveNode(
-            LevelNodeGraph<D> graph, ServerLevel origin, long from, long to, int turns, boolean sameLevel) {
+            LevelNodeGraph<D> graph,
+            ServerLevel origin,
+            long from,
+            long to,
+            int turns,
+            boolean sameLevel,
+            Batch batch) {
         if (!graph.containsCell(from)) return;
         GraphNode<D> node = graph.firstClass(from); // promotes a segment interior cell to a node
         if (node == null) return;
@@ -164,6 +206,8 @@ public final class SubLevelMoves {
         if (!sameLevel || graph.containsCell(to)) return;
         graph.addNode(to, data, mask);
         if (self) graph.setSelfEndpoint(to, true);
+        batch.fromTo.put(from, to);
+        if (peers.length > 0) batch.links.add(new LinkMove(graph, to, peers));
     }
 
     /** Clockwise quarter turns about Y between the horizontal facing before and after the move. */

@@ -82,8 +82,13 @@ public class RenderPipeAnchor
                     && be.getLevel().getBlockEntity(otherPos)
                             instanceof BlockEntityPipeAnchor other)) continue;
             if (other.fluid != be.fluid) continue;
-            Vec3 target = Vec3.atCenterOf(otherPos);
-            if (!isDominant(self, target)) continue;
+            // dominance on the plain positions, so exactly one end draws even across spaces
+            if (!isDominant(self, Vec3.atCenterOf(otherPos))) continue;
+            // backport: Sable compat - the other anchor where it is drawn, in this anchor's frame
+            BlockPos at = be.getBlockPos();
+            Vec3 target =
+                    com.hbm.backport.SubLevelLinks.relative(be.getLevel(), at, otherPos, Vec3.atCenterOf(otherPos))
+                            .add(at.getX(), at.getY(), at.getZ());
 
             double dX = target.x - self.x;
             double dY = target.y - self.y;
@@ -143,7 +148,16 @@ public class RenderPipeAnchor
         Vec3 self = Vec3.atCenterOf(pos);
         for (long key : be.connections) {
             BlockPos peer = BlockPos.of(key);
-            if (isDominant(self, Vec3.atCenterOf(peer))) box = box.minmax(new AABB(peer));
+            if (!isDominant(self, Vec3.atCenterOf(peer))) continue;
+            // backport: Sable compat - the peer where it is drawn, in this anchor's frame
+            if (be.getLevel() != null && com.hbm.backport.SubLevelLinks.crosses(be.getLevel(), pos, peer)) {
+                Vec3 at =
+                        com.hbm.backport.SubLevelLinks.relative(be.getLevel(), pos, peer, Vec3.atCenterOf(peer))
+                                .add(pos.getX(), pos.getY(), pos.getZ());
+                box = box.minmax(new AABB(at, at));
+            } else {
+                box = box.minmax(new AABB(peer));
+            }
         }
         return box.inflate(1.0D);
     }

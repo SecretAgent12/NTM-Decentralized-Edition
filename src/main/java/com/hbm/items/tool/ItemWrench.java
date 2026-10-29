@@ -80,8 +80,11 @@ public class ItemWrench extends ItemCompat {
         }
         if (firstFluid != secondFluid) return "Pipe error - Pipe anchor fluid types do not match";
 
-        Vec3 delta = Vec3.atCenterOf(second).subtract(Vec3.atCenterOf(first));
-        if (delta.length() > FluidPipeAnchorBlock.MAX_PIPE_LENGTH)
+        // backport: Sable compat - measured where both anchors are drawn (one may be on a build)
+        double span =
+                com.hbm.backport.SubLevelLinks.worldDistance(
+                        level, Vec3.atCenterOf(first), Vec3.atCenterOf(second));
+        if (span > FluidPipeAnchorBlock.MAX_PIPE_LENGTH)
             return "Pipe error - Pipe anchor is too far away";
 
         LevelNodeGraph<PipeData> graph = FluidPipeGraph.get(level, firstFluid);

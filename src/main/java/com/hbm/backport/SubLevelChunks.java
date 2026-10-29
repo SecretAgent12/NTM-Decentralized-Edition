@@ -53,6 +53,8 @@ public final class SubLevelChunks {
     public static void init() {
         NeoForgeServerEvents.onChunkLoad(SubLevelChunks::onChunkLoad);
         NeoForgeServerEvents.onChunkUnload(SubLevelChunks::onChunkUnload);
+        // Sable compat: wires and pipes between builds and the world snap when stretched too far
+        SubLevelLinkWatch.init();
         NeoForgeServerEvents.onServerTickPost(SubLevelChunks::reindexPending); // backport-fix: BF-106
     }
 

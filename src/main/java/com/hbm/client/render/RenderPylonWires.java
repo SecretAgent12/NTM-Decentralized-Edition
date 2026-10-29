@@ -72,11 +72,14 @@ public class RenderPylonWires
             int shift = lines == 4 && crossed(be, other) ? 2 : 0;
             for (int line = 0; line < lines; line++) {
                 Vec3 from = mine[line % mine.length];
+                // backport: Sable compat - the peer's mount where it is drawn, in this pylon's frame
                 Vec3 to =
-                        theirs[(line + shift) % theirs.length].add(
-                                otherPos.getX() - self.getX(),
-                                otherPos.getY() - self.getY(),
-                                otherPos.getZ() - self.getZ());
+                        com.hbm.backport.SubLevelLinks.relative(
+                                level,
+                                self,
+                                otherPos,
+                                theirs[(line + shift) % theirs.length].add(
+                                        otherPos.getX(), otherPos.getY(), otherPos.getZ()));
                 half(state, level, self, from, from.add(to.subtract(from).scale(0.5D)), hang);
             }
         }
@@ -173,7 +176,20 @@ public class RenderPylonWires
     @Override
     public AABB getRenderBoundingBox(BlockEntityPylonBase be) {
         AABB box = new AABB(be.getBlockPos());
-        for (long key : be.connections) box = box.minmax(new AABB(BlockPos.of(key)));
+        Level level = be.getLevel();
+        BlockPos self = be.getBlockPos();
+        for (long key : be.connections) {
+            BlockPos peer = BlockPos.of(key);
+            // backport: Sable compat - the peer where it is drawn, in this pylon's frame
+            if (level != null && com.hbm.backport.SubLevelLinks.crosses(level, self, peer)) {
+                Vec3 at =
+                        com.hbm.backport.SubLevelLinks.relative(level, self, peer, Vec3.atCenterOf(peer))
+                                .add(self.getX(), self.getY(), self.getZ());
+                box = box.minmax(new AABB(at, at));
+            } else {
+                box = box.minmax(new AABB(peer));
+            }
+        }
         return box.inflate(MAX_ARM + GIRTH, 1.0D, MAX_ARM + GIRTH)
                 .expandTowards(0.0D, be.familyLift(), 0.0D)
                 .expandTowards(0.0D, -MAX_SAG, 0.0D);

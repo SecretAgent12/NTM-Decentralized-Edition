@@ -69,7 +69,14 @@ public abstract class BlockEntityPylonBase extends BlockEntityCompat
         if (first.connectionType() != second.connectionType()) return 1;
         if (first == second) return 2;
         double reach = Math.min(first.maxWireLength(), second.maxWireLength());
-        return reach >= first.connectionPoint().distanceTo(second.connectionPoint()) ? 0 : 3;
+        // backport: Sable compat - measured where both ends are drawn (a pylon on a physics build
+        // sits in a plot millions of blocks away); same space: the plain distance, as before
+        double span =
+                first.level == null
+                        ? first.connectionPoint().distanceTo(second.connectionPoint())
+                        : com.hbm.backport.SubLevelLinks.worldDistance(
+                                first.level, first.connectionPoint(), second.connectionPoint());
+        return reach >= span ? 0 : 3;
     }
 
     public abstract ConnectionType connectionType();
@@ -99,6 +106,13 @@ public abstract class BlockEntityPylonBase extends BlockEntityCompat
                 node != null && node.hasRemoteLinks()
                         ? node.remoteLinks.toLongArray()
                         : new long[0];
+        // backport: Sable compat - wires to or from a physics build snap when it pulls too far
+        for (long peer : connections)
+            com.hbm.backport.SubLevelLinkWatch.track(
+                    (ServerLevel) level,
+                    worldPosition.asLong(),
+                    peer,
+                    com.hbm.backport.SubLevelLinkWatch.Kind.POWER);
         networkPackNTTracking();
     }
 

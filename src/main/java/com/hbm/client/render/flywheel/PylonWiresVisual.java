@@ -110,11 +110,15 @@ public final class PylonWiresVisual extends HbmBlockEntityVisual<BlockEntityPylo
             int shift = count == 4 && crossed(blockEntity, other) ? 2 : 0;
             for (int i = 0; i < count; i++) {
                 Vec3 from = mine[i % mine.length];
+                // backport: Sable compat - the peer's mount where it is drawn, in this pylon's frame
+                // (same space: the plain offset, as before)
                 Vec3 to =
-                        theirs[(i + shift) % theirs.length].add(
-                                peer.getX() - pos.getX(),
-                                peer.getY() - pos.getY(),
-                                peer.getZ() - pos.getZ());
+                        com.hbm.backport.SubLevelLinks.relative(
+                                level,
+                                pos,
+                                peer,
+                                theirs[(i + shift) % theirs.length].add(
+                                        peer.getX(), peer.getY(), peer.getZ()));
                 half(from, from.add(to.subtract(from).scale(.5D)), lastHang);
             }
         }
@@ -157,6 +161,9 @@ public final class PylonWiresVisual extends HbmBlockEntityVisual<BlockEntityPylo
             lastPeerStates = new BlockState[connections.length];
         }
         for (int i = 0; i < connections.length; i++) {
+            // backport: Sable compat - a wire to another space moves with the build: redraw every tick
+            if (com.hbm.backport.SubLevelLinks.crosses(level, pos, BlockPos.of(connections[i])))
+                changed = true;
             BlockEntityPylonBase peer =
                     ChunkUtil.blockEntityIfLoaded(level, BlockPos.of(connections[i]))
                                     instanceof BlockEntityPylonBase other

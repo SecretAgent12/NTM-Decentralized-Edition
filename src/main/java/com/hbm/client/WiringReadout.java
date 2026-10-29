@@ -9,6 +9,7 @@ import com.hbm.items.tool.ItemWrench;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
@@ -42,10 +43,14 @@ public final class WiringReadout {
 
     private static void push(LocalPlayer player, ItemStack stack, @Nullable Long stored, int id) {
         if (stored == null) return;
-        BlockPos start = BlockPos.of(stored);
-        double dx = player.getX() - start.getX();
-        double dy = player.getY() - start.getY();
-        double dz = player.getZ() - start.getZ();
+        // backport: Sable compat - from where the start is drawn: a pylon or anchor on a physics
+        // build sits in a plot millions of blocks away
+        Vec3 start =
+                com.hbm.backport.SubLevelLinks.toWorld(
+                        player.level(), Vec3.atLowerCornerOf(BlockPos.of(stored)));
+        double dx = player.getX() - start.x;
+        double dy = player.getY() - start.y;
+        double dz = player.getZ() - start.z;
         int metres = (int) Math.sqrt(dx * dx + dy * dy + dz * dz);
         InfoSystem.push(
                 new InfoSystem.InfoEntry(
