@@ -3,6 +3,12 @@
   "minVersion": "0.8.5",
   "package": "com.hbm.mixin.compat",
   "plugin": "com.hbm.mixin.compat.ClientCompatPlugin",
+  "mixins": [
+    "createfluid.CreateFlowSourceAccessor",
+    "createfluid.CreateFluidPropagatorMixin",
+    "createfluid.CreateFluidHandlerSourceMixin",
+    "createfluid.CreatePumpEndpointMixin"
+  ],
   "client": [
     "sodium.QuadTagMixin",
     "sodium.LightCacheMixin",

@@ -21,6 +21,12 @@ public final class ClientCompatPlugin implements IMixinConfigPlugin {
                             .getClassLoader()
                             .getResource("mezz/jei/neoforge/platform/FluidHelper.class")
                     != null;
+        // backport-fix: BF-016 Create's fluid pipes see NTM multiblock cells, only with Create
+        if (mixin.contains(".createfluid."))
+            return getClass()
+                            .getClassLoader()
+                            .getResource("com/simibubi/create/content/fluids/FluidPropagator.class")
+                    != null;
         // backport-fix: BF-069 Create's JEI Item Drain page, only with Create installed
         if (mixin.contains(".create."))
             return getClass()
