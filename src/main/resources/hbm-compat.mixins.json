@@ -7,7 +7,9 @@
     "createfluid.CreateFlowSourceAccessor",
     "createfluid.CreateFluidPropagatorMixin",
     "createfluid.CreateFluidHandlerSourceMixin",
-    "createfluid.CreatePumpEndpointMixin"
+    "createfluid.CreatePumpEndpointMixin",
+    "createitem.CreateCapManipulationCellMixin",
+    "createitem.CreateChuteCellMixin"
   ],
   "client": [
     "sodium.QuadTagMixin",
