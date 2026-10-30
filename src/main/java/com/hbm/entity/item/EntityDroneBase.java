@@ -48,6 +48,20 @@ public abstract class EntityDroneBase extends EntityCompat {
         this.targetX = x;
         this.targetY = y;
         this.targetZ = z;
+        this.lastGoal = null;
+    }
+
+    // backport: Sable compat - how the target moved this tick (a build carrying it), and where it was
+    private Vec3 goalDrift = new Vec3(0D, -0D, 0D);
+    private @org.jspecify.annotations.Nullable Vec3 lastGoal;
+
+    /**
+     * backport: Sable compat - the drone's speed against its target: the plain speed in the world,
+     * the speed past a moving build's point when the target rides one. What the crates, waypoints
+     * and request programs test for "has arrived" (was: the plain speed, never low on a flying build).
+     */
+    public double relativeSpeed() {
+        return getDeltaMovement().subtract(goalDrift).length();
     }
 
     @Override
@@ -99,11 +113,24 @@ public abstract class EntityDroneBase extends EntityCompat {
         }
 
         setDeltaMovement(Vec3.ZERO);
+        goalDrift = Vec3.ZERO;
 
         if (this.targetY != -1) {
-            Vec3 delta = new Vec3(targetX - getX(), targetY - getY(), targetZ - getZ());
-            double speed = Math.min(getSpeed(), delta.length());
-            setDeltaMovement(delta.normalize().scale(speed));
+            // backport: Sable compat - a target on a physics build is a plot point: fly to where the
+            // build is drawn now, and ride along with it (goalDrift) once there. A build that isn't
+            // loaded: hold position rather than head for the plot millions of blocks away.
+            Vec3 raw = new Vec3(targetX, targetY, targetZ);
+            Vec3 goal = com.hbm.backport.SubLevelLinks.toWorld(level(), raw);
+            boolean lost =
+                    goal == raw
+                            && dev.ryanhcode.sable.companion.SableCompanion.INSTANCE.isInPlotGrid(level(), raw);
+            if (!lost) {
+                if (lastGoal != null && goal != raw) goalDrift = goal.subtract(lastGoal);
+                lastGoal = goal;
+                Vec3 delta = goal.subtract(position());
+                double speed = Math.min(getSpeed(), delta.length());
+                setDeltaMovement(delta.normalize().scale(speed).add(goalDrift));
+            }
         }
 
         if (this.horizontalCollision) {

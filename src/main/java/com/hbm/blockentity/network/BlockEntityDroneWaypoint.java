@@ -21,6 +21,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import com.hbm.backport.storage.ValueInput;
 import com.hbm.backport.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 import com.hbm.client.ClientSyncRecovery;
 import com.hbm.packet.BeSyncTable;
@@ -76,19 +77,22 @@ public class BlockEntityDroneWaypoint extends BlockEntityCompat
             for (EntityDeliveryDrone drone :
                     ((ServerLevel) level)
                             .getEntitiesOfClass(EntityDeliveryDrone.class, new AABB(point))) {
-                if (drone.getDeltaMovement().length() >= 0.05) continue;
+                if (drone.relativeSpeed() >= 0.05) continue; // backport: Sable compat
                 drone.setTarget(next.getX() + 0.5, next.getY(), next.getZ() + 0.5);
             }
 
             if (level.getGameTime() % 2 == 0) {
+                // backport: Sable compat - the line between where both ends are drawn
+                Vec3 from = com.hbm.backport.SubLevelLinks.toWorld(level, Vec3.atCenterOf(point));
+                Vec3 to = com.hbm.backport.SubLevelLinks.toWorld(level, Vec3.atCenterOf(next));
                 ParticleCreators.droneLine(
                         level,
-                        point.getX() + 0.5,
-                        point.getY() + 0.5,
-                        point.getZ() + 0.5,
-                        next.getX() - point.getX(),
-                        next.getY() - point.getY(),
-                        next.getZ() - point.getZ(),
+                        from.x,
+                        from.y,
+                        from.z,
+                        to.x - from.x,
+                        to.y - from.y,
+                        to.z - from.z,
                         LINE_COLOUR,
                         LINE_PARTICLE_RANGE);
             }

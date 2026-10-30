@@ -86,7 +86,7 @@ public class EntityRequestDrone extends EntityDroneBase implements StoredItems {
         super.tick();
 
         if (!(level() instanceof ServerLevel server)) return;
-        if (getDeltaMovement().length() >= 0.01) return;
+        if (relativeSpeed() >= 0.01) return; // backport: Sable compat - against a moving target
 
         if (this.nextActionTimer > 0) {
             this.nextActionTimer--;

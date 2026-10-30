@@ -3,6 +3,8 @@
 
 package com.hbm.blockentity.network;
 
+import com.hbm.backport.SubLevelLinks;
+import com.hbm.backport.SubLevelRequestNet;
 import com.hbm.module.ModulePatternMatcher;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -51,17 +53,31 @@ public final class RequestNetwork {
         if (chunks == null) return Map.of();
 
         Map<BlockPos, PathNode> nodes = new HashMap<>();
-        int x = SectionPos.blockToSectionCoord(centre.getX());
-        int z = SectionPos.blockToSectionCoord(centre.getZ());
+        collect(
+                chunks,
+                nodes,
+                SectionPos.blockToSectionCoord(centre.getX()),
+                SectionPos.blockToSectionCoord(centre.getZ()),
+                chunkRange);
+        // Sable compat: also the nodes of the world / other builds drawn around this one
+        SubLevelRequestNet.otherSpaces(
+                level, centre, chunkRange, (x, z) -> collect(chunks, nodes, x, z, chunkRange));
 
+        return nodes;
+    }
+
+    private static void collect(
+            Long2ObjectMap<Map<BlockPos, PathNode>> chunks,
+            Map<BlockPos, PathNode> nodes,
+            int x,
+            int z,
+            int chunkRange) {
         for (int i = -chunkRange; i <= chunkRange; i++) {
             for (int j = -chunkRange; j <= chunkRange; j++) {
                 Map<BlockPos, PathNode> inChunk = chunks.get(ChunkPos.asLong(x + i, z + j));
                 if (inChunk != null) nodes.putAll(inChunk);
             }
         }
-
-        return nodes;
     }
 
     public static void updateEntries(MinecraftServer server) {
@@ -96,7 +112,14 @@ public final class RequestNetwork {
     public static boolean hasPath(ServerLevel level, BlockPos from, BlockPos to) {
         Vec3 start = Vec3.atCenterOf(from);
         Vec3 end = Vec3.atCenterOf(to);
-        if (start.distanceTo(end) > MAX_LINK_RANGE) return false;
+        double range = MAX_LINK_RANGE;
+        // Sable compat: a link between the world and a build, or two builds, in the world
+        if (SubLevelLinks.crosses(level, from, to)) {
+            start = SubLevelLinks.toWorld(level, start);
+            end = SubLevelLinks.toWorld(level, end);
+            range += SubLevelRequestNet.SWAY;
+        }
+        if (start.distanceTo(end) > range) return false;
 
         return level.clip(
                                 new ClipContext(

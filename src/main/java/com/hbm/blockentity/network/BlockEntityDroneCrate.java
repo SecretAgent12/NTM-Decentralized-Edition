@@ -92,7 +92,7 @@ public class BlockEntityDroneCrate extends BlockEntityMachineBase
             for (EntityDeliveryDrone drone :
                     server.getEntitiesOfClass(
                             EntityDeliveryDrone.class, new AABB(worldPosition.above()))) {
-                if (drone.getDeltaMovement().length() >= 0.05) continue;
+                if (drone.relativeSpeed() >= 0.05) continue; // backport: Sable compat
 
                 drone.setTarget(next.getX() + 0.5, next.getY(), next.getZ() + 0.5);
 
@@ -102,14 +102,27 @@ public class BlockEntityDroneCrate extends BlockEntityMachineBase
                 if (!sendingMode && !itemType) unloadFluid(server, drone);
             }
 
+            // backport: Sable compat - the line between where both ends are drawn
+            net.minecraft.world.phys.Vec3 from =
+                    com.hbm.backport.SubLevelLinks.toWorld(
+                            server,
+                            new net.minecraft.world.phys.Vec3(
+                                    worldPosition.getX() + 0.5,
+                                    worldPosition.getY() + 1.5,
+                                    worldPosition.getZ() + 0.5));
+            net.minecraft.world.phys.Vec3 to =
+                    com.hbm.backport.SubLevelLinks.toWorld(
+                            server,
+                            new net.minecraft.world.phys.Vec3(
+                                    next.getX() + 0.5, next.getY() + 0.5, next.getZ() + 0.5));
             ParticleCreators.droneLine(
                     server,
-                    worldPosition.getX() + 0.5,
-                    worldPosition.getY() + 1.5,
-                    worldPosition.getZ() + 0.5,
-                    next.getX() - worldPosition.getX(),
-                    next.getY() - worldPosition.getY() - 1,
-                    next.getZ() - worldPosition.getZ(),
+                    from.x,
+                    from.y,
+                    from.z,
+                    to.x - from.x,
+                    to.y - from.y,
+                    to.z - from.z,
                     LINE_COLOUR,
                     LINE_PARTICLE_RANGE);
         }

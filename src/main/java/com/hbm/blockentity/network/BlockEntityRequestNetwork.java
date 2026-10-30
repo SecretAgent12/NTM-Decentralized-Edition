@@ -3,6 +3,7 @@
 
 package com.hbm.blockentity.network;
 
+import com.hbm.backport.SubLevelLinks;
 import com.hbm.blockentity.BlockEntityMachineBase;
 import com.hbm.blockentity.network.RequestNetwork.PathNode;
 import com.hbm.particle.helper.ParticleCreators;
@@ -15,6 +16,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 public abstract class BlockEntityRequestNetwork extends BlockEntityMachineBase {
@@ -87,14 +89,21 @@ public abstract class BlockEntityRequestNetwork extends BlockEntityMachineBase {
     }
 
     private static void drawLink(ServerLevel server, BlockPos from, BlockPos to) {
+        Vec3 a = Vec3.atCenterOf(from);
+        Vec3 b = Vec3.atCenterOf(to);
+        // Sable compat: a link to another space is drawn between the points shown in the world
+        if (SubLevelLinks.crosses(server, from, to)) {
+            a = SubLevelLinks.toWorld(server, a);
+            b = SubLevelLinks.toWorld(server, b);
+        }
         ParticleCreators.droneLine(
                 server,
-                from.getX() + 0.5,
-                from.getY() + 0.5,
-                from.getZ() + 0.5,
-                (to.getX() - from.getX()) / 2D,
-                (to.getY() - from.getY()) / 2D,
-                (to.getZ() - from.getZ()) / 2D,
+                a.x,
+                a.y,
+                a.z,
+                (b.x - a.x) / 2D,
+                (b.y - a.y) / 2D,
+                (b.z - a.z) / 2D,
                 0x00ff00,
                 LINK_PARTICLE_RANGE);
     }
