@@ -8343,6 +8343,7 @@
   "jei.hbm.anvil_tier": "Tier %s",
   "jei.hbm.casting": "Crucible Casting",
   "jei.hbm.construction": "Construction",
+  "jei.hbm.fluid_containers": "Fluid Containers",
   "jei.hbm.consumption": "%sHE/t",
   "jei.hbm.consumption_padded": "%s HE/t",
   "jei.hbm.crucible_alloying": "Crucible Alloying",

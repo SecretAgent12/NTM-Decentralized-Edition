@@ -8647,6 +8647,7 @@
   "jei.hbm.anvil_tier": "Рівень %s",
   "jei.hbm.casting": "Лиття в тиглі",
   "jei.hbm.construction": "Будівництво",
+  "jei.hbm.fluid_containers": "Рідинні контейнери",
   "jei.hbm.consumption": "%sHE/t",
   "jei.hbm.consumption_padded": "%s HE/t",
   "jei.hbm.crucible_alloying": "Сплавлення в тиглі",

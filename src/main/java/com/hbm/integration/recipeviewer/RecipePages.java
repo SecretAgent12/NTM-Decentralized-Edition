@@ -68,6 +68,8 @@ public final class RecipePages {
     public static final BoilingPage BOILING = new BoilingPage();
     public static final SawmillPage SAWMILL = new SawmillPage();
     public static final AshpitPage ASHPIT = new AshpitPage();
+    // backport: GitHub #12, the NEI "Fluid Containers" page of 1.7.10
+    public static final FluidContainerPage FLUID_CONTAINERS = new FluidContainerPage();
 
     public static final GenericMachinePage<GenericRecipe> ASSEMBLY =
             GenericMachinePage.<GenericRecipe>builder(
@@ -401,6 +403,7 @@ public final class RecipePages {
                     ELECTROLYSER_FLUID,
                     ELECTROLYSER_METAL,
                     ASHPIT,
+                    FLUID_CONTAINERS,
                     FLUID_BREEDER,
                     FRACTION,
                     BOILING,

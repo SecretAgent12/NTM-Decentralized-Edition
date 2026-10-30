@@ -8684,6 +8684,7 @@
   "item.hbm.wrench_flipped.desc": "Гаечный ключ 2: Ключевание",
   "jei.hbm.casting": "Литьё в тигле",
   "jei.hbm.construction": "Строительство",
+  "jei.hbm.fluid_containers": "Жидкостные контейнеры",
   "jei.hbm.consumption": "%sHE/t",
   "jei.hbm.consumption_padded": "%s HE/t",
   "jei.hbm.crucible_alloying": "Сплавление в тигле",
