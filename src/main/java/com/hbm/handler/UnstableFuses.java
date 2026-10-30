@@ -281,6 +281,13 @@ public final class UnstableFuses {
                 if (owner == null || queue.isChanged(owner)) continue;
                 if (!InventoryOwnerAccess.of(owner).live(owner)) continue;
                 int slot = deltas.slots()[i];
+                // backport-fix: BF-117 a queued slot change can outlive its slot: the inventory
+                // shrank (a Sophisticated Storage chest broken or rearranged, an upgrade removed)
+                // before this tick. Re-read the whole source, as for a layout change, instead of
+                // touching a slot that is gone (GitHub #38).
+                if (slot != InventoryChanges.LAYOUT
+                        && (slot < 0 || slot >= InventorySlotAccess.of(source).size(source)))
+                    slot = InventoryChanges.LAYOUT;
                 if (slot != InventoryChanges.LAYOUT)
                     InventorySlotAccess.of(source).prepare(source, slot);
                 SlotSource canonical = ItemInteriors.canonicalSource(server, source);
@@ -288,7 +295,7 @@ public final class UnstableFuses {
                     source = canonical;
                     owner = canonical.inventoryOwner();
                 }
-                if (deltas.slots()[i] == InventoryChanges.LAYOUT) {
+                if (slot == InventoryChanges.LAYOUT) {
                     trackSource(queue, owner, source);
                     if (touched == null) touched = new ReferenceOpenHashSet<>();
                     touched.add(owner);

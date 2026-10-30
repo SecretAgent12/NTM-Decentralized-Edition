@@ -96,6 +96,8 @@ public abstract class MixinInventoryHandler extends ItemStackHandler
 
     @Override
     public void prepareStoredSlot(int slot) {
+        // backport-fix: BF-117 never past the end: Sophisticated resizes its slot list
+        if (slot < 0 || slot >= getSlots()) return;
         // backport: 26.x compared the persisted InventoryData stack with the live one and rewrote
         // the record when they differ. 1.21.1 persists per-slot NBT and updateSlotNbt is exactly
         // that compare-and-rewrite; saving and the change listeners follow it as in
