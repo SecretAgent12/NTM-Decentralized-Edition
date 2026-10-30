@@ -236,8 +236,16 @@ public class BlockEntitySoyuzLauncher extends BlockEntityMachineBase
 
             ItemStack stack = getItem(SLOT_DESIGNATOR);
             IDesignatorItem designator = (IDesignatorItem) stack.getItem();
-            soyuz.targetX = designator.getTargetX(stack);
-            soyuz.targetZ = designator.getTargetZ(stack);
+            // backport-fix: a target designated on an airship (Sable sub-level) is a plot column;
+            // the capsule comes down where that ship is at lift-off (SubLevelTargets)
+            net.minecraft.world.phys.Vec3 drop =
+                    com.hbm.backport.SubLevelTargets.column(
+                            level,
+                            designator.getTargetX(stack),
+                            designator.getTargetZ(stack),
+                            worldPosition.getY());
+            soyuz.targetX = net.minecraft.util.Mth.floor(drop.x);
+            soyuz.targetZ = net.minecraft.util.Mth.floor(drop.z);
             soyuz.setPayload(payload);
         }
 
@@ -273,8 +281,16 @@ public class BlockEntitySoyuzLauncher extends BlockEntityMachineBase
 
         ItemStack stack = getItem(SLOT_DESIGNATOR);
         IDesignatorItem designator = (IDesignatorItem) stack.getItem();
-        double dx = worldPosition.getX() - designator.getTargetX(stack);
-        double dz = worldPosition.getZ() - designator.getTargetZ(stack);
+        // backport-fix: on an airship (Sable sub-level) the launcher, or a target designated on one,
+        // is a plot position millions of blocks away: measure in the world (SubLevelTargets)
+        net.minecraft.world.phys.Vec3 from =
+                com.hbm.backport.SubLevelSpace.toWorld(
+                        level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ());
+        net.minecraft.world.phys.Vec3 to =
+                com.hbm.backport.SubLevelTargets.column(
+                        level, designator.getTargetX(stack), designator.getTargetZ(stack), from.y);
+        double dx = from.x - (to.x - 0.5D);
+        double dz = from.z - (to.z - 0.5D);
         return (int) Math.sqrt(dx * dx + dz * dz);
     }
 

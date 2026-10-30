@@ -35,6 +35,8 @@ public class ItemDesignator extends ItemCompat implements IDesignatorItem {
         BlockPos pos = context.getClickedPos();
         if (level.getBlockState(pos).getBlock() instanceof LaunchPad) return InteractionResult.PASS;
         if (level.isClientSide()) return InteractionResult.SUCCESS;
+        // Sable compat: a block on an airship is marked where the ship is now (SubLevelTargets)
+        pos = com.hbm.backport.SubLevelTargets.designated(level, pos);
         context.getItemInHand()
                 .set(
                         ModDataComponents.TARGET_DESIGNATOR.get(),

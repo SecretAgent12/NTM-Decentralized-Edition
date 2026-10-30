@@ -31,7 +31,8 @@ public class ItemDesignatorRange extends ItemDesignator {
                 && bhr.getType() == HitResult.Type.BLOCK
                 && !(level.getBlockState(bhr.getBlockPos()).getBlock() instanceof LaunchPad)) {
             if (!level.isClientSide()) {
-                BlockPos pos = bhr.getBlockPos();
+                // Sable compat: a block on an airship is marked where the ship is now
+                BlockPos pos = com.hbm.backport.SubLevelTargets.designated(level, bhr.getBlockPos());
                 player.getItemInHand(hand)
                         .set(
                                 ModDataComponents.TARGET_DESIGNATOR.get(),

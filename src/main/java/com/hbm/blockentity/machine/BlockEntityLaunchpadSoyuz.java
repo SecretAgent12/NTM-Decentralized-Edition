@@ -469,8 +469,16 @@ public class BlockEntityLaunchpadSoyuz extends BlockEntityMachineBase
             }
             ItemStack stack = getItem(1);
             IDesignatorItem designator = (IDesignatorItem) stack.getItem();
-            soyuz.targetX = designator.getTargetX(stack);
-            soyuz.targetZ = designator.getTargetZ(stack);
+            // backport-fix: a target designated on an airship (Sable sub-level) is a plot column;
+            // the capsule comes down where that ship is at lift-off (SubLevelTargets)
+            net.minecraft.world.phys.Vec3 drop =
+                    com.hbm.backport.SubLevelTargets.column(
+                            level,
+                            designator.getTargetX(stack),
+                            designator.getTargetZ(stack),
+                            worldPosition.getY());
+            soyuz.targetX = net.minecraft.util.Mth.floor(drop.x);
+            soyuz.targetZ = net.minecraft.util.Mth.floor(drop.z);
             soyuz.setPayload(payload);
         }
         setItem(0, ItemStack.EMPTY);

@@ -289,8 +289,20 @@ public class BlockEntityLaunchTable extends BlockEntityMachineBase
         float chip = ItemCustomMissile.getChip(missileStack).inaccuracy();
         float fins = multipart.fins() != null ? multipart.fins().inaccuracy() : 1.0F;
 
-        double scatterX = (core.getX() - targetX) * chip * fins;
-        double scatterZ = (core.getZ() - targetZ) * chip * fins;
+        // backport-fix: the scatter grows with the distance to the target. On an airship (Sable
+        // sub-level) the core, or a target designated on one, is a plot position millions of blocks
+        // away: measure from the world position of the core to the world position of the target, and
+        // aim the missile there (SubLevelTargets).
+        net.minecraft.world.phys.Vec3 from =
+                com.hbm.backport.SubLevelSpace.toWorld(
+                        getLevel(), core.getX() + 0.5D, core.getY() + LAUNCH_OFFSET, core.getZ() + 0.5D);
+        net.minecraft.world.phys.Vec3 aim =
+                com.hbm.backport.SubLevelTargets.column(getLevel(), targetX, targetZ, from.y);
+        targetX = net.minecraft.util.Mth.floor(aim.x);
+        targetZ = net.minecraft.util.Mth.floor(aim.z);
+
+        double scatterX = (net.minecraft.util.Mth.floor(from.x) - targetX) * chip * fins;
+        double scatterZ = (net.minecraft.util.Mth.floor(from.z) - targetZ) * chip * fins;
         float angle = getLevel().getRandom().nextFloat() * 360F;
         double cos = Math.cos(angle);
         double sin = Math.sin(angle);

@@ -49,6 +49,8 @@ public class ItemSatelliteDesignator extends ItemSatelliteChip {
                                 ClipContext.Block.OUTLINE,
                                 ClipContext.Fluid.NONE,
                                 player));
-        return hit.getBlockPos().relative(hit.getDirection());
+        // Sable compat: a block on an airship is aimed at where the ship is now (SubLevelTargets)
+        return com.hbm.backport.SubLevelTargets.designated(
+                level, hit.getBlockPos().relative(hit.getDirection()));
     }
 }
