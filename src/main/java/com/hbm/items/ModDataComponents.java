@@ -93,6 +93,9 @@ public final class ModDataComponents {
 
     public static RegistryHandle<DataComponentType<Long>> UNSTABLE_AT;
 
+    // backport-fix: BF-120 ticks a U-238m2 ingot has spent in a player's inventory (ItemUnstable)
+    public static RegistryHandle<DataComponentType<Integer>> UNSTABLE_TIMER;
+
     public static RegistryHandle<DataComponentType<Long>> BATTERY_CHARGE;
 
     public static RegistryHandle<DataComponentType<BatteryCharge>> MACHINE_BATTERY_STATE;
@@ -347,6 +350,13 @@ public final class ModDataComponents {
                         DataComponentType.<Long>builder()
                                 .persistent(Codec.LONG)
                                 .networkSynchronized(ByteBufCodecs.VAR_LONG)
+                                .build());
+        UNSTABLE_TIMER =
+                NeoForgeRegistrar.registerDataComponent(
+                        "unstable_timer",
+                        DataComponentType.<Integer>builder()
+                                .persistent(Codec.INT)
+                                .networkSynchronized(ByteBufCodecs.VAR_INT)
                                 .build());
         HOT_UNTIL =
                 NeoForgeRegistrar.registerDataComponent(

@@ -4,6 +4,7 @@
 package com.hbm.inventory.recipes.ingredient;
 
 import com.hbm.inventory.recipes.crafting.CraftingInputState;
+import com.hbm.items.ModDataComponents;
 import com.hbm.items.tool.ItemCraftingDegradation;
 import java.util.Objects;
 import com.hbm.backport.recipe.DataComponentMatchers;
@@ -31,7 +32,7 @@ public final class RecipeInputState {
 
     public static boolean accepts(
             Ingredient ingredient, ItemStack stack, DataComponentMatchers additional) {
-        if (stack.getComponentsPatch().isEmpty()) return true;
+        if (stack.getComponentsPatch().isEmpty() || onlyRecipeNeutral(stack)) return true;
         var custom = ingredient.getCustomIngredient();
         if (custom instanceof IngredientState state) return state.acceptsState(stack, additional);
         if (custom == null) return accepts(additional, stack);
@@ -40,6 +41,7 @@ public final class RecipeInputState {
             if (!stack.is(expected.getItem())) continue;
             boolean matched = true;
             for (var change : stack.getComponentsPatch().entrySet()) {
+                if (recipeNeutral(change.getKey())) continue;
                 if (!claims(additional, change.getKey(), stack)
                         && !Objects.equals(
                                 stack.get(change.getKey()), expected.get(change.getKey()))) {
@@ -59,9 +61,29 @@ public final class RecipeInputState {
     public static boolean accepts(
             DataComponentMatchers matchers, DataComponentMatchers additional, ItemStack stack) {
         for (var change : stack.getComponentsPatch().entrySet()) {
+            if (recipeNeutral(change.getKey())) continue;
             if (!claims(matchers, change.getKey(), stack)
                     && !claims(additional, change.getKey(), stack)) return false;
         }
+        return true;
+    }
+
+    /**
+     * backport-fix: BF-119 item state that never decides a recipe: the decay timer of an unstable
+     * item (U-238m2) and a battery's charge. In 1.7.10 both were NBT, which recipes ignored (only
+     * the item and its meta counted); here any changed component rejected the stack, so U-238m2
+     * (its timer starts in any inventory) never went into a recipe and a charged quantum battery
+     * neither: the plasma forge's FEnSU could not be made (GitHub #41, #43).
+     */
+    private static boolean recipeNeutral(DataComponentType<?> type) {
+        return type == ModDataComponents.UNSTABLE_TIMER.get()
+                || type == ModDataComponents.UNSTABLE_AT.get()
+                || type == ModDataComponents.BATTERY_CHARGE.get();
+    }
+
+    private static boolean onlyRecipeNeutral(ItemStack stack) {
+        for (var change : stack.getComponentsPatch().entrySet())
+            if (!recipeNeutral(change.getKey())) return false;
         return true;
     }
 
