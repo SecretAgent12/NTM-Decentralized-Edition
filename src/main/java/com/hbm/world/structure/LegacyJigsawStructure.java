@@ -44,7 +44,7 @@ public final class LegacyJigsawStructure extends JigsawStructure implements Colu
                                                                     structure ->
                                                                             structure.minHeight),
                                                     Codec.INT
-                                                            .optionalFieldOf("max_height", 128)
+                                                            .optionalFieldOf("max_height", SinglePieceStructure.NO_CEILING) // backport-fix: BF-124
                                                             .forGetter(
                                                                     structure ->
                                                                             structure.maxHeight))

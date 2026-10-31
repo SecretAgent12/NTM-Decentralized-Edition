@@ -23,6 +23,12 @@ import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
 import net.minecraft.world.level.levelgen.structure.structures.JigsawStructure;
 
 public final class SinglePieceStructure extends JigsawStructure implements ColumnBiome.SelfTested {
+    // backport-fix: BF-124 (GitHub #36) no height ceiling unless a structure sets one. 1.7.10's
+    // SpawnCondition clamps every start to y 128 by default, which there sat above any normal terrain;
+    // 1.21.1 mountains and terrain mods (FreeTerraForged: up to y 500) go higher, and the cap buried
+    // structures in the hillside. Structures with their own band (dish, oil rig, lighthouse...) keep it.
+    static final int NO_CEILING = 0x7FFF_FFFF;
+
     public static final MapCodec<SinglePieceStructure> CODEC =
             RecordCodecBuilder.<SinglePieceStructure>mapCodec(
                             instance ->
@@ -44,7 +50,7 @@ public final class SinglePieceStructure extends JigsawStructure implements Colum
                                                                     structure ->
                                                                             structure.minHeight),
                                                     Codec.INT
-                                                            .optionalFieldOf("max_height", 128)
+                                                            .optionalFieldOf("max_height", NO_CEILING)
                                                             .forGetter(
                                                                     structure ->
                                                                             structure.maxHeight),
