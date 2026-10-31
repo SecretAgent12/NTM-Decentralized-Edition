@@ -12,7 +12,7 @@ import com.hbm.capability.ICapabilityBlock;
 import com.hbm.capability.MachineCaps;
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.interfaces.IToolable;
-import com.hbm.items.machine.ItemStamp;
+import com.hbm.inventory.recipes.StampTypes;
 import com.hbm.sound.ModSounds;
 import com.hbm.util.BobMathUtil;
 import com.mojang.serialization.MapCodec;
@@ -118,7 +118,7 @@ public class MachineConveyorPress extends BlockMultiblockCore
         }
 
         ItemStack held = player.getMainHandItem();
-        if (!(held.getItem() instanceof ItemStamp)
+        if (!StampTypes.isStamp(held) // backport-fix: BF-128
                 || !press.getItem(BlockEntityConveyorPress.SLOT_STAMP).isEmpty()) {
             return InteractionResult.PASS;
         }

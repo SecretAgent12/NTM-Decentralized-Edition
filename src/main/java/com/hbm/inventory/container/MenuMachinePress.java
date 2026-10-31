@@ -7,7 +7,7 @@ import com.hbm.blockentity.machine.BlockEntityMachinePress;
 import com.hbm.handler.FuelHandler;
 import com.hbm.inventory.slot.SlotFiltered;
 import com.hbm.inventory.slot.SlotRecipeOutput;
-import com.hbm.items.machine.ItemStamp;
+import com.hbm.inventory.recipes.StampTypes;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
@@ -26,14 +26,14 @@ public class MenuMachinePress extends BlockEntityMenu<BlockEntityMachinePress> {
                         BlockEntityMachinePress.SLOT_STAMP,
                         80,
                         17,
-                        stack -> stack.getItem() instanceof ItemStamp));
+                        stack -> StampTypes.isStamp(stack))); // backport-fix: BF-128
         addSlot(
                 new SlotFiltered(
                         be,
                         BlockEntityMachinePress.SLOT_INPUT,
                         80,
                         53,
-                        stack -> !(stack.getItem() instanceof ItemStamp)));
+                        stack -> !StampTypes.isStamp(stack)));
         addSlot(
                 new SlotRecipeOutput(
                         playerInv.player, be, BlockEntityMachinePress.SLOT_OUTPUT, 140, 35));
@@ -74,7 +74,7 @@ public class MenuMachinePress extends BlockEntityMenu<BlockEntityMachinePress> {
                                         BlockEntityMachinePress.SLOT_STORAGE_START,
                                         machineEnd,
                                         false);
-                    if (stack.getItem() instanceof ItemStamp)
+                    if (StampTypes.isStamp(stack))
                         return moveItemStackTo(
                                         stack,
                                         BlockEntityMachinePress.SLOT_STAMP,

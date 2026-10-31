@@ -9,8 +9,7 @@ import com.hbm.blockentity.BlockEntityMachineBase;
 import com.hbm.blocks.ModBlockEntities;
 import com.hbm.entity.item.EntityMovingItem;
 import com.hbm.inventory.recipes.PressRecipes;
-import com.hbm.items.machine.ItemStamp.StampType;
-import com.hbm.items.machine.ItemStamp;
+import com.hbm.inventory.recipes.StampTypes;
 import com.hbm.packet.SyncField;
 import com.hbm.packet.SyncSlots;
 import com.hbm.packet.SyncUnitSchema;
@@ -174,8 +173,8 @@ public class BlockEntityConveyorPress extends BlockEntityMachineBase
     }
 
     private ItemStack pressed(ItemStack input) {
-        StampType type = ItemStamp.typeOf(getItem(SLOT_STAMP));
-        return type == null ? ItemStack.EMPTY : PressRecipes.INSTANCE.getOutput(input, type);
+        // backport-fix: BF-128 by the stamp item, with every stamp type it has
+        return PressRecipes.INSTANCE.getOutput(input, getItem(SLOT_STAMP));
     }
 
     public boolean canRetract() {
@@ -184,7 +183,7 @@ public class BlockEntityConveyorPress extends BlockEntityMachineBase
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
-        return stack.getItem() instanceof ItemStamp;
+        return StampTypes.isStamp(stack); // backport-fix: BF-128
     }
 
     @Override

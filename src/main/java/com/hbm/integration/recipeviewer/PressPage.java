@@ -6,7 +6,7 @@ package com.hbm.integration.recipeviewer;
 import com.hbm.blocks.ModBlocks;
 import com.hbm.inventory.recipes.PressRecipe;
 import com.hbm.inventory.recipes.PressRecipes;
-import com.hbm.items.machine.ItemStamp;
+import com.hbm.inventory.recipes.StampTypes;
 import java.util.ArrayList;
 import java.util.List;
 import com.hbm.backport.client.gui.GuiGraphicsExtractor;
@@ -48,7 +48,8 @@ public final class PressPage extends TablePage<PressRecipe> {
         page.input(48, 42).items(recipe.input().displayStacks());
 
         List<ItemStack> stamps = new ArrayList<>();
-        for (Item stamp : ItemStamp.stampsOf(recipe.type())) stamps.add(new ItemStack(stamp));
+        // backport-fix: BF-128 NTM's stamps of the type plus the items tagged hbm:stamps/<type>
+        for (Item stamp : StampTypes.stampsOf(recipe.stamp())) stamps.add(new ItemStack(stamp));
         page.input(48, 6).items(stamps);
         page.output(111, 24).item(recipe.output());
     }

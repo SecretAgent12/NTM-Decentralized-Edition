@@ -12,8 +12,7 @@ import com.hbm.inventory.container.MenuMachineEPress;
 import com.hbm.inventory.recipes.PressRecipe;
 import com.hbm.inventory.recipes.PressRecipes;
 import com.hbm.inventory.recipes.loader.Outputs;
-import com.hbm.items.machine.ItemStamp.StampType;
-import com.hbm.items.machine.ItemStamp;
+import com.hbm.inventory.recipes.StampTypes;
 import com.hbm.items.machine.upgrade.UpgradeManager;
 import com.hbm.items.machine.upgrade.UpgradeType;
 import com.hbm.packet.SyncField;
@@ -102,8 +101,9 @@ public class BlockEntityMachineEPress extends BlockEntityMachineBase
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
         return switch (slot) {
-            case SLOT_STAMP -> stack.getItem() instanceof ItemStamp;
-            case SLOT_INPUT -> !(stack.getItem() instanceof ItemStamp);
+            // backport-fix: BF-128 any item with a stamp type (StampTypes), not only NTM stamps
+            case SLOT_STAMP -> StampTypes.isStamp(stack);
+            case SLOT_INPUT -> !StampTypes.isStamp(stack);
             case SLOT_OUTPUT -> false;
             default -> true;
         };
@@ -183,9 +183,8 @@ public class BlockEntityMachineEPress extends BlockEntityMachineBase
     }
 
     private @Nullable PressRecipe currentRecipe() {
-        StampType stampType = ItemStamp.typeOf(inventory.get(SLOT_STAMP));
-        if (stampType == null) return null;
-        return PressRecipes.INSTANCE.getRecipe(inventory.get(SLOT_INPUT), stampType);
+        return PressRecipes.INSTANCE.getRecipe(
+                inventory.get(SLOT_INPUT), inventory.get(SLOT_STAMP)); // backport-fix: BF-128
     }
 
     private void craftItem() {

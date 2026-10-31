@@ -168,7 +168,7 @@ when you edit them with `replaceInput` / `replaceOutput`.
 
 | Machine | Field | Values seen in NTM's own recipes |
 |---|---|---|
-| `press` | `stamp` | `flat`, `plate`, `wire`, `circuit`, `c9`, `c50`, `printing1`…`printing8` |
+| `press` | `stamp` | `flat`, `plate`, `wire`, `circuit`, `c9`, `c50`, `printing1`…`printing8`, or a new type (see [Press stamps](#press-stamps)) |
 | `silex` | `laser_strength` | `ir`, `visible`, `uv`, `gamma` |
 | `silex` | `fluid_consumed`, `fluid_produced` | mB, e.g. `100`, `900` |
 | `crystallizer` | `productivity` | `0.05`…`0.3` |
@@ -210,6 +210,32 @@ ServerEvents.tags('item', event => {
     event.add('c:ingots/steel', 'mymod:steel_ingot')
 })
 ```
+
+## Press stamps
+
+A press recipe asks for a stamp type (`stamp: 'plate'`), and any item with that type works in the stamp
+slot of the press, the electric press and the conveyor press. NTM's own stamps have their type built in;
+any other item gets one from the item tag `hbm:stamps/<type>`. So a tag is all it takes to make another
+mod's item a stamp, or to add a new stamp type:
+
+```js
+ServerEvents.tags('item', event => {
+    // AE2's logic press also works as NTM's circuit stamp
+    event.add('hbm:stamps/circuit', 'ae2:logic_processor_press')
+    // a new stamp type for the recipe below
+    event.add('hbm:stamps/ae2_silicon', 'ae2:silicon_press')
+})
+
+ServerEvents.recipes(event => {
+    event.recipes.hbm.press('ae2:printed_silicon', ['#c:silicon'])
+        .merge({ stamp: 'ae2_silicon' })
+        .id('kubejs:press_printed_silicon')
+})
+```
+
+Type names are lowercase (`a-z`, `0-9`, `_`, `-`, `.`, `/`). Only NTM's stamps wear out; an item without
+durability presses forever. JEI and REI show tagged items next to NTM's stamps on the press page. A
+datapack does the same with `data/hbm/tags/item/stamps/<type>.json`.
 
 ## Data files (datapacks)
 
