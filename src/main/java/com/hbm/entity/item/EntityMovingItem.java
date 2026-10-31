@@ -41,6 +41,7 @@ public class EntityMovingItem extends EntityMovingConveyorObject
 
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
         builder.define(STACK, ItemStack.EMPTY);
     }
 

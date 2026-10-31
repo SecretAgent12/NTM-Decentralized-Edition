@@ -48,7 +48,9 @@ public class EntityMovingPackage extends EntityMovingConveyorObject
     }
 
     @Override
-    protected void defineSynchedData(SynchedEntityData.Builder builder) {}
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+    }
 
     public void setItemStacks(List<ItemStack> stacks) {
         this.contents = new ArrayList<>();

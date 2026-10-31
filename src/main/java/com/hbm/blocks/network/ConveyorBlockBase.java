@@ -146,7 +146,16 @@ public abstract class ConveyorBlockBase extends BlockCompat implements IConveyor
 
         EntityMovingItem moving = new EntityMovingItem(level);
         moving.setItemStack(item.getItem().copy());
-        Vec3 snap = getClosestSnappingPosition(level, pos, entity.position());
+        // backport-fix: BF-121 a belt on a physics build (Sable) sits in the build's plot while
+        // the item landing on it is in the world: snap it in the belt's own space. Snapped in world
+        // coordinates the item was clamped to the belt's edge, fell off at once and landed again,
+        // hopping along the belt forever (GitHub #39)
+        Vec3 at = entity.position();
+        var frame = com.hbm.backport.SubLevelLinks.frameOf(level, pos);
+        if (frame != null
+                && dev.ryanhcode.sable.companion.SableCompanion.INSTANCE.getContaining(level, at)
+                        == null) at = frame.logicalPose().transformPositionInverse(at);
+        Vec3 snap = getClosestSnappingPosition(level, pos, at);
         moving.moveTo(snap.x, snap.y, snap.z, 0F, 0F);
         level.addFreshEntity(moving);
 
