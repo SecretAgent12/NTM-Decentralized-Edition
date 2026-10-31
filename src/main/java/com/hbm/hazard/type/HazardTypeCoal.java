@@ -4,7 +4,6 @@
 package com.hbm.hazard.type;
 
 import com.hbm.config.RadiationConfig;
-import com.hbm.data.RadiationData;
 import com.hbm.extprop.HbmLivingProps;
 import com.hbm.handler.ArmorUtil;
 import com.hbm.hazard.HazardClass;
@@ -23,7 +22,7 @@ public class HazardTypeCoal implements IHazardType {
 
     @Override
     public void onUpdate(LivingEntity target, double level, ItemStack stack) {
-        if (RadiationData.DISABLE_COAL.get()) return;
+        if (RadiationConfig.coalDustDisabled() /* backport-fix: BF-126 */) return;
         if (!ArmorRegistry.hasProtection(target, EquipmentSlot.HEAD, HazardClass.PARTICLE_COARSE)) {
             HbmLivingProps.incrementBlackLung(
                     target,

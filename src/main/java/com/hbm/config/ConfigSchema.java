@@ -260,6 +260,16 @@ public final class ConfigSchema {
                     1,
                     Integer.MAX_VALUE,
                     "Ticks between item/inventory hazard applications.");
+    // backport-fix: BF-126 (GitHub #34) 1.7.10's HAZ_01_disableCoaldust back as a config line; the
+    // hazards datapack value disable_coal keeps working, either one turns coal dust off
+    public static final ConfigEntry<Boolean> DISABLE_COAL_DUST =
+            bool(
+                    Domain.RUNTIME,
+                    "radiation",
+                    "disable_coal_dust",
+                    false,
+                    "When enabled, all coal dust hazards are disabled (the hazards datapack value "
+                            + "disable_coal does the same for one world)");
 
     public static final ConfigEntry<Integer> LIMIT_EXPLOSION_LIFESPAN =
             integer(
@@ -568,6 +578,7 @@ public final class ConfigSchema {
                     ENABLE_528_BOSNIA_SIMULATOR,
                     RAD_TICK_RATE,
                     HAZARD_RATE,
+                    DISABLE_COAL_DUST,
                     LIMIT_EXPLOSION_LIFESPAN,
                     BLAST_SPEED,
                     MK5_BLAST_TIME,

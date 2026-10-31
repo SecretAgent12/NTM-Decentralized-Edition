@@ -4,6 +4,7 @@
 package com.hbm.extprop;
 
 import com.hbm.advancement.HbmCriteria;
+import com.hbm.config.RadiationConfig;
 import com.hbm.data.RadiationData;
 import com.hbm.entity.mob.EntityDuck;
 import com.hbm.lib.Library;
@@ -166,7 +167,7 @@ public final class HbmLivingProps {
     }
 
     public int blackLung() {
-        return RadiationData.DISABLE_COAL.get() ? 0 : blacklung;
+        return RadiationConfig.coalDustDisabled() /* backport-fix: BF-126 */ ? 0 : blacklung;
     }
 
     public List<ContaminationEffect> getCont() {
@@ -312,7 +313,7 @@ public final class HbmLivingProps {
     }
 
     public static void setBlackLung(LivingEntity entity, int bl) {
-        if (RadiationData.DISABLE_COAL.get()) return;
+        if (RadiationConfig.coalDustDisabled() /* backport-fix: BF-126 */) return;
         HbmLivingProps p = getData(entity);
         p.blacklung = bl;
         if (bl >= maxBlacklung) {
@@ -324,7 +325,7 @@ public final class HbmLivingProps {
     }
 
     public static void incrementBlackLung(LivingEntity entity, int bl) {
-        if (RadiationData.DISABLE_COAL.get()) return;
+        if (RadiationConfig.coalDustDisabled() /* backport-fix: BF-126 */) return;
         setBlackLung(entity, getBlackLung(entity) + bl);
         informGasHazard(entity, "info.coaldust");
     }
