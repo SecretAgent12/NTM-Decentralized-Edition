@@ -3,6 +3,7 @@
 
 package com.hbm.inventory.recipes.anvil;
 
+import com.hbm.config.BalanceConfig;
 import com.hbm.inventory.recipes.ingredient.CountIngredient;
 import com.hbm.inventory.recipes.ingredient.RecipeInputState;
 import com.hbm.inventory.recipes.loader.GenericRecipe;
@@ -74,6 +75,15 @@ public class AnvilSmithingRecipe extends GenericRecipe {
                 recipe.shapeless = extras.shapeless();
                 recipe.shapeTag = extras.shapeTag().orElse(null);
             };
+    // backport-fix: BF-123 Less Bullshit Mode's "all anvil recipes at tier 1" also covers smithing,
+    // as in 1.7.10 (AnvilSmithingRecipe constructor); NEXT only unlocked construction recipes. Set
+    // when the datapack is read, like AnvilConstructionRecipe, so clients get the unlocked tier.
+    private static final BiConsumer<AnvilSmithingRecipe, Extras> APPLY_DATAPACK_EXTRAS =
+            (recipe, extras) -> {
+                APPLY_EXTRAS.accept(recipe, extras);
+                if (!BalanceConfig.enableLBSMUnlockAnvil || !BalanceConfig.enableLBSM) return;
+                recipe.tier = AnvilConstructionRecipe.unlockedTier(recipe.tier, true);
+            };
     private static final Function<AnvilSmithingRecipe, Extras> EXTRACT_EXTRAS =
             recipe ->
                     new Extras(
@@ -83,7 +93,10 @@ public class AnvilSmithingRecipe extends GenericRecipe {
                             Optional.ofNullable(recipe.shapeTag));
     public static final MapCodec<AnvilSmithingRecipe> MAP_CODEC =
             GenericRecipe.mapCodec(
-                    AnvilSmithingRecipe::new, EXTRAS_MAP_CODEC, APPLY_EXTRAS, EXTRACT_EXTRAS);
+                    AnvilSmithingRecipe::new,
+                    EXTRAS_MAP_CODEC,
+                    APPLY_DATAPACK_EXTRAS,
+                    EXTRACT_EXTRAS);
     public static final StreamCodec<RegistryFriendlyByteBuf, AnvilSmithingRecipe> STREAM_CODEC =
             GenericRecipe.streamCodec(
                     AnvilSmithingRecipe::new, EXTRAS_STREAM_CODEC, APPLY_EXTRAS, EXTRACT_EXTRAS);
