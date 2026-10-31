@@ -136,8 +136,22 @@ dependencies {
     }
     // Sable (Create: Aeronautics) API stub for the optional sub-level compat mixin
     compileOnly sourceSets.sableStubs.output
-    // JEI for 1.21.1 NeoForge (19.x): recipe pages, ghost ingredients, lookups (com.hbm.integration.jei)
-    implementation "curse.maven:jei-238222:8964989"
+    // Recipe viewers. JEI 19.x for 1.21.1 NeoForge (com.hbm.integration.jei) and REI 16.x
+    // (com.hbm.integration.rei) show the same recipe pages (com.hbm.integration.recipeviewer); both are
+    // always compiled against (REI's API also needs Architectury and Cloth Config's basic-math).
+    // Dev runs get one of them (gradle.properties: dev_viewer=jei|rei, REI when unset - GitHub #37,
+    // AE2 autocrafting is tested with REI)
+    compileOnly "curse.maven:jei-238222:8964989"
+    compileOnly "maven.modrinth:rei:b8gfS9Je"                           // REI 16.0.799+neoforge
+    compileOnly "maven.modrinth:lhGA9TYQ:1IiqEQGl"                      // Architectury API 13.0.11+neoforge
+    compileOnly "maven.modrinth:9s6osm5g:izKINKFg"                      // Cloth Config 15.0.140+neoforge
+    if (project.findProperty('dev_viewer') == 'jei') {
+        runtimeOnly "curse.maven:jei-238222:8964989"
+    } else {
+        runtimeOnly "maven.modrinth:rei:b8gfS9Je"
+        runtimeOnly "maven.modrinth:lhGA9TYQ:1IiqEQGl"
+        runtimeOnly "maven.modrinth:9s6osm5g:izKINKFg"
+    }
     implementation "curse.maven:balm-531761:8969738"
     implementation "curse.maven:trashslot-235577:8163135"
     implementation "curse.maven:mekanism-268560:7904058"
