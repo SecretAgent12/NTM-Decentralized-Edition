@@ -226,8 +226,11 @@ public final class NuclearTechNeoForge {
                     if (ModList.get().isLoaded("simulated"))
                         com.hbm.backport.SimulatedCompat.register();
                     // backport: Create's Engineer's Goggles as a helmet mod (CreateGogglesCompat)
-                    if (ModList.get().isLoaded("create"))
+                    if (ModList.get().isLoaded("create")) {
                         com.hbm.integration.create.CreateGogglesCompat.register();
+                        // backport-fix: BF-127 hanging NTM blocks ride Create contraptions
+                        com.hbm.integration.create.CreateContraptionCompat.register();
+                    }
                     if (ModList.get().isLoaded("sophisticatedstorage")) {
                         HazardSystem.addTransformer(new HazardTransformerSophisticatedStorage());
                         com.hbm.neoforge.inventory.SophisticatedItemInteriors.registerStorage();
