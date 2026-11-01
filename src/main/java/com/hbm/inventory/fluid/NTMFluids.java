@@ -436,7 +436,9 @@ public final class NTMFluids {
     }
 
     public static String spritePath(Fluid fluid) {
-        return legacyName(fluid).toLowerCase(Locale.US);
+        // backport-fix: BF-129 a fluid NTM doesn't know (another mod's, or a removed addon's) has no
+        // legacy name; "none" gives callers a sprite that isn't there, so they fall back to empty
+        return java.util.Objects.requireNonNullElse(legacyName(fluid), "none").toLowerCase(Locale.US);
     }
 
     public static int legacyId(@Nullable Fluid fluid) {
