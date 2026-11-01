@@ -1020,6 +1020,14 @@
     "hbm:rail_large_switch",
     "hbm:rail_large_switch_flipped",
     "hbm:rail_narrow_straight",
-    "hbm:rail_narrow_curve"
+    "hbm:rail_narrow_curve",
+    {
+      "id": "hbm:create_motor",
+      "required": false
+    },
+    {
+      "id": "hbm:create_motor_desh",
+      "required": false
+    }
   ]
 }

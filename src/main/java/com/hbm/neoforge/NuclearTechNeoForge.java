@@ -98,6 +98,10 @@ public final class NuclearTechNeoForge {
         NeoForgeServerEvents.install();
         NeoForgeRegistrar.subscribe(modBus);
         NuclearTech.init();
+        // backport: Create electric motors (com.hbm.integration.create.motor); registered here, with
+        // NTM's own blocks, and only with Create installed
+        if (ModList.get().isLoaded("create"))
+            com.hbm.integration.create.motor.CreateMotors.register();
         NeoForge.EVENT_BUS.addListener(CapabilityInvalidation::onLevelTick);
         NeoForge.EVENT_BUS.addListener(ArmorModChestLootNeoForge::onLootTableLoad);
         modBus.addListener(

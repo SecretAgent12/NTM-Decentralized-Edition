@@ -1,0 +1,8 @@
+{
+  "buffer_ticks": 2,
+  "efficiency": 0.85,
+  "he_per_su": 0.1,
+  "idle_fraction": 0.02,
+  "restart_delay": 40,
+  "undervoltage_ticks": 5
+}

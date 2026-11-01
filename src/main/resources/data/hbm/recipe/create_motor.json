@@ -1,0 +1,33 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "create"
+    }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "S": {
+      "item": "create:shaft"
+    },
+    "P": {
+      "tag": "c:plates/steel"
+    },
+    "M": {
+      "item": "hbm:motor"
+    },
+    "C": {
+      "item": "create:andesite_casing"
+    }
+  },
+  "pattern": [
+    " S ",
+    "PMP",
+    "PCP"
+  ],
+  "result": {
+    "count": 1,
+    "id": "hbm:create_motor"
+  }
+}

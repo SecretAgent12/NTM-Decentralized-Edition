@@ -7,7 +7,9 @@ package com.hbm.integration.ponder;
 import com.hbm.lib.Library;
 import net.createmod.ponder.api.registration.PonderPlugin;
 import net.createmod.ponder.api.registration.PonderSceneRegistrationHelper;
+import net.createmod.ponder.api.registration.PonderTagRegistrationHelper;
 import net.minecraft.resources.ResourceLocation;
+import net.neoforged.fml.ModList;
 
 /** backport: NTM's Ponder scenes. Schematics: assets/hbm/ponder/*.nbt, texts: hbm.ponder.* keys. */
 public final class NTMPonderPlugin implements PonderPlugin {
@@ -27,5 +29,14 @@ public final class NTMPonderPlugin implements PonderPlugin {
                 .addStoryBoard("firebox_boiler", NTMPonderScenes::fireboxBoiler);
         helper.forComponents(firebox, furnace)
                 .addStoryBoard("firebox_furnace", NTMPonderScenes::fireboxFurnace);
+        // backport: Create electric motors, only with Create (their blocks exist only then)
+        if (ModList.get().isLoaded("create"))
+            com.hbm.integration.create.motor.CreateMotorScenes.registerScenes(helper);
+    }
+
+    @Override
+    public void registerTags(PonderTagRegistrationHelper<ResourceLocation> helper) {
+        if (ModList.get().isLoaded("create"))
+            com.hbm.integration.create.motor.CreateMotorScenes.registerTags(helper);
     }
 }

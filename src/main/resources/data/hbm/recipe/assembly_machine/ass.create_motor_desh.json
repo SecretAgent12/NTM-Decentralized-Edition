@@ -1,0 +1,34 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "create"
+    }
+  ],
+  "type": "hbm:assembly_machine",
+  "duration": 200,
+  "input_items": [
+    {
+      "ingredient": "hbm:motor_desh"
+    },
+    {
+      "count": 4,
+      "ingredient": "hbm:plate_desh"
+    },
+    {
+      "ingredient": "create:brass_casing"
+    },
+    {
+      "ingredient": "create:shaft"
+    },
+    {
+      "count": 2,
+      "ingredient": "hbm:coil_tungsten"
+    }
+  ],
+  "order": 22273,
+  "output_items": [
+    "hbm:create_motor_desh"
+  ],
+  "power": 100
+}

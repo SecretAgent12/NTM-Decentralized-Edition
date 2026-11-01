@@ -1,6 +1,6 @@
 modLoader = "javafml"
 loaderVersion = "[1,)"
-license = "LGPL-3.0-only"
+license = "LGPL-3.0-only AND LicenseRef-NTM-DE-Assets"
 
 [[mods]]
 modId = "hbm"
@@ -14,7 +14,7 @@ description = '''HBM's Nuclear Tech Mod on Minecraft 1.21.1 / NeoForge: a backpo
 
 Unofficial. Not affiliated with HbmMods or Warfactory - report bugs of this build to the backport, not upstream.'''
 authors = "HbmMods (The Bobcat), movblock, SecretAgent12"
-credits = "HbmMods (The Bobcat) and contributors: the original Hbm's Nuclear Tech Mod. movblock and Warfactory: ntm-next, the 26.2 port this build is based on. SecretAgent12: backport to Minecraft 1.21.1 / NeoForge, Sable / Create: Aeronautics compatibility, integrations. Raw ore textures: MrNorwood (thorium, cobalt, lithium, schrabidium); Mr. Morgan and NuclearGrandFather (aluminium, beryllium, lead, plutonium, titanium, tungsten, uranium)."
+credits = "HbmMods (The Bobcat) and contributors: the original Hbm's Nuclear Tech Mod. movblock and Warfactory: ntm-next, the 26.2 port this build is based on. SecretAgent12: backport to Minecraft 1.21.1 / NeoForge, Sable / Create: Aeronautics compatibility, integrations. Electric motor model and textures: NuclearGrandFather. Raw ore textures: MrNorwood (thorium, cobalt, lithium, schrabidium); Mr. Morgan and NuclearGrandFather (aluminium, beryllium, lead, plutonium, titanium, tungsten, uranium)."
 displayTest = "IGNORE_ALL_VERSION"
 enumExtensions = "META-INF/enumextensions.json"
 

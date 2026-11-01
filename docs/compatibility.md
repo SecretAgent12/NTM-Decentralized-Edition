@@ -12,8 +12,9 @@ the other mod is installed.
 | Mod | Status | What you get |
 |---|:---:|---|
 | **Create: Aeronautics / Sable** | ✅ | Machines, cables, pipes and multiblocks work on airships and other physics builds |
-| **Create** | ✅ | Plays nicely: NTM bundles the same Flywheel and Ponder that Create 6 uses. From 1.0.0-beta.5: Engineer's Goggles go into an NTM helmet (helmet or extra slot of the armor modification table) and work from there |
+| **Create** | ✅ | Plays nicely: NTM bundles the same Flywheel and Ponder that Create 6 uses. From 1.0.0-beta.5: Engineer's Goggles go into an NTM helmet (helmet or extra slot of the armor modification table) and work from there. Electric motors turn NTM's HE into rotation: the Electric Motor (64 RPM, 1024 SU) and the Desh Electric Motor (128 RPM, 8192 SU) pay HE for the load on their shaft, about what an NTM machine pays for the same work. Radio torches, drone waypoints, spotlights and charges ride contraptions |
 | **JEI** | ✅ | Every NTM recipe type |
+| **REI** | ✅ | Every NTM recipe type, the same pages as in JEI |
 | **Jade** | ✅ | Energy and fluid info; looking at any part of a multiblock shows its core |
 | **The One Probe** | ✅ | Same as Jade |
 | **WTHIT** | ✅ | Same as Jade (from 1.0.0-beta.4) |
@@ -27,7 +28,7 @@ the other mod is installed.
 | **ImmediatelyFast, Gnetum** | ✅ | From 1.0.0-beta.4. Older versions: machine GUIs could turn dark or black |
 | **ScalableLux** | ✅ | Recommended (0.3.x): relights nuke craters much faster. Not together with Create: Aeronautics, see below |
 | **Iris / shaders** | ✅ | From 1.0.0-beta.10. Iris 1.8.14 or newer with Sodium 0.8. Install Colorwheel as well, see [Shaders](#shaders) |
-| **REI, Compact Storage** | ❌ | Not planned for now |
+| **Compact Storage** | ❌ | Not planned for now |
 | **Trinkets** | ❌ | No NeoForge 1.21.1 version exists |
 
 ## Shaders

@@ -338,3 +338,39 @@ SPDX-FileCopyrightText = "2026 SecretAgent12"
 SPDX-License-Identifier = "LGPL-3.0-only"
 
 # ---- end of generated block ----
+
+# ---- NTM: DE original assets ----
+
+# Create electric motors: model and textures (LicenseRef-NTM-DE-Assets)
+[[annotations]]
+path = [
+    "**/src/main/resources/assets/hbm/models/block/create_motor/**",
+    "**/src/main/resources/assets/hbm/textures/block/create_motor.png",
+    "**/src/main/resources/assets/hbm/textures/block/create_motor_desh.png",
+]
+precedence = "override"
+SPDX-FileCopyrightText = "2026 SecretAgent12"
+SPDX-License-Identifier = "LicenseRef-NTM-DE-Assets"
+
+# Create electric motors: blockstates, model and item definitions, loot tables, recipes
+[[annotations]]
+path = [
+    "**/src/main/resources/assets/hbm/blockstates/create_motor*.json",
+    "**/src/main/resources/assets/hbm/models/block/create_motor*.json",
+    "**/src/main/resources/assets/hbm/models/item/create_motor*.json",
+    "**/src/main/resources/assets/hbm/items/create_motor*.json",
+    "**/src/main/resources/data/hbm/loot_table/blocks/create_motor*.json",
+    "**/src/main/resources/data/hbm/recipe/create_motor.json",
+    "**/src/main/resources/data/hbm/recipe/assembly_machine/ass.create_motor_desh.json",
+    "**/src/main/resources/data/hbm/hbm/machine_config/create_motor*.json",
+]
+precedence = "override"
+SPDX-FileCopyrightText = "2026 SecretAgent12"
+SPDX-License-Identifier = "LGPL-3.0-only"
+
+# Ponder schematics: all made for NTM: DE (firebox scenes, Create motors, ...)
+[[annotations]]
+path = "**/src/main/resources/assets/hbm/ponder/**"
+precedence = "override"
+SPDX-FileCopyrightText = "2026 SecretAgent12"
+SPDX-License-Identifier = "LGPL-3.0-only"

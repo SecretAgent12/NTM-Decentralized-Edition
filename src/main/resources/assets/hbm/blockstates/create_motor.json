@@ -1,0 +1,27 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "hbm:block/create_motor"
+    },
+    "facing=east": {
+      "model": "hbm:block/create_motor",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "hbm:block/create_motor",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "hbm:block/create_motor",
+      "y": 270
+    },
+    "facing=up": {
+      "model": "hbm:block/create_motor",
+      "x": 270
+    },
+    "facing=down": {
+      "model": "hbm:block/create_motor",
+      "x": 90
+    }
+  }
+}

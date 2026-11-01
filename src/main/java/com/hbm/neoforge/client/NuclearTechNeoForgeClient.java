@@ -195,6 +195,9 @@ public final class NuclearTechNeoForgeClient {
                     FarView.joined();
                 });
         modBus.addListener((FMLClientSetupEvent event) -> NuclearTech.deriveClientConfigFacades());
+        // backport: Create electric motors (integration.create.motor): shaft renderer, tooltips
+        if (ModList.get().isLoaded("create"))
+            com.hbm.integration.create.motor.CreateMotorsClient.register(modBus);
         // backport: Ponder guides (com.hbm.integration.ponder), only when Ponder is present
         modBus.addListener(
                 (FMLClientSetupEvent event) -> {

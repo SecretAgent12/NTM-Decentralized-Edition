@@ -349,6 +349,38 @@ public final class MachineData {
                 FRACKING_GAS_PER_BEDROCK_DEPOSIT_MIN, FRACKING_GAS_PER_BEDROCK_DEPOSIT_MAX);
     }
 
+    // backport: Create electric motors (com.hbm.integration.create.motor), NTM's own price of SU in
+    // HE. 0.1 HE/t per SU: a Create press at 128 RPM (1024 SU) then costs about what NTM's electric
+    // press does (100 HE/t) for the same work
+    private static final DataGroups.Group CREATE_MOTORS = DataGroups.group(GROUPS, "createMotors");
+    public static final DataGroups.Param<Double> CREATE_MOTORS_HE_PER_SU =
+            CREATE_MOTORS.real("he_per_su", 0.1D);
+    public static final DataGroups.Param<Double> CREATE_MOTORS_EFFICIENCY =
+            CREATE_MOTORS.bounded("efficiency", 0.85D, 0.01D, 1D);
+    public static final DataGroups.Param<Double> CREATE_MOTORS_IDLE =
+            CREATE_MOTORS.chance("idle_fraction", 0.02D);
+    // a motor stores no energy: its buffer is a couple of ticks of full load; it trips after this
+    // many ticks without HE from the network and restarts no sooner than the delay after a trip
+    public static final DataGroups.Param<Integer> CREATE_MOTORS_BUFFER_TICKS =
+            CREATE_MOTORS.bounded("buffer_ticks", 2, 1, 200);
+    public static final DataGroups.Param<Integer> CREATE_MOTORS_TRIP_TICKS =
+            CREATE_MOTORS.bounded("undervoltage_ticks", 5, 1, 200);
+    public static final DataGroups.Param<Integer> CREATE_MOTORS_RESTART_DELAY =
+            CREATE_MOTORS.bounded("restart_delay", 40, 0, 1200);
+
+    private static final DataGroups.Group CREATE_MOTOR = DataGroups.group(GROUPS, "createMotor");
+    public static final DataGroups.Param<Integer> CREATE_MOTOR_RPM =
+            CREATE_MOTOR.bounded("rpm", 64, 1, 256);
+    public static final DataGroups.Param<Integer> CREATE_MOTOR_STRESS_PER_RPM =
+            CREATE_MOTOR.positive("stress_per_rpm", 16);
+
+    private static final DataGroups.Group CREATE_MOTOR_DESH =
+            DataGroups.group(GROUPS, "createMotorDesh");
+    public static final DataGroups.Param<Integer> CREATE_MOTOR_DESH_RPM =
+            CREATE_MOTOR_DESH.bounded("rpm", 128, 1, 256);
+    public static final DataGroups.Param<Integer> CREATE_MOTOR_DESH_STRESS_PER_RPM =
+            CREATE_MOTOR_DESH.positive("stress_per_rpm", 64);
+
     private MachineData() {}
 
     public static List<DataGroups.Group> groups() {

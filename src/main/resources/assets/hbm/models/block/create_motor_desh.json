@@ -1,0 +1,11 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "model": "hbm:models/block/create_motor/motor.obj",
+  "flip_v": true,
+  "emissive_ambient": false,
+  "textures": {
+    "texture": "hbm:block/create_motor_desh",
+    "particle": "hbm:block/create_motor_desh"
+  }
+}

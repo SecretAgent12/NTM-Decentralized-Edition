@@ -1,0 +1,36 @@
+NTM: Decentralized Edition — original assets
+Copyright (c) 2026 SecretAgent12. All rights reserved, except as allowed below.
+
+This license covers the assets (textures, models, sounds and other media) listed as
+"LicenseRef-NTM-DE-Assets" in REUSE.toml. It does not cover the code of NTM: DE, which is
+under the LGPL-3.0 with additional terms (see NOTICE.md), or assets from Hbm's Nuclear Tech Mod,
+NTM: NEXT or third parties.
+
+Credits: the model and textures of the electric motors (Create integration) were made by
+NuclearGrandFather, who assigned the rights to them to SecretAgent12.
+
+You may, without asking:
+1. Redistribute unmodified releases of NTM: DE that contain these assets, on their own or
+   inside modpacks, server packs and other collections.
+2. Use these assets in addons, resource packs, datapacks and similar works that require
+   NTM: DE to be installed, including referencing, retexturing or overriding them.
+3. Show these assets in screenshots, videos, wikis, guides and reviews.
+4. Use these assets in forks of NTM: DE. A fork of NTM: DE is a modified version of NTM: DE
+   whose code is based on the source code of NTM: DE
+   (https://github.com/SecretAgent12/NTM-Decentralized-Edition) and which follows the license
+   and the additional terms of NTM: DE's code (see NOTICE.md), including those on attribution
+   and naming. A fork that does not follow them may not use these assets either.
+
+An "unmodified release of NTM: DE" has the meaning given in NOTICE.md: a jar published by
+SecretAgent12, or a jar built without changes from a release tag or a commit on a branch of
+https://github.com/SecretAgent12/NTM-Decentralized-Edition, with its name, version and metadata
+unchanged. A jar with a changed name, version or metadata is not an unmodified release; it is a
+modified version, and point 4 applies to it.
+
+Any other use requires my written permission. In particular, you may not copy these assets,
+modified or not, into mods or other works that are not forks of NTM: DE, such as other mods,
+other ports or editions of Hbm's Nuclear Tech Mod, or asset collections.
+
+To ask for permission, or if you want to contribute your own assets to NTM: DE, contact me first:
+- GitHub issues: https://github.com/SecretAgent12/NTM-Decentralized-Edition/issues
+- Discord: secretagent12

@@ -17,6 +17,12 @@ and deliberate deviations from ntm-next are marked with `// backport:` comments 
   the license of ntm-next and Hbm's Nuclear Tech Mod.
 - `src/main/java/com/hbm/lib/neotransfer/`: derived from NeoForge, **LGPL-2.1-only** (`LICENSES/LGPL-2.1-only.txt`).
 - `src/main/java/com/hbm/lib/crankshaft/`: derived from CrankShaft / Flywheel, **MIT** (`LICENSES/MIT.txt`).
+- Original NTM: DE assets (textures, models and other media made for NTM: DE, listed as
+  `LicenseRef-NTM-DE-Assets` in `REUSE.toml`): **not** under the LGPL; see
+  `LICENSES/LicenseRef-NTM-DE-Assets.txt`. They may be used in modpacks, addons, resource packs,
+  media and forks of NTM: DE, but not copied into other mods. The model and textures of the
+  electric motors were made by NuclearGrandFather, who assigned the rights to them to SecretAgent12.
+  If you want to contribute your own assets, contact me first (GitHub issues or Discord: secretagent12).
 - Other third-party code and assets: see `THIRD_PARTY_NOTICES` and `REUSE.toml`.
 
 
