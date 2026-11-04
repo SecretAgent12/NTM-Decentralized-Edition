@@ -4,6 +4,7 @@
 package com.hbm.uninos.graph;
 
 import com.hbm.api.fluidmk2.FlushIndex;
+import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.capability.ICapabilityBlock;
 import com.hbm.blockentity.GraphResident;
@@ -1204,7 +1205,15 @@ public class LevelNodeGraph<D> extends SavedDataCompat {
         long chunkKey = chunkOf(posKey);
         if (chunk == null || !chunk.getFullStatus().isOrAfter(FullChunkStatus.FULL)) return chunkKey;
         BlockPos pos = BlockPos.of(posKey);
-        if (chunk.getBlockState(pos).hasBlockEntity()) {
+        BlockState state = chunk.getBlockState(pos);
+        if (state.isAir()) return NO_BLOCKER;
+        // backport-fix: BF-131 a cell of a core block (the upper blocks of an RBMK column: same block,
+        // another state) reports hasBlockEntity() but never gets a block entity of its own; waiting for
+        // one parked the pipe face for good, so the column's steam / hot coolant never reached the pipe.
+        // Such a cell waits for its core's chunk instead.
+        if (state.getBlock() instanceof BlockMultiblockCore core && core.isCellState(state))
+            return MultiblockSurface.coreBlockingChunk(level, pos);
+        if (state.hasBlockEntity()) {
             BlockEntity be = chunk.getBlockEntity(pos, LevelChunk.EntityCreationType.CHECK);
             if (be == null || be.isRemoved()) return chunkKey;
         }
