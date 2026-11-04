@@ -2,6 +2,10 @@
   "feature": "hbm:arctic_vault",
   "placement": [
     {
+      "type": "hbm:config_switch",
+      "switch": "arctic_vaults"
+    },
+    {
       "type": "minecraft:rarity_filter",
       "chance": 500
     },

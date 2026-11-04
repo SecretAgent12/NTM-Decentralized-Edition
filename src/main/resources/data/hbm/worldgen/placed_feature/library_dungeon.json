@@ -2,6 +2,10 @@
   "feature": "hbm:library_dungeon",
   "placement": [
     {
+      "type": "hbm:config_switch",
+      "switch": "library_dungeons"
+    },
+    {
       "type": "minecraft:rarity_filter",
       "chance": 64
     },

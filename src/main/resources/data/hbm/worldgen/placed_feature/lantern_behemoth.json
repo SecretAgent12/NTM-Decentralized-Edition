@@ -2,6 +2,10 @@
   "feature": "hbm:lantern_behemoth",
   "placement": [
     {
+      "type": "hbm:config_switch",
+      "switch": "lantern_behemoths"
+    },
+    {
       "type": "minecraft:rarity_filter",
       "chance": 2000
     },

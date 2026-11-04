@@ -60,6 +60,11 @@ public interface RuntimeConfig {
         return store().get(ConfigSchema.GLYPHIDS_ENABLED);
     }
 
+    // backport: see ConfigSchema.NUCLEAR_CREEPERS
+    default boolean nuclearCreepers() {
+        return store().get(ConfigSchema.NUCLEAR_CREEPERS);
+    }
+
     default int toolRecursionDepth() {
         return store().get(ConfigSchema.TOOL_RECURSION_DEPTH);
     }

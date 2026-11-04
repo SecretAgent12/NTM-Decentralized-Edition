@@ -3,6 +3,8 @@
 
 package com.hbm.handler.radiation;
 
+import com.hbm.config.NeoForgeHbmConfig;
+import com.hbm.entity.ModEntities;
 import com.hbm.lib.ModDamageTypes;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import java.util.HashMap;
@@ -72,6 +74,10 @@ public final class IrradiationTransformations {
     public static boolean apply(LivingEntity entity, double dose) {
         int index = targets.getInt(entity.getType());
         if (index < 0 || dose < thresholds[index]) return false;
+        // backport: hbm-runtime.toml [mobs] nuclear_creepers = false skips the creeper rule
+        // entirely (no transformation, no failure damage), as if the datapack had no such rule
+        if (!NeoForgeHbmConfig.runtime().nuclearCreepers()
+                && ModEntities.CREEPER_NUCLEAR.get() == results[index]) return false;
         var server = (ServerLevel) entity.level();
         if (denominators[index] > 1 && server.getRandom().nextInt(denominators[index]) != 0) {
             if (failureDamage[index] > 0F)

@@ -2,6 +2,10 @@
   "feature": "hbm:barrel",
   "placement": [
     {
+      "type": "hbm:config_switch",
+      "switch": "waste_barrels"
+    },
+    {
       "type": "minecraft:rarity_filter",
       "chance": 5000
     },

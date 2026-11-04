@@ -2,6 +2,10 @@
   "feature": "hbm:locked_safe",
   "placement": [
     {
+      "type": "hbm:config_switch",
+      "switch": "locked_safes"
+    },
+    {
       "type": "minecraft:rarity_filter",
       "chance": 2500
     },

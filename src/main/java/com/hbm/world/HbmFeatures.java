@@ -7,6 +7,7 @@ import com.hbm.blocks.ModBlocks;
 import com.hbm.registration.NeoForgeRegistrar;
 import com.hbm.registration.RegistryHandle;
 import com.hbm.world.feature.*;
+import com.hbm.world.placement.ConfigSwitchPlacement;
 import com.hbm.world.placement.LightBlockingHeightPlacement;
 import com.hbm.world.placement.OreHostPlacement;
 import com.hbm.world.placement.WorldConfigPlacement;
@@ -53,6 +54,7 @@ public final class HbmFeatures {
     public static void register() {
         LightBlockingHeightPlacement.register();
         WorldConfigPlacement.register();
+        ConfigSwitchPlacement.register(); // backport: hbm-runtime.toml [world_objects]
         OreHostPlacement.register();
         STRATUM = NeoForgeRegistrar.registerFeature("stratum", new StratumFeature());
         STRATUM_3D = NeoForgeRegistrar.registerFeature("stratum_3d", new Stratum3DFeature());
