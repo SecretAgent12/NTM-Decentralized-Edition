@@ -180,10 +180,13 @@ dependencies {
     implementation "curse.maven:curios-309927:6529130"
     // Sophisticated Storage / Backpacks for 1.21.1: radiation of stored contents (tooltips + carried items),
     // hazard visitor mixins (com.hbm.neoforge.hazard, com.hbm.neoforge.mixin.storage)
-    implementation "curse.maven:sophisticated-storage-619320:8985962"
-    implementation "curse.maven:sophisticated-backpacks-422301:8992926"
+    // Storage 1.6.16, Backpacks 3.26.20, Core 1.5.28 (2026-11-04): Storage and Backpacks need Core 1.5.28+.
+    // Since Backpacks 3.26.18 / the matching Storage the contents request carries an ItemStackReference
+    // (BF-132, SophisticatedContentsRequest keeps older versions working too)
+    implementation "curse.maven:sophisticated-storage-619320:9431872"
+    implementation "curse.maven:sophisticated-backpacks-422301:9431839"
     // Sophisticated Core (required by both; 1.5.2+ for the linked-storage classes the backpack mixin uses)
-    implementation "curse.maven:sophisticated-core-618298:8985869"
+    implementation "curse.maven:sophisticated-core-618298:9431812"
     // Lithium for 1.21.1 NeoForge: keeps its section block trackers valid when NTM swaps chunk sections (com.hbm.integration.lithium)
     implementation "curse.maven:lithium-360438:8330365"
     // ScalableLux (Starlight) for 1.21.1 NeoForge: NTM bulk light updates (com.hbm.mixin.scalablelux, @Pseudo)

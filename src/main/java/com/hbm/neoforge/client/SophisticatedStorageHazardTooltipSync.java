@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
 import net.p3pp3rf1y.sophisticatedcore.init.ModCoreDataComponents;
 import net.p3pp3rf1y.sophisticatedstorage.block.ItemContentsStorage;
 import net.p3pp3rf1y.sophisticatedstorage.item.StorageBlockItem;
@@ -23,13 +22,13 @@ final class SophisticatedStorageHazardTooltipSync {
 
     static void request(ItemStack stack) {
         UUID id = contentsId(stack);
-        if (id != null) request(id);
+        if (id != null) request(id, stack);
     }
 
     static List<ItemStack> requestNested(ItemStack stack, Set<UUID> visited) {
         UUID id = contentsId(stack);
         if (id == null || !visited.add(id)) return List.of();
-        request(id);
+        request(id, stack);
         // backport: 1.21.1 ItemContentsStorage.getOrCreateStorageContents returns the raw contents tag;
         // SophisticatedStoredStacks decodes it
         return SophisticatedStoredStacks.stacks(
@@ -42,9 +41,10 @@ final class SophisticatedStorageHazardTooltipSync {
                 : null;
     }
 
-    private static void request(UUID id) {
+    private static void request(UUID id, ItemStack stack) {
         if (!HazardTooltipRequests.reserve(id, false)) return;
-        // backport: NeoForge 26 ClientPacketDistributor.sendToServer -> 1.21.1 PacketDistributor.sendToServer
-        PacketDistributor.sendToServer(new RequestStorageContentsPayload(id));
+        // backport-fix: BF-132 the payload's constructor differs between Sophisticated Storage
+        // versions (an ItemStackReference was added); SophisticatedContentsRequest picks it
+        SophisticatedContentsRequest.send(RequestStorageContentsPayload.class, id, stack);
     }
 }
