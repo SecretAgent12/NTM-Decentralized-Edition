@@ -199,6 +199,16 @@ public final class NuclearTechNeoForge {
                         HbmPlayerProps.getData(player).grenadeDeployment = 0;
                 });
         NeoForgeHbmConfig.registerSpecs(container);
+        // backport: the datapack's gameplay groups as an ordinary config file (GameplayConfig)
+        container.registerConfig(
+                ModConfig.Type.COMMON,
+                com.hbm.data.GameplayConfig.SPEC,
+                com.hbm.data.GameplayConfig.FILE);
+        modBus.addListener(
+                (ModConfigEvent.Reloading event) -> {
+                    if (event.getConfig().getSpec() == com.hbm.data.GameplayConfig.SPEC)
+                        com.hbm.data.GameplayConfig.onReload();
+                });
 
         DeferredRegister<MapCodec<? extends ICondition>> conditionCodecs =
                 DeferredRegister.create(

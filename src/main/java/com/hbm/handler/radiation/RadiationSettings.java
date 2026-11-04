@@ -3,6 +3,7 @@
 
 package com.hbm.handler.radiation;
 
+import com.hbm.data.GameplayConfig;
 import com.hbm.data.RadiationData;
 import com.hbm.lib.Library;
 import com.mojang.serialization.Codec;
@@ -11,6 +12,7 @@ import java.util.Optional;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 
 public record RadiationSettings(
         Optional<Double> diffusivity,
@@ -94,10 +96,14 @@ public record RadiationSettings(
     }
 
     public static RadiationSettings forLevel(ServerLevel level) {
-        return level.registryAccess()
-                .registryOrThrow(REGISTRY)
-                .getOptional(ResourceKey.create(REGISTRY, level.dimension().location()))
-                .orElse(DEFAULT);
+        RadiationSettings settings =
+                level.registryAccess()
+                        .registryOrThrow(REGISTRY)
+                        .getOptional(ResourceKey.create(REGISTRY, level.dimension().location()))
+                        .orElse(DEFAULT);
+        // backport: hbm-gameplay.toml [radiation] nether_ambient_rad, a changed line wins over
+        // radiation_settings/the_nether.json
+        return Level.NETHER == level.dimension() ? GameplayConfig.netherAmbient(settings) : settings;
     }
 
     public double diffusivityOrDefault() {

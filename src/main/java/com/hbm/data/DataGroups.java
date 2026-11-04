@@ -60,6 +60,8 @@ public final class DataGroups {
         EnergyData.applyDataPack(registries);
         RadiationData.applyDataPack(registries);
         for (Consumer<RegistryAccess> addon : addons) addon.accept(registries);
+        // backport: hbm-gameplay.toml lines changed from their defaults replace the datapack's values
+        GameplayConfig.afterDataPack();
     }
 
     public static <T extends DataValues> void apply(
@@ -94,6 +96,11 @@ public final class DataGroups {
 
         public ResourceLocation id() {
             return id;
+        }
+
+        // backport: GameplayConfig mirrors the parameters into hbm-gameplay.toml
+        public List<Param<?>> params() {
+            return List.copyOf(params);
         }
 
         public Map<String, Dynamic<?>> defaults() {
@@ -302,6 +309,16 @@ public final class DataGroups {
 
         public T defaultValue() {
             return defaultValue;
+        }
+
+        // backport: GameplayConfig checks hbm-gameplay.toml lines with the datapack's own codec
+        public Codec<T> codec() {
+            return codec;
+        }
+
+        // backport: GameplayConfig lays a hbm-gameplay.toml line over the datapack's value
+        void override(T value) {
+            this.value = value;
         }
     }
 }

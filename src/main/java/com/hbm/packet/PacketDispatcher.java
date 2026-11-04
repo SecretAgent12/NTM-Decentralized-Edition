@@ -91,6 +91,8 @@ public final class PacketDispatcher {
                         QMAWSyncPayload.STREAM_CODEC,
                         QMAWSyncPayload::apply,
                         QMAWSyncPayload::of));
+        // backport: hbm-gameplay.toml lines changed on the server reach the players
+        NeoForgeNetwork.datapackSync.add(com.hbm.data.GameplayConfig.SYNC);
         NeoForgeServerEvents.onServerStopping(server -> com.hbm.qmaw.QMAWCatalog.clearServer());
         NeoForgeNetwork.clientbound.add(
                 new NeoForgeNetwork.Registration<>(
