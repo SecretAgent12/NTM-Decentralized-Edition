@@ -73,7 +73,7 @@ public final class LegacyJigsawStructure extends JigsawStructure implements Colu
                 pool,
                 Optional.empty(),
                 maxDepth,
-                ConstantHeight.of(VerticalAnchor.absolute((minHeight + maxHeight) / 2)),
+                ConstantHeight.of(VerticalAnchor.absolute(startHeight(minHeight, maxHeight))),
                 false,
                 Optional.empty(),
                 128, // backport: 1.21.1 takes the horizontal max distance as an int
@@ -84,6 +84,17 @@ public final class LegacyJigsawStructure extends JigsawStructure implements Colu
         this.maxDepth = maxDepth;
         this.minHeight = minHeight;
         this.maxHeight = maxHeight;
+    }
+
+    /**
+     * backport-fix: BF-124 the jigsaw start sits mid-band. Without {@code max_height} the band has no
+     * ceiling ({@link SinglePieceStructure#NO_CEILING}), and {@code (min + max) / 2} overflowed int to
+     * y -1073741824. Without a ceiling the start stays where the old default band 1..128 put it (y 64);
+     * the pieces are grounded on the terrain afterwards anyway ({@link #grounded}).
+     */
+    private static int startHeight(int minHeight, int maxHeight) {
+        int top = maxHeight == SinglePieceStructure.NO_CEILING ? Math.max(minHeight, 128) : maxHeight;
+        return (int) (((long) minHeight + top) / 2);
     }
 
     @Override
