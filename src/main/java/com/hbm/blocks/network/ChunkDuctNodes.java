@@ -44,7 +44,21 @@ public final class ChunkDuctNodes {
     private static final Map<ServerLevel, ReferenceOpenHashSet<BlockEntity>> OWNERS =
             new HashMap<>();
 
+    /**
+     * backport-fix: BF-139 depth of {@link #onChunkLoad} on the server thread. Creating a duct's nodes there redraws
+     * its arms with Level.setBlock while NeoForge's ChunkEvent.Load is still inside the chunk's loading; Sable's
+     * block-change hook then read the neighbouring chunk with a loading Level.getChunk and the server thread parked
+     * until the watchdog (ChunkPublication only covers the block-entity window, BF-097/114). While this is non-zero,
+     * PhysicalGraph defers its redraws to the end of the server tick.
+     */
+    private static int chunkLoads;
+
     private ChunkDuctNodes() {}
+
+    /** backport-fix: BF-139 true while a chunk's ducts are being set up inside ChunkEvent.Load. */
+    public static boolean loadingChunk() {
+        return chunkLoads > 0x0;
+    }
 
     public static void init() {
         NeoForgeServerEvents.onChunkLoad(ChunkDuctNodes::onChunkLoad);
@@ -118,6 +132,17 @@ public final class ChunkDuctNodes {
     }
 
     public static void onChunkLoad(ServerLevel level, LevelChunk chunk) {
+        // backport-fix: BF-139 count only the server thread: the deferral is read there
+        boolean counted = level.getServer().isSameThread();
+        if (counted) chunkLoads++;
+        try {
+            setUp(level, chunk);
+        } finally {
+            if (counted) chunkLoads--;
+        }
+    }
+
+    private static void setUp(ServerLevel level, LevelChunk chunk) {
         Long2ObjectOpenHashMap<String> fluids = chunk.hbm$ductFluids();
         LevelChunkSection[] sections = chunk.getSections();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();

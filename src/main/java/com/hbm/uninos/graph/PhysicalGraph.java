@@ -12,6 +12,7 @@ import com.hbm.api.fluidmk2.FluidPipeGraph;
 import com.hbm.api.fluidmk2.FluidPipeGraphProvider;
 import com.hbm.api.fluidmk2.PipeData;
 import com.hbm.blocks.CapabilityDependentShape;
+import com.hbm.blocks.network.ChunkDuctNodes;
 import com.hbm.capability.NtmCapabilities;
 import com.hbm.capability.PhysicalConnector;
 import com.hbm.util.ChunkUtil;
@@ -215,6 +216,8 @@ public final class PhysicalGraph {
      * chunk whose loading was the very task running it: the server thread parked forever. Redraws asked for while a
      * chunk of the level is loading wait for the end of the server tick and are redrawn from the then current
      * neighbours; nothing else changes.
+     * backport-fix: BF-139 the same holds for ducts set up inside ChunkEvent.Load (ChunkDuctNodes#loadingChunk): the
+     * redraw's setBlock there made Sable read a neighbouring chunk with a loading getChunk and hang the server.
      */
     private static final Map<ServerLevel, LongOpenHashSet> DEFERRED = new WeakHashMap<>();
 
@@ -243,7 +246,7 @@ public final class PhysicalGraph {
     private static void publish(
             ServerLevel level, BlockPos pos, BlockState state, BlockState drawn) {
         if (drawn == state) return;
-        if (ChunkPublication.loadingAny(level)) {
+        if (ChunkPublication.loadingAny(level) || ChunkDuctNodes.loadingChunk()) {
             DEFERRED.computeIfAbsent(level, l -> new LongOpenHashSet()).add(pos.asLong());
             return;
         }
